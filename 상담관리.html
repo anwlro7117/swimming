@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌿 부모상담 신청 현황</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f7f2; --primary: #2d5016; --accent: #6db33f;
+    --light: #e8f5d9; --muted: #8a9e7a; --card: #fff;
+    --border: #e0ead0; --text: #1a2612; --sub: #5a6e4a;
+    --warn: #e07b39; --no: #e63946;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  header { background: var(--primary); padding: 30px 24px 50px; position: relative; overflow: hidden; }
+  header::before { content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 28px; background: var(--bg); clip-path: ellipse(55% 100% at 50% 100%); }
+  .hdr-inner { max-width: 860px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
+  header h1 { font-size: 1.5rem; font-weight: 900; color: #fff; }
+  header p { color: #a8c880; font-size: 0.82rem; margin-top: 4px; }
+  .logout-btn { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 7px 14px; border-radius: 20px; font-family: inherit; font-size: 0.78rem; font-weight: 700; cursor: pointer; }
+  main { max-width: 860px; margin: 0 auto; padding: 0 16px 60px; }
+  .card { background: var(--card); border-radius: 18px; box-shadow: 0 2px 14px rgba(45,80,22,0.08); padding: 24px; margin-bottom: 14px; border: 1.5px solid var(--border); }
+  .card-title { font-size: 0.88rem; font-weight: 700; color: var(--primary); margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+  .card-title::before { content: ''; display: block; width: 4px; height: 18px; border-radius: 2px; background: linear-gradient(var(--accent), var(--primary)); }
+  .form-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .form-label { font-size: 0.82rem; font-weight: 700; color: var(--sub); min-width: 60px; }
+  .date-input { padding: 10px 14px; border: 2px solid var(--border); border-radius: 10px; font-family: inherit; font-size: 0.9rem; color: var(--text); background: #fff; outline: none; }
+  .date-input:focus { border-color: var(--accent); }
+  .save-btn { padding: 10px 20px; border: none; border-radius: 10px; background: var(--primary); color: #fff; font-family: inherit; font-size: 0.86rem; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+  .save-btn:hover { background: var(--accent); }
+  .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 14px; }
+  .s-card { background: var(--card); border-radius: 14px; padding: 16px; box-shadow: 0 2px 10px rgba(45,80,22,0.07); border-top: 4px solid var(--primary); text-align: center; }
+  .s-num { font-size: 2rem; font-weight: 900; color: var(--primary); }
+  .s-lbl { font-size: 0.72rem; color: var(--muted); margin-top: 4px; font-weight: 500; }
+  .filter-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+  .f-select { padding: 8px 12px; border: 2px solid var(--border); border-radius: 10px; font-family: inherit; font-size: 0.84rem; color: var(--text); background: #fff; outline: none; cursor: pointer; }
+  .f-select:focus { border-color: var(--accent); }
+  .del-btn { padding: 8px 14px; border: 2px solid #fde8ea; border-radius: 10px; background: #fff; font-family: inherit; font-size: 0.8rem; color: var(--no); font-weight: 700; cursor: pointer; margin-left: auto; }
+  .del-btn:hover { background: #fde8ea; }
+  .tbl { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+  .tbl th { background: #f4f8f0; color: var(--muted); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.5px; padding: 10px 12px; text-align: left; border-bottom: 2px solid var(--border); }
+  .tbl td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .tbl tr:last-child td { border-bottom: none; }
+  .tbl tr:hover td { background: #f8fbf4; }
+  .badge { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 0.76rem; font-weight: 700; }
+  .b-cls { background: var(--light); color: var(--primary); }
+  .b-t1 { background: var(--primary); color: #fff; }
+  .b-t2 { background: var(--accent); color: #fff; }
+  .b-none { background: #eee; color: #999; }
+  .row-del { background: none; border: none; color: #ccc; cursor: pointer; font-size: 1rem; padding: 2px 6px; border-radius: 6px; }
+  .row-del:hover { color: var(--no); background: #fde8ea; }
+  .empty { text-align: center; padding: 40px; color: var(--muted); font-size: 0.88rem; }
+
+  /* 로그인 화면 */
+  #loginScreen { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--bg); }
+  .login-box { background: var(--card); border-radius: 24px; padding: 40px 36px; box-shadow: 0 4px 30px rgba(45,80,22,0.12); text-align: center; max-width: 360px; width: 100%; border: 1.5px solid var(--border); }
+  .login-box h2 { font-size: 1.4rem; font-weight: 900; color: var(--primary); margin-bottom: 6px; }
+  .login-box p { color: var(--muted); font-size: 0.84rem; margin-bottom: 24px; }
+  .pw-input { width: 100%; padding: 13px 16px; border: 2px solid var(--border); border-radius: 12px; font-family: 'DM Mono', monospace; font-size: 1rem; color: var(--text); background: #fff; outline: none; text-align: center; letter-spacing: 4px; margin-bottom: 12px; }
+  .pw-input:focus { border-color: var(--accent); }
+  .login-btn { width: 100%; padding: 13px; border: none; border-radius: 12px; background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; font-family: inherit; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+  .pw-err { color: var(--no); font-size: 0.82rem; margin-top: 8px; display: none; }
+  #mainScreen { display: none; }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(70px); background: var(--primary); color: #fff; padding: 12px 22px; border-radius: 30px; font-size: 0.88rem; font-weight: 600; box-shadow: 0 5px 20px rgba(45,80,22,0.3); transition: transform 0.3s cubic-bezier(.34,1.56,.64,1); z-index: 999; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  @media (max-width: 600px) { .summary-grid { grid-template-columns: repeat(3,1fr); } }
+</style>
+</head>
+<body>
+
+<!-- 로그인 화면 제거 - 모든 선생님 공개 -->
+
+<!-- 메인 화면 -->
+<div id="mainScreen">
+  <header>
+    <div class="hdr-inner">
+      <div><h1>🌿 부모상담 신청 현황</h1><p>무지개어린이집</p></div>
+      
+    </div>
+  </header>
+
+  <main>
+    <!-- 상담 기간 설정 -->
+    <div class="card">
+      <div class="card-title">📅 상담 기간 설정</div>
+      <div class="form-row">
+        <span class="form-label">시작일</span>
+        <input type="date" class="date-input" id="startDate">
+        <span class="form-label">종료일</span>
+        <input type="date" class="date-input" id="endDate">
+        <button class="save-btn" onclick="saveConfig()">💾 저장</button>
+      </div>
+    </div>
+
+    <!-- 요약 카드 -->
+    <div class="summary-grid">
+      <div class="s-card"><div class="s-num" id="s-total">-</div><div class="s-lbl">총 신청 건수</div></div>
+      <div class="s-card" style="border-color:var(--accent)"><div class="s-num" style="color:var(--accent)" id="s-classes">-</div><div class="s-lbl">신청 반 수</div></div>
+      <div class="s-card" style="border-color:var(--warn)"><div class="s-num" style="color:var(--warn)" id="s-children">-</div><div class="s-lbl">신청 아동 수</div></div>
+    </div>
+
+    <!-- 신청 현황 -->
+    <div class="card">
+      <div class="card-title">📋 신청 현황</div>
+      <div class="filter-row">
+        <select class="f-select" id="fDate" onchange="renderTable()"><option value="">전체 날짜</option></select>
+        <select class="f-select" id="fClass" onchange="renderTable()"><option value="">전체 반</option></select>
+        <button class="del-btn" onclick="clearAll()">🗑 전체 삭제</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="tbl">
+          <thead>
+            <tr><th>신청일시</th><th>반</th><th>아동</th><th>날짜</th><th>1순위</th><th>2순위</th><th></th></tr>
+          </thead>
+          <tbody id="tblBody"><tr><td colspan="7" class="empty">불러오는 중...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, remove, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDojXJ_9pOnla8uG240APwo3Ik9gBddMw4",
+  authDomain: "mujigae-swimming.firebaseapp.com",
+  databaseURL: "https://mujigae-swimming-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "mujigae-swimming",
+  storageBucket: "mujigae-swimming.firebasestorage.app",
+  messagingSenderId: "279953220805",
+  appId: "1:279953220805:web:b24cbe70f8556416c0bcac"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+let allData = {};
+
+// ── 페이지 로드 시 바로 시작 ──────────────────────────────
+loadConfig();
+listenData();
+
+// ── 기간 설정 ─────────────────────────────────────────────
+function loadConfig() {
+  get(ref(db, 'consultConfig')).then(snap => {
+    const cfg = snap.val();
+    if (cfg) {
+      document.getElementById('startDate').value = cfg.startDate || '2026-03-16';
+      document.getElementById('endDate').value = cfg.endDate || '2026-03-31';
+    } else {
+      document.getElementById('startDate').value = '2026-03-16';
+      document.getElementById('endDate').value = '2026-03-31';
+    }
+  });
+}
+
+async function saveConfig() {
+  const s = document.getElementById('startDate').value;
+  const e = document.getElementById('endDate').value;
+  if (!s || !e) { showToast('⚠️ 날짜를 모두 입력해주세요'); return; }
+  if (s > e) { showToast('⚠️ 종료일이 시작일보다 빠릅니다'); return; }
+  await set(ref(db, 'consultConfig'), { startDate: s, endDate: e });
+  showToast('✅ 상담 기간이 저장됐어요!');
+}
+
+// ── 실시간 데이터 ─────────────────────────────────────────
+function listenData() {
+  onValue(ref(db, 'consult'), snap => {
+    allData = snap.val() || {};
+    renderSummary();
+    updateFilters();
+    renderTable();
+  });
+}
+
+function renderSummary() {
+  const entries = Object.values(allData);
+  document.getElementById('s-total').textContent = entries.length;
+  document.getElementById('s-classes').textContent = new Set(entries.map(e => e.cls)).size;
+  document.getElementById('s-children').textContent = new Set(entries.map(e => e.child)).size;
+}
+
+function updateFilters() {
+  const entries = Object.values(allData);
+  const dates = [...new Set(entries.map(e => e.date))].sort();
+  const classes = [...new Set(entries.map(e => e.cls))].sort();
+  document.getElementById('fDate').innerHTML = '<option value="">전체 날짜</option>' + dates.map(d => `<option value="${d}">${d}</option>`).join('');
+  document.getElementById('fClass').innerHTML = '<option value="">전체 반</option>' + classes.map(c => `<option value="${c}">${c}반</option>`).join('');
+}
+
+function renderTable() {
+  const fd = document.getElementById('fDate').value;
+  const fc = document.getElementById('fClass').value;
+  const filtered = Object.entries(allData)
+    .filter(([, e]) => (!fd || e.date === fd) && (!fc || e.cls === fc))
+    .sort((a, b) => (a[1].date > b[1].date ? 1 : -1));
+
+  const tbody = document.getElementById('tblBody');
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty">신청 내역이 없어요 🌿</td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtered.map(([key, e]) => {
+    const dt = e.submittedAt ? new Date(e.submittedAt).toLocaleString('ko-KR', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '-';
+    return `<tr>
+      <td style="font-size:0.78rem;color:var(--muted);">${dt}</td>
+      <td><span class="badge b-cls">${e.cls}반</span></td>
+      <td style="font-weight:600;">${e.child}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:0.82rem;">${e.date}</td>
+      <td><span class="badge b-t1">${e.time1}</span></td>
+      <td>${e.time2 ? `<span class="badge b-t2">${e.time2}</span>` : '<span class="badge b-none">미선택</span>'}</td>
+      <td><button class="row-del" onclick="deleteRow('${key}')">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function deleteRow(key) {
+  if (!confirm('이 신청 내역을 삭제할까요?')) return;
+  await remove(ref(db, 'consult/' + key));
+  showToast('🗑 삭제됐어요');
+}
+
+async function clearAll() {
+  if (!confirm('모든 상담 신청 내역을 삭제할까요?')) return;
+  await remove(ref(db, 'consult'));
+  showToast('🗑 전체 삭제됐어요');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+window.saveConfig = saveConfig;
+window.renderTable = renderTable;
+window.deleteRow = deleteRow;
+window.clearAll = clearAll;
+</script>
+</body>
+</html>
