@@ -101,7 +101,7 @@
       <div style="overflow-x:auto;">
         <table class="tbl">
           <thead>
-            <tr><th>신청일시</th><th>반</th><th>아동</th><th>날짜</th><th>1순위</th><th>2순위</th><th></th></tr>
+            <tr><th>신청일시</th><th>반</th><th>아동</th><th>날짜</th><th>방문상담</th><th>전화상담</th><th></th></tr>
           </thead>
           <tbody id="tblBody"><tr><td colspan="7" class="empty">불러오는 중...</td></tr></tbody>
         </table>
@@ -114,7 +114,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, set, get, remove, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, set, get, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDojXJ_9pOnla8uG240APwo3Ik9gBddMw4",
@@ -180,23 +180,19 @@ function renderTable() {
       <td><span class="badge b-cls">${e.cls}반</span></td>
       <td style="font-weight:600;">${e.child}</td>
       <td style="font-family:'DM Mono',monospace;font-size:0.82rem;">${e.date}</td>
-      <td><span class="badge b-t1">${e.time1}</span></td>
+      <td>${e.time1 ? `<span class="badge b-t1">${e.time1}</span>` : '<span class="badge b-none">미선택</span>'}</td>
       <td>${e.time2 ? `<span class="badge b-t2">${e.time2}</span>` : '<span class="badge b-none">미선택</span>'}</td>
       <td><button class="row-del" onclick="deleteRow('${key}')">✕</button></td>
     </tr>`;
   }).join('');
 }
 
+
+
 async function deleteRow(key) {
   if (!confirm('이 신청 내역을 삭제할까요?')) return;
   await remove(ref(db, 'consult/' + key));
   showToast('🗑 삭제됐어요');
-}
-
-async function clearAll() {
-  if (!confirm('모든 상담 신청 내역을 삭제할까요?')) return;
-  await remove(ref(db, 'consult'));
-  showToast('🗑 전체 삭제됐어요');
 }
 
 function showToast(msg) {
@@ -208,7 +204,6 @@ function showToast(msg) {
 
 window.renderTable = renderTable;
 window.deleteRow = deleteRow;
-window.clearAll = clearAll;
 </script>
 </body>
 </html>

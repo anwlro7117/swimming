@@ -605,7 +605,8 @@ async function submit() {
   submitBtn.textContent = '저장 중...';
 
   try {
-    const key = `${selectedDate}_${selectedClass}_${selectedChild}_${Date.now()}`;
+    // 같은 아동이 재신청하면 최신 값으로 덮어씌움
+    const key = `${selectedDate}_${selectedClass}_${selectedChild}`.replace(/[^a-zA-Z0-9가-힣_-]/g, "_");
     const saveTime1 = pick1 === '__etc_visit__' ? ('기타: ' + getEtcValue('visit')) : pick1;
     const saveTime2 = pick2 === '__etc_phone__' ? ('기타: ' + getEtcValue('phone')) : pick2;
     await set(ref(db, 'consult/' + key), {
