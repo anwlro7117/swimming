@@ -158,7 +158,15 @@ const ROSTER = {
     "모둠":   { teachers:["정인애","변아진","윤아름","정다송","김용석"], children:["김가온","한시혁","강승아","정서진","송아린","이승호","박건우"] }
   },
   "치료사": {
-    "치료사": { teachers:["이미화","서홍련","권다애","표영민","전나인","박규리","임주현","정소윤","강수민"], children:[] }
+    "이미화": { teachers:["이미화"], children:[] },
+    "서홍련": { teachers:["서홍련"], children:[] },
+    "권다애": { teachers:["권다애"], children:[] },
+    "표영민": { teachers:["표영민"], children:[] },
+    "전나인": { teachers:["전나인"], children:[] },
+    "박규리": { teachers:["박규리"], children:[] },
+    "임주현": { teachers:["임주현"], children:[] },
+    "정소윤": { teachers:["정소윤"], children:[] },
+    "강수민": { teachers:["강수민"], children:[] }
   }
 };
 
@@ -171,7 +179,7 @@ Object.entries(ROSTER).forEach(([group, classes]) => {
   Object.keys(classes).forEach(cls => {
     const btn = document.createElement('button');
     btn.className = 'cls-btn';
-    btn.textContent = cls === '치료사' ? '치료사' : cls + '반';
+    btn.textContent = group === '치료사' ? cls : cls + '반';
     btn.onclick = () => {
       document.querySelectorAll('.cls-btn').forEach(b => b.classList.remove('sel'));
       btn.classList.add('sel');
@@ -185,8 +193,8 @@ Object.entries(ROSTER).forEach(([group, classes]) => {
 function loadClass(cls) {
   const data = Object.values(ROSTER).flatMap(g => Object.entries(g)).find(([k]) => k === cls)?.[1];
   if (!data) return;
-  const isTherapist = cls === '치료사';
-  document.getElementById('checkTitle').textContent = isTherapist ? '🩺 치료사 참여 체크' : cls + '반 참석 체크';
+  const isTherapist = group === '치료사';
+  document.getElementById('checkTitle').textContent = isTherapist ? '🩺 ' + cls + ' 참여 체크' : cls + '반 참석 체크';
   document.getElementById('checkSection').style.display = 'block';
 
   const make = (id, items, type) => {
@@ -223,6 +231,7 @@ async function save() {
   const date = document.getElementById('dateInput').value;
   if (!date) { showToast('⚠️ 날짜를 선택해주세요'); return; }
   const { cls, group } = selectedClass;
+  const isTherapist = group === '치료사';
 
   const saveBtn = document.getElementById('saveBtn');
   saveBtn.disabled = true;
@@ -243,7 +252,7 @@ async function save() {
     });
 
     await set(ref(db, 'records/' + key), { records, updatedAt: new Date().toISOString() });
-    showToast(`✅ ${cls === '치료사' ? '치료사' : cls + '반'} 저장 완료! (전체 공유됨)`);
+    showToast(`✅ ${isTherapist ? cls : cls + '반'} 저장 완료! (전체 공유됨)`);
     document.querySelectorAll('.ci').forEach(d => d.classList.remove('on'));
   } catch(e) {
     showToast('❌ 저장 실패 — 인터넷 연결을 확인해주세요');

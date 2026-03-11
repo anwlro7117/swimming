@@ -153,7 +153,8 @@ onValue(ref(db, 'records'), (snapshot) => {
   renderAll();
 }, (error) => {
   statusBar.className = 'status-bar error';
-  statusBar.textContent = '🔴 연결 실패 — 인터넷 연결을 확인해주세요';
+  statusBar.textContent = '🔴 연결 실패: ' + error.message;
+  console.error('Firebase error:', error);
 });
 
 function renderAll() {
