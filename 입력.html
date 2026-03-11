@@ -184,13 +184,13 @@ Object.entries(ROSTER).forEach(([group, classes]) => {
       document.querySelectorAll('.cls-btn').forEach(b => b.classList.remove('sel'));
       btn.classList.add('sel');
       selectedClass = { cls, group };
-      loadClass(cls);
+      loadClass(cls, group);
     };
     grid.appendChild(btn);
   });
 });
 
-function loadClass(cls) {
+function loadClass(cls, group) {
   const data = Object.values(ROSTER).flatMap(g => Object.entries(g)).find(([k]) => k === cls)?.[1];
   if (!data) return;
   const isTherapist = group === '치료사';
