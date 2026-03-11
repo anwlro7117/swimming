@@ -67,78 +67,7 @@
   @media (max-width: 600px) { .summary-grid { grid-template-columns: repeat(3,1fr); } }
 
 
-  /* 달력 */
-  .cal-wrap { overflow-x: auto; }
-  .cal-table { width: 100%; border-collapse: collapse; min-width: 600px; }
-  .cal-table th {
-    background: var(--light); color: var(--primary);
-    font-size: 0.75rem; font-weight: 700; padding: 10px 8px;
-    text-align: center; border: 1px solid var(--border);
-  }
-  .cal-table td {
-    border: 1px solid var(--border); vertical-align: top;
-    padding: 6px; min-height: 80px; width: 14.28%;
-  }
-  .cal-date {
-    font-family: 'DM Mono', monospace; font-size: 0.75rem;
-    font-weight: 700; color: var(--muted); margin-bottom: 4px;
-  }
-  .cal-date.today { color: var(--primary); }
-  .cal-date.weekend { color: #e63946; }
-  .cal-item {
-    background: var(--light); border-left: 3px solid var(--primary);
-    border-radius: 4px; padding: 3px 6px; margin-bottom: 3px;
-    font-size: 0.72rem; font-weight: 600; color: var(--primary);
-    cursor: pointer; transition: all 0.15s; line-height: 1.5;
-  }
-  .cal-item:hover { background: var(--primary); color: #fff; }
-  .cal-item.phone { border-color: var(--accent); background: #f0fff0; color: var(--accent); }
-  .cal-item.phone:hover { background: var(--accent); color: #fff; }
-  .cal-item.both { border-color: var(--warn); background: #fff5ee; color: var(--warn); }
-  .cal-item.both:hover { background: var(--warn); color: #fff; }
-  .cal-other { opacity: 0.25; }
-  .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-  .cal-nav-btn {
-    padding: 7px 16px; border: 2px solid var(--border); border-radius: 10px;
-    background: #fff; font-family: inherit; font-size: 0.84rem; font-weight: 700;
-    color: var(--sub); cursor: pointer; transition: all 0.15s;
-  }
-  .cal-nav-btn:hover { border-color: var(--accent); color: var(--primary); }
-  .cal-month { font-size: 1rem; font-weight: 900; color: var(--primary); }
-  .gcal-btn {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 9px 16px; border: 2px solid #4285f4; border-radius: 10px;
-    background: #fff; font-family: inherit; font-size: 0.82rem; font-weight: 700;
-    color: #4285f4; cursor: pointer; transition: all 0.15s; text-decoration: none;
-  }
-  .gcal-btn:hover { background: #4285f4; color: #fff; }
-  /* 상세 팝업 */
-  .popup-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.4);
-    display: none; align-items: center; justify-content: center;
-    z-index: 1000; backdrop-filter: blur(2px);
-  }
-  .popup-overlay.open { display: flex; }
-  .popup-box {
-    background: #fff; border-radius: 18px; padding: 28px 26px;
-    max-width: 340px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-  }
-  .popup-box h3 { font-size: 1rem; font-weight: 900; color: var(--primary); margin-bottom: 14px; }
-  .popup-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; font-size: 0.86rem; }
-  .popup-lbl { color: var(--muted); font-weight: 600; min-width: 64px; font-size: 0.78rem; }
-  .popup-val { font-weight: 700; color: var(--text); }
-  .popup-close {
-    margin-top: 16px; width: 100%; padding: 10px; border: 2px solid var(--border);
-    border-radius: 10px; background: #fff; font-family: inherit; font-size: 0.86rem;
-    font-weight: 700; cursor: pointer; color: var(--sub);
-  }
-  .popup-gcal {
-    margin-top: 8px; width: 100%; padding: 10px; border: 2px solid #4285f4;
-    border-radius: 10px; background: #fff; font-family: inherit; font-size: 0.86rem;
-    font-weight: 700; cursor: pointer; color: #4285f4;
-    display: flex; align-items: center; justify-content: center; gap: 6px;
-  }
-  .popup-gcal:hover { background: #4285f4; color: #fff; }
+  
 
   .xlsx-btn {
     padding: 8px 16px; border: 2px solid var(--primary); border-radius: 10px;
@@ -166,40 +95,6 @@
 
   <main>
 
-
-    <!-- 달력 뷰 -->
-    <div class="card">
-      <div class="card-title">📅 상담 일정 달력</div>
-      <div class="cal-nav">
-        <button class="cal-nav-btn" onclick="changeMonth(-1)">◀ 이전</button>
-        <span class="cal-month" id="calMonth"></span>
-        <button class="cal-nav-btn" onclick="changeMonth(1)">다음 ▶</button>
-      </div>
-      <div class="cal-wrap">
-        <table class="cal-table">
-          <thead>
-            <tr>
-              <th>일</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th><th>토</th>
-            </tr>
-          </thead>
-          <tbody id="calBody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- 팝업 -->
-    <div class="popup-overlay" id="popupOverlay" onclick="if(event.target===this)closePopup()">
-      <div class="popup-box">
-        <h3 id="popupTitle">상담 상세</h3>
-        <div class="popup-row"><span class="popup-lbl">아동</span><span class="popup-val" id="popupChild"></span></div>
-        <div class="popup-row"><span class="popup-lbl">반</span><span class="popup-val" id="popupCls"></span></div>
-        <div class="popup-row"><span class="popup-lbl">날짜</span><span class="popup-val" id="popupDate"></span></div>
-        <div class="popup-row"><span class="popup-lbl">방문상담</span><span class="popup-val" id="popupT1"></span></div>
-        <div class="popup-row"><span class="popup-lbl">전화상담</span><span class="popup-val" id="popupT2"></span></div>
-        <button class="popup-gcal" id="popupGcal" onclick="openGcal()">📅 구글 캘린더에 추가</button>
-        <button class="popup-close" onclick="closePopup()">닫기</button>
-      </div>
-    </div>
 
     <!-- 요약 카드 -->
     <div class="summary-grid">
@@ -251,7 +146,6 @@ let allData = {};
 
 // ── 페이지 로드 시 바로 시작 ──────────────────────────────
 listenData();
-renderCal();
 
 
 
@@ -262,7 +156,6 @@ function listenData() {
     renderSummary();
     updateFilters();
     renderTable();
-    renderCal();
   });
 }
 
@@ -405,111 +298,7 @@ function exportExcel() {
 }
 window.exportExcel = exportExcel;
 window.renderTable = renderTable;
-// ── 달력 ─────────────────────────────────────────────────
-let calYear = new Date().getFullYear();
-let calMonth = new Date().getMonth();
-let currentPopupEntry = null;
 
-function changeMonth(dir) {
-  calMonth += dir;
-  if (calMonth > 11) { calMonth = 0; calYear++; }
-  if (calMonth < 0) { calMonth = 11; calYear--; }
-  renderCal();
-}
-
-function renderCal() {
-  const monthNames = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
-  document.getElementById('calMonth').textContent = `${calYear}년 ${monthNames[calMonth]}`;
-
-  const firstDay = new Date(calYear, calMonth, 1).getDay();
-  const lastDate = new Date(calYear, calMonth + 1, 0).getDate();
-  const today = new Date().toISOString().slice(0,10);
-
-  // 날짜별 신청 그룹
-  const byDate = {};
-  Object.values(allData).forEach(e => {
-    if (!byDate[e.date]) byDate[e.date] = [];
-    byDate[e.date].push(e);
-  });
-
-  let html = '<tr>';
-  let day = 1;
-  for (let i = 0; i < 42; i++) {
-    const col = i % 7;
-    if (i > 0 && col === 0) html += '</tr><tr>';
-    const cellDay = i - firstDay + 1;
-    if (cellDay < 1 || cellDay > lastDate) {
-      html += '<td class="cal-other"></td>';
-      continue;
-    }
-    const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(cellDay).padStart(2,'0')}`;
-    const isToday = dateStr === today;
-    const isWeekend = col === 0 || col === 6;
-    const entries = byDate[dateStr] || [];
-
-    let items = entries.map(e => {
-      const cls = e.time1 && e.time2 ? 'both' : e.time2 ? 'phone' : 'visit';
-      const timeLabel = e.time1 || e.time2 || '';
-      return `<div class="cal-item ${cls}" onclick='showPopup(${JSON.stringify(JSON.stringify(e))})'>${e.child} ${timeLabel}</div>`;
-    }).join('');
-
-    html += `<td>
-      <div class="cal-date ${isToday?'today':''} ${isWeekend?'weekend':''}">${cellDay}</div>
-      ${items}
-    </td>`;
-  }
-  html += '</tr>';
-  document.getElementById('calBody').innerHTML = html;
-}
-
-function showPopup(entryJson) {
-  const e = JSON.parse(entryJson);
-  currentPopupEntry = e;
-  document.getElementById('popupTitle').textContent = `📋 ${e.child} 상담`;
-  document.getElementById('popupChild').textContent = e.child;
-  document.getElementById('popupCls').textContent = e.cls + '반';
-  document.getElementById('popupDate').textContent = e.date;
-  document.getElementById('popupT1').textContent = e.time1 || '미선택';
-  document.getElementById('popupT2').textContent = e.time2 || '미선택';
-  document.getElementById('popupOverlay').classList.add('open');
-}
-
-function closePopup() {
-  document.getElementById('popupOverlay').classList.remove('open');
-  currentPopupEntry = null;
-}
-
-function openGcal() {
-  const e = currentPopupEntry;
-  if (!e) return;
-
-  // 구글 캘린더 URL 생성
-  const dateBase = e.date.replace(/-/g, '');
-  // 시간 파싱 (예: "10:00~10:30" → 100000/103000)
-  const timeStr = e.time1 || e.time2 || '';
-  let startDt = dateBase + 'T090000';
-  let endDt = dateBase + 'T093000';
-  const match = timeStr.match(/(\d{2}):(\d{2})/);
-  if (match) {
-    startDt = dateBase + 'T' + match[1] + match[2] + '00';
-    // 종료 시간 파싱
-    const endMatch = timeStr.match(/~(\d{2}):(\d{2})/);
-    if (endMatch) endDt = dateBase + 'T' + endMatch[1] + endMatch[2] + '00';
-    else endDt = dateBase + 'T' + String(parseInt(match[1]) + 1).padStart(2,'0') + match[2] + '00';
-  }
-
-  const title = encodeURIComponent(`[부모상담] ${e.child} (${e.cls}반)`);
-  const details = encodeURIComponent(
-    `방문상담: ${e.time1 || '미선택'}\n전화상담: ${e.time2 || '미선택'}`
-  );
-  const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startDt}/${endDt}&details=${details}`;
-  window.open(url, '_blank');
-}
-
-window.changeMonth = changeMonth;
-window.showPopup = showPopup;
-window.closePopup = closePopup;
-window.openGcal = openGcal;
 window.deleteRow = deleteRow;
 
 </script>
