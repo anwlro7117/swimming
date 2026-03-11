@@ -81,17 +81,7 @@
   </header>
 
   <main>
-    <!-- 상담 기간 설정 -->
-    <div class="card">
-      <div class="card-title">📅 상담 기간 설정</div>
-      <div class="form-row">
-        <span class="form-label">시작일</span>
-        <input type="date" class="date-input" id="startDate">
-        <span class="form-label">종료일</span>
-        <input type="date" class="date-input" id="endDate">
-        <button class="save-btn" onclick="saveConfig()">💾 저장</button>
-      </div>
-    </div>
+
 
     <!-- 요약 카드 -->
     <div class="summary-grid">
@@ -142,31 +132,9 @@ const db = getDatabase(app);
 let allData = {};
 
 // ── 페이지 로드 시 바로 시작 ──────────────────────────────
-loadConfig();
 listenData();
 
-// ── 기간 설정 ─────────────────────────────────────────────
-function loadConfig() {
-  get(ref(db, 'consultConfig')).then(snap => {
-    const cfg = snap.val();
-    if (cfg) {
-      document.getElementById('startDate').value = cfg.startDate || '2026-03-16';
-      document.getElementById('endDate').value = cfg.endDate || '2026-03-31';
-    } else {
-      document.getElementById('startDate').value = '2026-03-16';
-      document.getElementById('endDate').value = '2026-03-31';
-    }
-  });
-}
 
-async function saveConfig() {
-  const s = document.getElementById('startDate').value;
-  const e = document.getElementById('endDate').value;
-  if (!s || !e) { showToast('⚠️ 날짜를 모두 입력해주세요'); return; }
-  if (s > e) { showToast('⚠️ 종료일이 시작일보다 빠릅니다'); return; }
-  await set(ref(db, 'consultConfig'), { startDate: s, endDate: e });
-  showToast('✅ 상담 기간이 저장됐어요!');
-}
 
 // ── 실시간 데이터 ─────────────────────────────────────────
 function listenData() {
@@ -238,7 +206,6 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2800);
 }
 
-window.saveConfig = saveConfig;
 window.renderTable = renderTable;
 window.deleteRow = deleteRow;
 window.clearAll = clearAll;

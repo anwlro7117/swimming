@@ -299,6 +299,11 @@
       <div class="slot-grid" id="slots-pm"></div>
     </div>
 
+    <div class="slot-section">
+      <div class="slot-title">✏️ 기타 <span style="font-size:0.72rem;font-weight:400;color:var(--muted);">직접 입력</span></div>
+      <div id="slots-etc"></div>
+    </div>
+
     <div class="summary-box" id="summaryBox" style="display:none;">
       <div class="row"><span class="lbl">아동</span><span class="val" id="sum-child"></span></div>
       <div class="row"><span class="lbl">날짜</span><span class="val" id="sum-date"></span></div>
@@ -372,9 +377,9 @@ let dateRange = [];
 let bookedSlots = {};  // { '날짜_시간': count }
 
 // ── 상담 기간 고정 ────────────────────────────────────────
-dateRange = getDateRange('2026-03-16', '2026-03-31');
+dateRange = getDateRange('2026-03-11', '2026-03-31');
 document.getElementById('dateRangeText').textContent =
-  '📅 상담 기간: 2026년 3월 16일 ~ 3월 31일';
+  '📅 상담 기간: 2026년 3월 11일 ~ 3월 31일';
 renderDateTabs();
 
 function getDateRange(start, end) {
@@ -487,8 +492,48 @@ function renderSlots() {
       el.appendChild(btn);
     });
   });
+
+  // 기타(직접입력) 버튼 — 오후 슬롯 아래에 추가
+  const etcArea = document.getElementById('slots-etc');
+  etcArea.innerHTML = '';
+
+  ['visit','phone'].forEach(mode => {
+    const label = mode === 'visit' ? '🏫 방문상담' : '📞 전화상담';
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px;';
+    wrap.innerHTML = `
+      <span style="font-size:0.78rem;font-weight:700;color:var(--sub);min-width:72px;">${label} 기타</span>
+      <input type="text" id="etc-${mode}"
+        placeholder="예: 15:00~15:30"
+        style="flex:1;padding:9px 13px;border:2px solid var(--border);border-radius:10px;
+               font-family:inherit;font-size:0.84rem;color:var(--text);outline:none;"
+        oninput="syncEtc('${mode}')"
+      />
+    `;
+    etcArea.appendChild(wrap);
+  });
+
   updateSlotUI();
   updateSummary();
+}
+
+function syncEtc(mode) {
+  const val = document.getElementById('etc-' + mode).value.trim();
+  if (mode === 'visit') {
+    // 슬롯 버튼 선택 해제하고 텍스트 입력값으로 교체
+    if (val) { pick1 = '__etc_visit__'; }
+    else if (pick1 === '__etc_visit__') { pick1 = null; }
+  } else {
+    if (val) { pick2 = '__etc_phone__'; }
+    else if (pick2 === '__etc_phone__') { pick2 = null; }
+  }
+  updateSlotUI();
+  updateSummary();
+}
+
+function getEtcValue(mode) {
+  const el = document.getElementById('etc-' + mode);
+  return el ? el.value.trim() : '';
 }
 
 // 방문상담(pick1)·전화상담(pick2) 각각 독립 선택
@@ -518,12 +563,17 @@ function updateSlotUI() {
     btn.innerHTML = t;
     if (t === pick1) {
       btn.classList.add('pick1');
-      btn.innerHTML = `${t}<span class="rank-badge">1</span>`;
+      btn.innerHTML = `${t}<span class="rank-badge">방</span>`;
     } else if (t === pick2) {
       btn.classList.add('pick2');
-      btn.innerHTML = `${t}<span class="rank-badge">2</span>`;
+      btn.innerHTML = `${t}<span class="rank-badge">전</span>`;
     }
   });
+  // etc 입력란 테두리 표시
+  const etcVisit = document.getElementById('etc-visit');
+  const etcPhone = document.getElementById('etc-phone');
+  if (etcVisit) etcVisit.style.borderColor = pick1 === '__etc_visit__' ? 'var(--primary)' : 'var(--border)';
+  if (etcPhone) etcPhone.style.borderColor = pick2 === '__etc_phone__' ? 'var(--accent)' : 'var(--border)';
 }
 
 function updateSummary() {
@@ -533,8 +583,10 @@ function updateSummary() {
     box.style.display = 'block';
     document.getElementById('sum-child').textContent = selectedChild + ' (' + selectedClass + '반)';
     document.getElementById('sum-date').textContent = selectedDate;
-    document.getElementById('sum-t1').textContent = pick1 ? pick1 + ' ✅' : '미선택';
-    document.getElementById('sum-t2').textContent = pick2 ? pick2 + ' ✅' : '미선택';
+    const t1Label = pick1 === '__etc_visit__' ? (getEtcValue('visit') || '기타') : pick1;
+    const t2Label = pick2 === '__etc_phone__' ? (getEtcValue('phone') || '기타') : pick2;
+    document.getElementById('sum-t1').textContent = pick1 ? t1Label + ' ✅' : '미선택';
+    document.getElementById('sum-t2').textContent = pick2 ? t2Label + ' ✅' : '미선택';
     submitBtn.disabled = false;
   } else {
     box.style.display = 'none';
@@ -554,12 +606,14 @@ async function submit() {
 
   try {
     const key = `${selectedDate}_${selectedClass}_${selectedChild}_${Date.now()}`;
+    const saveTime1 = pick1 === '__etc_visit__' ? ('기타: ' + getEtcValue('visit')) : pick1;
+    const saveTime2 = pick2 === '__etc_phone__' ? ('기타: ' + getEtcValue('phone')) : pick2;
     await set(ref(db, 'consult/' + key), {
       child: selectedChild,
       cls: selectedClass,
       date: selectedDate,
-      time1: pick1,
-      time2: pick2 || null,
+      time1: saveTime1 || null,
+      time2: saveTime2 || null,
       submittedAt: new Date().toISOString()
     });
 
@@ -612,6 +666,7 @@ function showToast(msg) {
 
 window.submit = submit;
 window.setPickMode = setPickMode;
+window.syncEtc = syncEtc;
 window.resetForm = resetForm;
 </script>
 </body>
