@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏊 수영장 참석 입력</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f0f8ff; --ocean: #0077b6; --wave: #00b4d8; --deep: #03045e;
+    --foam: #caf0f8; --go: #2dc653; --card: #ffffff; --border: #ddeef8;
+    --muted: #6e8fa8; --text: #1a2d42;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  header { background: linear-gradient(135deg, var(--deep), var(--ocean) 70%, var(--wave)); padding: 32px 24px 60px; position: relative; overflow: hidden; }
+  header::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 40px; background: var(--bg); clip-path: ellipse(60% 100% at 50% 100%); }
+  .hdr-inner { max-width: 640px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
+  header h1 { font-size: 1.6rem; font-weight: 900; color: #fff; letter-spacing: -0.5px; }
+  header p { color: var(--foam); font-size: 0.85rem; margin-top: 4px; }
+  .nav-btn { background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.35); color: #fff; padding: 8px 16px; border-radius: 20px; font-family: inherit; font-size: 0.82rem; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; backdrop-filter: blur(4px); transition: background 0.2s; }
+  .nav-btn:hover { background: rgba(255,255,255,0.28); }
+  .drop { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.08); animation: bob 4s ease-in-out infinite; }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+  main { max-width: 640px; margin: 0 auto; padding: 0 16px 60px; }
+  .card { background: var(--card); border-radius: 18px; box-shadow: 0 3px 20px rgba(0,119,182,0.09); padding: 24px; margin-bottom: 16px; }
+  .card-title { font-size: 0.9rem; font-weight: 700; color: var(--ocean); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .card-title::before { content: ''; display: block; width: 3px; height: 18px; border-radius: 2px; background: linear-gradient(var(--wave), var(--ocean)); }
+  .date-input { width: 100%; padding: 13px 16px; border: 2px solid var(--border); border-radius: 12px; font-family: inherit; font-size: 1rem; color: var(--text); background: #fff; outline: none; transition: border-color 0.2s; }
+  .date-input:focus { border-color: var(--wave); }
+  .group-label { font-size: 0.72rem; font-weight: 700; color: var(--muted); letter-spacing: 0.8px; text-transform: uppercase; margin: 14px 0 8px; }
+  .class-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cls-btn { padding: 9px 16px; border: 2px solid var(--border); border-radius: 30px; background: #fff; font-family: inherit; font-size: 0.86rem; font-weight: 500; cursor: pointer; transition: all 0.18s; color: var(--text); }
+  .cls-btn:hover { border-color: var(--wave); background: #f0faff; }
+  .cls-btn.sel { border-color: var(--ocean); background: var(--ocean); color: #fff; box-shadow: 0 3px 10px rgba(0,119,182,0.28); }
+  .section-lbl { font-size: 0.78rem; font-weight: 700; color: var(--muted); margin: 18px 0 10px; display: flex; align-items: center; gap: 6px; }
+  .checklist { display: flex; flex-wrap: wrap; gap: 8px; }
+  .ci { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border: 2px solid var(--border); border-radius: 30px; cursor: pointer; font-size: 0.86rem; font-weight: 500; transition: all 0.15s; background: #fff; user-select: none; }
+  .ci:hover { border-color: #90e0ef; }
+  .ci.on { border-color: var(--go); background: #f0fff5; color: #1a7a3c; }
+  .ci .dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #ccc; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; transition: all 0.15s; flex-shrink: 0; }
+  .ci.on .dot { background: var(--go); border-color: var(--go); color: #fff; }
+  .sel-all-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .sel-all-btn { padding: 5px 12px; border: 1.5px solid var(--border); border-radius: 20px; background: #fff; font-family: inherit; font-size: 0.76rem; font-weight: 700; cursor: pointer; color: var(--muted); transition: all 0.15s; }
+  .sel-all-btn:hover { border-color: var(--ocean); color: var(--ocean); }
+  .save-btn { width: 100%; margin-top: 20px; padding: 15px; border: none; border-radius: 14px; background: linear-gradient(135deg, var(--deep), var(--ocean) 60%, var(--wave)); color: #fff; font-family: inherit; font-size: 1rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 18px rgba(0,119,182,0.38); transition: all 0.2s; letter-spacing: 0.3px; }
+  .save-btn:hover { transform: translateY(-2px); box-shadow: 0 7px 22px rgba(0,119,182,0.45); }
+  .save-btn:active { transform: translateY(0); }
+  .save-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(70px); background: var(--deep); color: #fff; padding: 12px 22px; border-radius: 30px; font-size: 0.88rem; font-weight: 500; box-shadow: 0 5px 20px rgba(3,4,94,0.3); transition: transform 0.3s cubic-bezier(.34,1.56,.64,1); z-index: 999; white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .status-bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 10px; font-size: 0.82rem; font-weight: 600; margin-bottom: 16px; }
+  .status-bar.connected { background: #d4f5e0; color: #1a7a3c; }
+  .status-bar.connecting { background: #fff3cd; color: #856404; }
+  .status-bar.error { background: #fde8ea; color: #c0392b; }
+  #checkSection { display: none; }
+  @media (max-width: 480px) { header h1 { font-size: 1.3rem; } .cls-btn { font-size: 0.8rem; padding: 8px 13px; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="hdr-inner">
+    <div><h1>🏊 참석 입력</h1><p>무지개어린이집 수영장</p></div>
+    <a href="통계.html" class="nav-btn">📊 통계 보기 →</a>
+  </div>
+  <div class="drop" style="width:50px;height:50px;right:12%;top:10px;animation-delay:0s;"></div>
+  <div class="drop" style="width:28px;height:28px;right:6%;top:30px;animation-delay:1.2s;"></div>
+  <div class="drop" style="width:38px;height:38px;right:20%;top:20px;animation-delay:0.6s;"></div>
+</header>
+
+<main>
+  <div id="statusBar" class="status-bar connecting">⏳ Firebase 연결 중...</div>
+
+  <div class="card">
+    <div class="card-title">📅 날짜 선택</div>
+    <input type="date" class="date-input" id="dateInput">
+  </div>
+
+  <div class="card">
+    <div class="card-title">🏫 반 선택</div>
+    <div class="group-label">영아반</div>
+    <div class="class-grid" id="g-영아반"></div>
+    <div class="group-label">유아반</div>
+    <div class="class-grid" id="g-유아반"></div>
+    <div class="group-label">방과후반</div>
+    <div class="class-grid" id="g-방과후반"></div>
+    <div class="group-label">치료사</div>
+    <div class="class-grid" id="g-치료사"></div>
+  </div>
+
+  <div class="card" id="checkSection">
+    <div class="card-title" id="checkTitle">참석 체크</div>
+    <div class="section-lbl" id="teacherLbl">👩‍🏫 참여 교사</div>
+    <div class="sel-all-row">
+      <button class="sel-all-btn" onclick="selectAll('teacher', true)">전체 선택</button>
+      <button class="sel-all-btn" onclick="selectAll('teacher', false)">전체 해제</button>
+    </div>
+    <div class="checklist" id="teacherList"></div>
+    <div class="section-lbl" id="childLbl">🧒 참석 아동</div>
+    <div class="sel-all-row" id="childSelAll">
+      <button class="sel-all-btn" onclick="selectAll('child', true)">전체 선택</button>
+      <button class="sel-all-btn" onclick="selectAll('child', false)">전체 해제</button>
+    </div>
+    <div class="checklist" id="childList"></div>
+    <button class="save-btn" id="saveBtn" onclick="save()">💾 저장하기</button>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDojXJ_9pOnla8uG240APwo3Ik9gBddMw4",
+  authDomain: "mujigae-swimming.firebaseapp.com",
+  databaseURL: "https://mujigae-swimming-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "mujigae-swimming",
+  storageBucket: "mujigae-swimming.firebasestorage.app",
+  messagingSenderId: "279953220805",
+  appId: "1:279953220805:web:b24cbe70f8556416c0bcac"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// 연결 상태 표시
+const statusBar = document.getElementById('statusBar');
+try {
+  await get(ref(db, '.info/connected'));
+  statusBar.className = 'status-bar connected';
+  statusBar.textContent = '🟢 Firebase 연결됨 — 모든 기기와 실시간 공유';
+} catch(e) {
+  statusBar.className = 'status-bar error';
+  statusBar.textContent = '🔴 연결 실패 — 인터넷 연결을 확인해주세요';
+}
+
+const ROSTER = {
+  "영아반": {
+    "아기참새": { teachers:["우지선"], children:["박범준","정윤하","장다엘","고이솔","조은준"] },
+    "초롱이슬": { teachers:["정선윤"], children:["전유주","박유준","양선우","박하엘","박유하"] }
+  },
+  "유아반": {
+    "아침햇살": { teachers:["강수지","김보라","김하민"], children:["정태호","고은호","김이안","전수호","위단우","서현우","김윤우","김지안"] },
+    "고운햇살": { teachers:["박서정","천은주","모정아"], children:["박재희","박지유","김민준","곽나율","김은서","장태양","홍하루","김동휘"] },
+    "들꽃향기": { teachers:["박초롱","이효선"], children:["한지후","박은진","곽시안","박찬율","설재은","류시환","강은호","박다엘","김사랑","손리완","이로아","이소민","방서윤","김인우","이은우","임서우","이하린","김세윤"] },
+    "푸른하늘": { teachers:["조현아","황선하"], children:["김아린","김강준","박진우","한서후","윤태언","김서우","백민지","이하민","강태희","곽다온","박준","김세윤","김지민"] },
+    "파도소리": { teachers:["임정연","조명원"], children:["윤지아","김수겸","돌란샤나","권민서","최도윤","장시영"] },
+    "은빛물결": { teachers:["채준범","이왕성","서명화","임민주"], children:["이재헌","박수현","김성원","정하준","송유담","박승빈","김정후","주현수","신승혁","김수호","정연우","최보민","한다윤"] },
+    "푸른바다": { teachers:["백장미","이슬아","유주환"], children:["김평온","김별리","양준우","강지호","김도우","백이엘","이태헌","오주원","서연석","임하라","김태유","조믿음","유이서","윤예나","윤예지","조가온","곽시후","이소민2"] }
+  },
+  "방과후반": {
+    "무지개": { teachers:["황경하","이승원","박정민"], children:["정하율","권민재","심유혁","안하람","박준하","서준우","강건영","박상현","구가율","김도원"] },
+    "다짐":   { teachers:["송태헌","마호진"], children:["김중원","이아윤","강남준","문시후","문휘경","이안"] },
+    "모둠":   { teachers:["정인애","변아진","윤아름","정다송","김용석"], children:["김가온","한시혁","강승아","정서진","송아린","이승호","박건우"] }
+  },
+  "치료사": {
+    "치료사": { teachers:["이미화","서홍련","권다애","표영민","전나인","박규리","임주현","정소윤","강수민"], children:[] }
+  }
+};
+
+let selectedClass = null;
+document.getElementById('dateInput').value = new Date().toISOString().slice(0,10);
+
+// 반 버튼 생성
+Object.entries(ROSTER).forEach(([group, classes]) => {
+  const grid = document.getElementById('g-' + group);
+  Object.keys(classes).forEach(cls => {
+    const btn = document.createElement('button');
+    btn.className = 'cls-btn';
+    btn.textContent = cls === '치료사' ? '치료사' : cls + '반';
+    btn.onclick = () => {
+      document.querySelectorAll('.cls-btn').forEach(b => b.classList.remove('sel'));
+      btn.classList.add('sel');
+      selectedClass = { cls, group };
+      loadClass(cls);
+    };
+    grid.appendChild(btn);
+  });
+});
+
+function loadClass(cls) {
+  const data = Object.values(ROSTER).flatMap(g => Object.entries(g)).find(([k]) => k === cls)?.[1];
+  if (!data) return;
+  const isTherapist = cls === '치료사';
+  document.getElementById('checkTitle').textContent = isTherapist ? '🩺 치료사 참여 체크' : cls + '반 참석 체크';
+  document.getElementById('checkSection').style.display = 'block';
+
+  const make = (id, items, type) => {
+    const el = document.getElementById(id);
+    el.innerHTML = '';
+    items.forEach(name => {
+      const d = document.createElement('div');
+      d.className = 'ci';
+      d.dataset.type = type;
+      d.dataset.name = name;
+      d.innerHTML = `<span class="dot">✓</span>${name}`;
+      d.onclick = () => d.classList.toggle('on');
+      el.appendChild(d);
+    });
+  };
+  make('teacherList', data.teachers, 'teacher');
+  make('childList', data.children, 'child');
+
+  ['childLbl','childSelAll','childList'].forEach(id => {
+    document.getElementById(id).style.display = isTherapist ? 'none' : '';
+  });
+  document.getElementById('checkSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function selectAll(type, val) {
+  const listId = type === 'teacher' ? 'teacherList' : 'childList';
+  document.querySelectorAll(`#${listId} .ci`).forEach(d => val ? d.classList.add('on') : d.classList.remove('on'));
+}
+
+window.selectAll = selectAll;
+
+async function save() {
+  if (!selectedClass) { showToast('⚠️ 반을 선택해주세요'); return; }
+  const date = document.getElementById('dateInput').value;
+  if (!date) { showToast('⚠️ 날짜를 선택해주세요'); return; }
+  const { cls, group } = selectedClass;
+
+  const saveBtn = document.getElementById('saveBtn');
+  saveBtn.disabled = true;
+  saveBtn.textContent = '저장 중...';
+
+  try {
+    // Firebase 키: 날짜_반 (같은 날+반이면 덮어쓰기)
+    const key = date + '_' + cls;
+    const records = [];
+    document.querySelectorAll('#teacherList .ci, #childList .ci').forEach(d => {
+      records.push({
+        date, cls, group,
+        type: d.dataset.type === 'teacher' ? '교사' : '아동',
+        name: d.dataset.name,
+        yn: d.classList.contains('on') ? 'O' : 'X',
+        savedAt: new Date().toISOString()
+      });
+    });
+
+    await set(ref(db, 'records/' + key), { records, updatedAt: new Date().toISOString() });
+    showToast(`✅ ${cls === '치료사' ? '치료사' : cls + '반'} 저장 완료! (전체 공유됨)`);
+    document.querySelectorAll('.ci').forEach(d => d.classList.remove('on'));
+  } catch(e) {
+    showToast('❌ 저장 실패 — 인터넷 연결을 확인해주세요');
+    console.error(e);
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = '💾 저장하기';
+  }
+}
+
+window.save = save;
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>
