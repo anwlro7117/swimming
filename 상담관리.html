@@ -65,9 +65,93 @@
   .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(70px); background: var(--primary); color: #fff; padding: 12px 22px; border-radius: 30px; font-size: 0.88rem; font-weight: 600; box-shadow: 0 5px 20px rgba(45,80,22,0.3); transition: transform 0.3s cubic-bezier(.34,1.56,.64,1); z-index: 999; }
   .toast.show { transform: translateX(-50%) translateY(0); }
   @media (max-width: 600px) { .summary-grid { grid-template-columns: repeat(3,1fr); } }
+
+
+  /* 달력 */
+  .cal-wrap { overflow-x: auto; }
+  .cal-table { width: 100%; border-collapse: collapse; min-width: 600px; }
+  .cal-table th {
+    background: var(--light); color: var(--primary);
+    font-size: 0.75rem; font-weight: 700; padding: 10px 8px;
+    text-align: center; border: 1px solid var(--border);
+  }
+  .cal-table td {
+    border: 1px solid var(--border); vertical-align: top;
+    padding: 6px; min-height: 80px; width: 14.28%;
+  }
+  .cal-date {
+    font-family: 'DM Mono', monospace; font-size: 0.75rem;
+    font-weight: 700; color: var(--muted); margin-bottom: 4px;
+  }
+  .cal-date.today { color: var(--primary); }
+  .cal-date.weekend { color: #e63946; }
+  .cal-item {
+    background: var(--light); border-left: 3px solid var(--primary);
+    border-radius: 4px; padding: 3px 6px; margin-bottom: 3px;
+    font-size: 0.72rem; font-weight: 600; color: var(--primary);
+    cursor: pointer; transition: all 0.15s; line-height: 1.5;
+  }
+  .cal-item:hover { background: var(--primary); color: #fff; }
+  .cal-item.phone { border-color: var(--accent); background: #f0fff0; color: var(--accent); }
+  .cal-item.phone:hover { background: var(--accent); color: #fff; }
+  .cal-item.both { border-color: var(--warn); background: #fff5ee; color: var(--warn); }
+  .cal-item.both:hover { background: var(--warn); color: #fff; }
+  .cal-other { opacity: 0.25; }
+  .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .cal-nav-btn {
+    padding: 7px 16px; border: 2px solid var(--border); border-radius: 10px;
+    background: #fff; font-family: inherit; font-size: 0.84rem; font-weight: 700;
+    color: var(--sub); cursor: pointer; transition: all 0.15s;
+  }
+  .cal-nav-btn:hover { border-color: var(--accent); color: var(--primary); }
+  .cal-month { font-size: 1rem; font-weight: 900; color: var(--primary); }
+  .gcal-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 16px; border: 2px solid #4285f4; border-radius: 10px;
+    background: #fff; font-family: inherit; font-size: 0.82rem; font-weight: 700;
+    color: #4285f4; cursor: pointer; transition: all 0.15s; text-decoration: none;
+  }
+  .gcal-btn:hover { background: #4285f4; color: #fff; }
+  /* 상세 팝업 */
+  .popup-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+    display: none; align-items: center; justify-content: center;
+    z-index: 1000; backdrop-filter: blur(2px);
+  }
+  .popup-overlay.open { display: flex; }
+  .popup-box {
+    background: #fff; border-radius: 18px; padding: 28px 26px;
+    max-width: 340px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  }
+  .popup-box h3 { font-size: 1rem; font-weight: 900; color: var(--primary); margin-bottom: 14px; }
+  .popup-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; font-size: 0.86rem; }
+  .popup-lbl { color: var(--muted); font-weight: 600; min-width: 64px; font-size: 0.78rem; }
+  .popup-val { font-weight: 700; color: var(--text); }
+  .popup-close {
+    margin-top: 16px; width: 100%; padding: 10px; border: 2px solid var(--border);
+    border-radius: 10px; background: #fff; font-family: inherit; font-size: 0.86rem;
+    font-weight: 700; cursor: pointer; color: var(--sub);
+  }
+  .popup-gcal {
+    margin-top: 8px; width: 100%; padding: 10px; border: 2px solid #4285f4;
+    border-radius: 10px; background: #fff; font-family: inherit; font-size: 0.86rem;
+    font-weight: 700; cursor: pointer; color: #4285f4;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .popup-gcal:hover { background: #4285f4; color: #fff; }
+
+  .xlsx-btn {
+    padding: 8px 16px; border: 2px solid var(--primary); border-radius: 10px;
+    background: var(--primary); font-family: inherit; font-size: 0.82rem;
+    color: #fff; font-weight: 700; cursor: pointer; margin-left: auto;
+    transition: all 0.2s; display:flex; align-items:center; gap:5px;
+  }
+  .xlsx-btn:hover { background: var(--accent); border-color: var(--accent); }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
+
 
 <!-- 로그인 화면 제거 - 모든 선생님 공개 -->
 
@@ -83,6 +167,40 @@
   <main>
 
 
+    <!-- 달력 뷰 -->
+    <div class="card">
+      <div class="card-title">📅 상담 일정 달력</div>
+      <div class="cal-nav">
+        <button class="cal-nav-btn" onclick="changeMonth(-1)">◀ 이전</button>
+        <span class="cal-month" id="calMonth"></span>
+        <button class="cal-nav-btn" onclick="changeMonth(1)">다음 ▶</button>
+      </div>
+      <div class="cal-wrap">
+        <table class="cal-table">
+          <thead>
+            <tr>
+              <th>일</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th><th>토</th>
+            </tr>
+          </thead>
+          <tbody id="calBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 팝업 -->
+    <div class="popup-overlay" id="popupOverlay" onclick="if(event.target===this)closePopup()">
+      <div class="popup-box">
+        <h3 id="popupTitle">상담 상세</h3>
+        <div class="popup-row"><span class="popup-lbl">아동</span><span class="popup-val" id="popupChild"></span></div>
+        <div class="popup-row"><span class="popup-lbl">반</span><span class="popup-val" id="popupCls"></span></div>
+        <div class="popup-row"><span class="popup-lbl">날짜</span><span class="popup-val" id="popupDate"></span></div>
+        <div class="popup-row"><span class="popup-lbl">방문상담</span><span class="popup-val" id="popupT1"></span></div>
+        <div class="popup-row"><span class="popup-lbl">전화상담</span><span class="popup-val" id="popupT2"></span></div>
+        <button class="popup-gcal" id="popupGcal" onclick="openGcal()">📅 구글 캘린더에 추가</button>
+        <button class="popup-close" onclick="closePopup()">닫기</button>
+      </div>
+    </div>
+
     <!-- 요약 카드 -->
     <div class="summary-grid">
       <div class="s-card"><div class="s-num" id="s-total">-</div><div class="s-lbl">총 신청 건수</div></div>
@@ -96,7 +214,7 @@
       <div class="filter-row">
         <select class="f-select" id="fDate" onchange="renderTable()"><option value="">전체 날짜</option></select>
         <select class="f-select" id="fClass" onchange="renderTable()"><option value="">전체 반</option></select>
-        <button class="del-btn" onclick="clearAll()">🗑 전체 삭제</button>
+        <button class="xlsx-btn" onclick="exportExcel()">📥 엑셀 다운로드</button>
       </div>
       <div style="overflow-x:auto;">
         <table class="tbl">
@@ -133,6 +251,7 @@ let allData = {};
 
 // ── 페이지 로드 시 바로 시작 ──────────────────────────────
 listenData();
+renderCal();
 
 
 
@@ -143,6 +262,7 @@ function listenData() {
     renderSummary();
     updateFilters();
     renderTable();
+    renderCal();
   });
 }
 
@@ -202,8 +322,196 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2800);
 }
 
+
+// ── 엑셀 다운로드 ─────────────────────────────────────────
+function exportExcel() {
+  const entries = Object.values(allData);
+  if (!entries.length) { showToast('⚠️ 내보낼 데이터가 없어요'); return; }
+
+  const DAY_KO = ['일','월','화','수','목','금','토'];
+  const TIME_SLOTS = [
+    '10:00~10:30','10:40~11:10','11:20~11:50',
+    '13:00~13:30','13:40~14:10','14:20~14:50','기타'
+  ];
+
+  // 날짜+시간 정렬
+  const sorted = [...entries].sort((a,b) => {
+    const t1 = a.time1 || a.time2 || '99:99';
+    const t2 = b.time1 || b.time2 || '99:99';
+    return (a.date+t1).localeCompare(b.date+t2);
+  });
+
+  const wb = XLSX.utils.book_new();
+
+  // ── 시트1: 달력 뷰 (날짜 × 시간) ──────────────────────
+  const dates = [...new Set(sorted.map(e=>e.date))].sort();
+
+  // grid 매핑
+  const grid = {};
+  sorted.forEach(e => {
+    const slot = e.time1 || e.time2 || '기타';
+    let matched = '기타';
+    TIME_SLOTS.forEach(s => { if(s!=='기타' && slot.startsWith(s.slice(0,5))) matched=s; });
+    const k = e.date+'||'+matched;
+    if(!grid[k]) grid[k]=[];
+    grid[k].push(e);
+  });
+
+  // 헤더
+  const calHeader = ['시간대', ...dates.map(d => {
+    const wd = new Date(d).getDay();
+    return d.slice(5)+'
+('+DAY_KO[wd]+')';
+  })];
+  const calRows = [calHeader];
+  TIME_SLOTS.forEach(slot => {
+    const row = [slot];
+    dates.forEach(d => {
+      const items = grid[d+'||'+slot] || [];
+      row.push(items.map(e => {
+        let t = '';
+        if(e.time1) t += '방문:'+e.time1.slice(0,5);
+        if(e.time2) t += (t?' ':'')+'전화:'+e.time2.slice(0,5);
+        return e.child+'('+e.cls.slice(0,2)+')
+'+t;
+      }).join('
+') || '');
+    });
+    calRows.push(row);
+  });
+  const ws1 = XLSX.utils.aoa_to_sheet(calRows);
+  ws1['!cols'] = [{wch:16}, ...dates.map(()=>({wch:20}))];
+  XLSX.utils.book_append_sheet(wb, ws1, '달력 뷰');
+
+  // ── 시트2: 시간순 목록 ────────────────────────────────
+  const listRows = [
+    ['No.','날짜','요일','아동','반','방문상담','전화상담']
+  ];
+  sorted.forEach((e,i) => {
+    const wd = new Date(e.date).getDay();
+    listRows.push([
+      i+1, e.date, DAY_KO[wd], e.child, e.cls+'반',
+      e.time1||'-', e.time2||'-'
+    ]);
+  });
+  const ws2 = XLSX.utils.aoa_to_sheet(listRows);
+  ws2['!cols'] = [{wch:6},{wch:14},{wch:7},{wch:10},{wch:14},{wch:16},{wch:16}];
+  XLSX.utils.book_append_sheet(wb, ws2, '시간순 목록');
+
+  // ── 파일명: 오늘 날짜 포함 ───────────────────────────
+  const today = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `부모상담_일정표_${today}.xlsx`);
+  showToast('📥 엑셀 파일이 다운로드됐어요!');
+}
+window.exportExcel = exportExcel;
 window.renderTable = renderTable;
+// ── 달력 ─────────────────────────────────────────────────
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let currentPopupEntry = null;
+
+function changeMonth(dir) {
+  calMonth += dir;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  renderCal();
+}
+
+function renderCal() {
+  const monthNames = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  document.getElementById('calMonth').textContent = `${calYear}년 ${monthNames[calMonth]}`;
+
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const lastDate = new Date(calYear, calMonth + 1, 0).getDate();
+  const today = new Date().toISOString().slice(0,10);
+
+  // 날짜별 신청 그룹
+  const byDate = {};
+  Object.values(allData).forEach(e => {
+    if (!byDate[e.date]) byDate[e.date] = [];
+    byDate[e.date].push(e);
+  });
+
+  let html = '<tr>';
+  let day = 1;
+  for (let i = 0; i < 42; i++) {
+    const col = i % 7;
+    if (i > 0 && col === 0) html += '</tr><tr>';
+    const cellDay = i - firstDay + 1;
+    if (cellDay < 1 || cellDay > lastDate) {
+      html += '<td class="cal-other"></td>';
+      continue;
+    }
+    const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(cellDay).padStart(2,'0')}`;
+    const isToday = dateStr === today;
+    const isWeekend = col === 0 || col === 6;
+    const entries = byDate[dateStr] || [];
+
+    let items = entries.map(e => {
+      const cls = e.time1 && e.time2 ? 'both' : e.time2 ? 'phone' : 'visit';
+      const timeLabel = e.time1 || e.time2 || '';
+      return `<div class="cal-item ${cls}" onclick='showPopup(${JSON.stringify(JSON.stringify(e))})'>${e.child} ${timeLabel}</div>`;
+    }).join('');
+
+    html += `<td>
+      <div class="cal-date ${isToday?'today':''} ${isWeekend?'weekend':''}">${cellDay}</div>
+      ${items}
+    </td>`;
+  }
+  html += '</tr>';
+  document.getElementById('calBody').innerHTML = html;
+}
+
+function showPopup(entryJson) {
+  const e = JSON.parse(entryJson);
+  currentPopupEntry = e;
+  document.getElementById('popupTitle').textContent = `📋 ${e.child} 상담`;
+  document.getElementById('popupChild').textContent = e.child;
+  document.getElementById('popupCls').textContent = e.cls + '반';
+  document.getElementById('popupDate').textContent = e.date;
+  document.getElementById('popupT1').textContent = e.time1 || '미선택';
+  document.getElementById('popupT2').textContent = e.time2 || '미선택';
+  document.getElementById('popupOverlay').classList.add('open');
+}
+
+function closePopup() {
+  document.getElementById('popupOverlay').classList.remove('open');
+  currentPopupEntry = null;
+}
+
+function openGcal() {
+  const e = currentPopupEntry;
+  if (!e) return;
+
+  // 구글 캘린더 URL 생성
+  const dateBase = e.date.replace(/-/g, '');
+  // 시간 파싱 (예: "10:00~10:30" → 100000/103000)
+  const timeStr = e.time1 || e.time2 || '';
+  let startDt = dateBase + 'T090000';
+  let endDt = dateBase + 'T093000';
+  const match = timeStr.match(/(\d{2}):(\d{2})/);
+  if (match) {
+    startDt = dateBase + 'T' + match[1] + match[2] + '00';
+    // 종료 시간 파싱
+    const endMatch = timeStr.match(/~(\d{2}):(\d{2})/);
+    if (endMatch) endDt = dateBase + 'T' + endMatch[1] + endMatch[2] + '00';
+    else endDt = dateBase + 'T' + String(parseInt(match[1]) + 1).padStart(2,'0') + match[2] + '00';
+  }
+
+  const title = encodeURIComponent(`[부모상담] ${e.child} (${e.cls}반)`);
+  const details = encodeURIComponent(
+    `방문상담: ${e.time1 || '미선택'}\n전화상담: ${e.time2 || '미선택'}`
+  );
+  const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startDt}/${endDt}&details=${details}`;
+  window.open(url, '_blank');
+}
+
+window.changeMonth = changeMonth;
+window.showPopup = showPopup;
+window.closePopup = closePopup;
+window.openGcal = openGcal;
 window.deleteRow = deleteRow;
+
 </script>
 </body>
 </html>
