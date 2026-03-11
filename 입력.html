@@ -129,12 +129,13 @@ const db = getDatabase(app);
 // 연결 상태 표시
 const statusBar = document.getElementById('statusBar');
 try {
-  await get(ref(db, '.info/connected'));
+  await get(ref(db, 'records'));
   statusBar.className = 'status-bar connected';
   statusBar.textContent = '🟢 Firebase 연결됨 — 모든 기기와 실시간 공유';
 } catch(e) {
   statusBar.className = 'status-bar error';
-  statusBar.textContent = '🔴 연결 실패 — 인터넷 연결을 확인해주세요';
+  statusBar.textContent = '🔴 연결 실패: ' + e.message;
+  console.error('Firebase 오류:', e);
 }
 
 const ROSTER = {
