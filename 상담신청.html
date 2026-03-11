@@ -371,21 +371,11 @@ let pick2 = null;
 let dateRange = [];
 let bookedSlots = {};  // { '날짜_시간': count }
 
-// ── 상담 기간 불러오기 ────────────────────────────────────
-get(ref(db, 'consultConfig')).then(snap => {
-  const cfg = snap.val();
-  if (cfg && cfg.startDate && cfg.endDate) {
-    dateRange = getDateRange(cfg.startDate, cfg.endDate);
-    document.getElementById('dateRangeText').textContent =
-      `📅 상담 기간: ${cfg.startDate} ~ ${cfg.endDate}`;
-  } else {
-    // 기본값: 3월 16일 ~ 3월 31일
-    dateRange = getDateRange('2026-03-16', '2026-03-31');
-    document.getElementById('dateRangeText').textContent =
-      '📅 상담 기간: 2026-03-16 ~ 2026-03-31';
-  }
-  renderDateTabs();
-});
+// ── 상담 기간 고정 ────────────────────────────────────────
+dateRange = getDateRange('2026-03-16', '2026-03-31');
+document.getElementById('dateRangeText').textContent =
+  '📅 상담 기간: 2026년 3월 16일 ~ 3월 31일';
+renderDateTabs();
 
 function getDateRange(start, end) {
   const dates = [];
