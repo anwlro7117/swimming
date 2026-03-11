@@ -210,6 +210,14 @@
   /* 히든 */
   #step2card, #step3card, #doneCard { display: none; }
 
+  .mode-btn {
+    flex:1; padding:11px; border:2px solid var(--border); border-radius:12px;
+    background:#fff; font-family:inherit; font-size:0.86rem; font-weight:700;
+    cursor:pointer; transition:all 0.2s; color:var(--sub);
+  }
+  .mode-btn.sel { background:var(--primary); border-color:var(--primary); color:#fff; }
+  #mode-phone.sel { background:var(--accent); border-color:var(--accent); }
+  #step2card, #step3card, #doneCard { display: none; }
   @media (max-width: 480px) {
     .slot-grid { grid-template-columns: repeat(3, 1fr); }
     header h1 { font-size: 1.35rem; }
@@ -275,24 +283,27 @@
   <!-- STEP 3: 시간 선택 -->
   <div class="card" id="step3card">
     <div class="card-title">⏰ 희망 시간 선택</div>
-    <div style="font-size:0.8rem; color:var(--sub); margin-bottom:16px; line-height:1.8;">
-      <span style="display:inline-block;width:12px;height:12px;background:var(--primary);border-radius:3px;margin-right:4px;vertical-align:middle;"></span> <strong>1순위</strong> 먼저 선택 →
-      <span style="display:inline-block;width:12px;height:12px;background:var(--accent);border-radius:3px;margin-right:4px;vertical-align:middle;"></span> <strong>2순위</strong> 선택
+    <div style="margin-bottom:16px;">
+      <div style="font-size:0.8rem; color:var(--sub); margin-bottom:10px;">선택할 상담 유형을 먼저 고른 후 시간을 클릭해주세요 (하나만 선택해도 됩니다)</div>
+      <div style="display:flex; gap:8px;">
+        <button id="mode-visit" class="mode-btn sel" onclick="setPickMode('visit')">🏫 방문상담</button>
+        <button id="mode-phone" class="mode-btn" onclick="setPickMode('phone')">📞 전화상담</button>
+      </div>
     </div>
     <div class="slot-section">
-      <div class="slot-title">🌅 오전 <span class="slot-badge badge-1">09:00 ~ 12:00</span></div>
+      <div class="slot-title">🌅 오전<span class="slot-badge badge-1">오전</span></div>
       <div class="slot-grid" id="slots-am"></div>
     </div>
     <div class="slot-section">
-      <div class="slot-title">☀️ 오후 <span class="slot-badge badge-2">12:00 ~ 18:00</span></div>
+      <div class="slot-title">☀️ 오후<span class="slot-badge badge-2">오후</span></div>
       <div class="slot-grid" id="slots-pm"></div>
     </div>
 
     <div class="summary-box" id="summaryBox" style="display:none;">
       <div class="row"><span class="lbl">아동</span><span class="val" id="sum-child"></span></div>
       <div class="row"><span class="lbl">날짜</span><span class="val" id="sum-date"></span></div>
-      <div class="row"><span class="lbl">1순위</span><span class="val" id="sum-t1"></span></div>
-      <div class="row"><span class="lbl">2순위</span><span class="val" id="sum-t2"></span></div>
+      <div class="row"><span class="lbl">방문상담</span><span class="val" id="sum-t1"></span></div>
+      <div class="row"><span class="lbl">전화상담</span><span class="val" id="sum-t2"></span></div>
     </div>
 
     <button class="submit-btn" id="submitBtn" onclick="submit()" disabled>✅ 신청 완료하기</button>
@@ -346,18 +357,10 @@ const ROSTER = {
   }
 };
 
-// ── 시간 슬롯 생성 (09:00 ~ 18:00, 30분 단위) ──────────────
-function makeSlots() {
-  const slots = [];
-  for (let h = 9; h < 18; h++) {
-    slots.push(`${String(h).padStart(2,'0')}:00`);
-    slots.push(`${String(h).padStart(2,'0')}:30`);
-  }
-  return slots;
-}
-const ALL_SLOTS = makeSlots();
-const AM_SLOTS = ALL_SLOTS.filter(s => parseInt(s) < 12);
-const PM_SLOTS = ALL_SLOTS.filter(s => parseInt(s) >= 12);
+// ── 시간 슬롯 (고정) ──────────────────────────────────────
+const AM_SLOTS = ['10:00~10:30', '10:40~11:10', '11:20~11:50'];
+const PM_SLOTS = ['13:00~13:30', '13:40~14:10', '14:20~14:50'];
+const ALL_SLOTS = [...AM_SLOTS, ...PM_SLOTS];
 
 // ── 상태 ─────────────────────────────────────────────────
 let selectedClass = null;
@@ -498,16 +501,21 @@ function renderSlots() {
   updateSummary();
 }
 
+// 방문상담(pick1)·전화상담(pick2) 각각 독립 선택
+// 같은 슬롯 두 번 클릭 시 해제, 다른 슬롯 클릭 시 교체
+let pickMode = 'visit'; // 'visit' | 'phone'
+
+function setPickMode(mode) {
+  pickMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('sel'));
+  document.getElementById('mode-' + mode).classList.add('sel');
+}
+
 function pickSlot(time) {
-  if (pick1 === time) { pick1 = null; }
-  else if (pick2 === time) { pick2 = null; }
-  else if (!pick1) { pick1 = time; }
-  else if (!pick2) {
-    if (time === pick1) return;
-    pick2 = time;
+  if (pickMode === 'visit') {
+    pick1 = (pick1 === time) ? null : time;
   } else {
-    showToast('⚠️ 이미 1순위·2순위가 선택됐어요. 해제 후 다시 선택해주세요.');
-    return;
+    pick2 = (pick2 === time) ? null : time;
   }
   updateSlotUI();
   updateSummary();
@@ -531,11 +539,11 @@ function updateSlotUI() {
 function updateSummary() {
   const box = document.getElementById('summaryBox');
   const submitBtn = document.getElementById('submitBtn');
-  if (pick1) {
+  if (pick1 || pick2) {
     box.style.display = 'block';
     document.getElementById('sum-child').textContent = selectedChild + ' (' + selectedClass + '반)';
     document.getElementById('sum-date').textContent = selectedDate;
-    document.getElementById('sum-t1').textContent = pick1 + ' ✅';
+    document.getElementById('sum-t1').textContent = pick1 ? pick1 + ' ✅' : '미선택';
     document.getElementById('sum-t2').textContent = pick2 ? pick2 + ' ✅' : '미선택';
     submitBtn.disabled = false;
   } else {
@@ -546,8 +554,8 @@ function updateSummary() {
 
 // ── 제출 ─────────────────────────────────────────────────
 async function submit() {
-  if (!selectedChild || !selectedDate || !pick1) {
-    showToast('⚠️ 아동, 날짜, 1순위 시간을 선택해주세요');
+  if (!selectedChild || !selectedDate || (!pick1 && !pick2)) {
+    showToast('⚠️ 아동, 날짜, 시간을 하나 이상 선택해주세요');
     return;
   }
   const submitBtn = document.getElementById('submitBtn');
@@ -613,6 +621,7 @@ function showToast(msg) {
 }
 
 window.submit = submit;
+window.setPickMode = setPickMode;
 window.resetForm = resetForm;
 </script>
 </body>
