@@ -236,63 +236,55 @@ function exportExcel() {
 
   const wb = XLSX.utils.book_new();
 
-  // ── 시트1: 달력 뷰 (날짜 × 시간) ──────────────────────
+  // 시트1: 달력 뷰 (날짜 x 시간)
   const dates = [...new Set(sorted.map(e=>e.date))].sort();
-
-  // grid 매핑
   const grid = {};
   sorted.forEach(e => {
     const slot = e.time1 || e.time2 || '기타';
     let matched = '기타';
-    TIME_SLOTS.forEach(s => { if(s!=='기타' && slot.startsWith(s.slice(0,5))) matched=s; });
-    const k = e.date+'||'+matched;
-    if(!grid[k]) grid[k]=[];
+    TIME_SLOTS.forEach(s => {
+      if (s !== '기타' && slot.startsWith(s.slice(0,5))) matched = s;
+    });
+    const k = e.date + '||' + matched;
+    if (!grid[k]) grid[k] = [];
     grid[k].push(e);
   });
 
-  // 헤더
-  const calHeader = ['시간대', ...dates.map(d => {
+  const calHeader = ['시간대'].concat(dates.map(d => {
     const wd = new Date(d).getDay();
-    return d.slice(5)+'('+DAY_KO[wd]+')';
-  })];
+    return d.slice(5) + '(' + DAY_KO[wd] + ')';
+  }));
   const calRows = [calHeader];
   TIME_SLOTS.forEach(slot => {
     const row = [slot];
     dates.forEach(d => {
-      const items = grid[d+'||'+slot] || [];
-      row.push(items.map(e => {
+      const items = grid[d + '||' + slot] || [];
+      const cell = items.map(e => {
         let t = '';
-        if(e.time1) t += '방문:'+e.time1.slice(0,5);
-        if(e.time2) t += (t?' ':'')+'전화:'+e.time2.slice(0,5);
-        return e.child+'('+e.cls.slice(0,2)+')
-'+t;
-      }).join('
-') || '');
+        if (e.time1) t += '방문:' + e.time1.slice(0,5);
+        if (e.time2) t += (t ? ' ' : '') + '전화:' + e.time2.slice(0,5);
+        return e.child + '(' + e.cls.slice(0,2) + ') ' + t;
+      }).join(' / ');
+      row.push(cell || '');
     });
     calRows.push(row);
   });
   const ws1 = XLSX.utils.aoa_to_sheet(calRows);
-  ws1['!cols'] = [{wch:16}, ...dates.map(()=>({wch:20}))];
+  ws1['!cols'] = [{wch:16}].concat(dates.map(function(){ return {wch:22}; }));
   XLSX.utils.book_append_sheet(wb, ws1, '달력 뷰');
 
-  // ── 시트2: 시간순 목록 ────────────────────────────────
-  const listRows = [
-    ['No.','날짜','요일','아동','반','방문상담','전화상담']
-  ];
-  sorted.forEach((e,i) => {
+  // 시트2: 시간순 목록
+  const listRows = [['No.','날짜','요일','아동','반','방문상담','전화상담']];
+  sorted.forEach((e, i) => {
     const wd = new Date(e.date).getDay();
-    listRows.push([
-      i+1, e.date, DAY_KO[wd], e.child, e.cls+'반',
-      e.time1||'-', e.time2||'-'
-    ]);
+    listRows.push([i+1, e.date, DAY_KO[wd], e.child, e.cls+'반', e.time1||'-', e.time2||'-']);
   });
   const ws2 = XLSX.utils.aoa_to_sheet(listRows);
   ws2['!cols'] = [{wch:6},{wch:14},{wch:7},{wch:10},{wch:14},{wch:16},{wch:16}];
   XLSX.utils.book_append_sheet(wb, ws2, '시간순 목록');
 
-  // ── 파일명: 오늘 날짜 포함 ───────────────────────────
   const today = new Date().toISOString().slice(0,10);
-  XLSX.writeFile(wb, `부모상담_일정표_${today}.xlsx`);
+  XLSX.writeFile(wb, '부모상담_일정표_' + today + '.xlsx');
   showToast('📥 엑셀 파일이 다운로드됐어요!');
 }
 window.exportExcel = exportExcel;
