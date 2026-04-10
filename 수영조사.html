@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏊 수영장 참여 조사</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f0f8ff;
+    --card: #ffffff;
+    --border: #d0e8f8;
+    --primary: #0077b6;
+    --accent: #00b4d8;
+    --light: #e0f4ff;
+    --text: #03045e;
+    --sub: #4a7a9b;
+    --muted: #8aaec0;
+    --swim: #0077b6;
+    --indoor: #f59e0b;
+    --absent: #6b7280;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  header {
+    background: linear-gradient(135deg, #03045e 0%, #0077b6 100%);
+    padding: 32px 24px 52px; position: relative; overflow: hidden;
+  }
+  header::before {
+    content: '🌊'; position: absolute; right: 24px; top: 20px;
+    font-size: 5rem; opacity: 0.1;
+  }
+  header::after {
+    content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 28px;
+    background: var(--bg); clip-path: ellipse(55% 100% at 50% 100%);
+  }
+  .hdr-inner { max-width: 680px; margin: 0 auto; }
+  header h1 { font-size: 1.7rem; font-weight: 900; color: #fff; letter-spacing: -0.5px; }
+  .hdr-sub { color: #90e0ef; font-size: 0.85rem; margin-top: 6px; }
+  .event-badge {
+    display: inline-flex; align-items: center; gap: 8px; margin-top: 14px;
+    padding: 8px 16px; background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.25); border-radius: 30px;
+    font-size: 0.83rem; font-weight: 700; color: #fff;
+  }
+
+  main { max-width: 680px; margin: 0 auto; padding: 0 16px 80px; }
+
+  /* 단계 */
+  .steps { display: flex; margin-bottom: 20px; }
+  .step { flex: 1; text-align: center; padding: 10px 4px; font-size: 0.75rem; font-weight: 600; color: var(--muted); border-bottom: 3px solid var(--border); transition: all 0.2s; }
+  .step.active { color: var(--primary); border-color: var(--accent); }
+  .step.done { color: var(--accent); border-color: var(--accent); }
+  .step-num { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: var(--border); color: var(--muted); font-size: 0.7rem; font-weight: 700; margin-bottom: 4px; }
+  .step.active .step-num { background: var(--primary); color: #fff; }
+  .step.done .step-num { background: var(--accent); color: #fff; }
+
+  /* 카드 */
+  .card { background: var(--card); border-radius: 18px; box-shadow: 0 2px 16px rgba(0,119,182,0.08); padding: 24px; margin-bottom: 14px; border: 1.5px solid var(--border); }
+  .card-title { font-size: 0.88rem; font-weight: 700; color: var(--primary); margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+  .card-title::before { content: ''; display: block; width: 4px; height: 18px; border-radius: 2px; background: linear-gradient(var(--primary), var(--accent)); }
+
+  /* 반 버튼 */
+  .inst-label { font-size: 0.7rem; font-weight: 700; color: var(--muted); letter-spacing: 0.8px; margin: 12px 0 7px; }
+  .class-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cls-btn { padding: 10px 20px; border: 1.5px solid var(--border); border-radius: 30px; background: #fff; font-family: inherit; font-size: 0.86rem; font-weight: 600; cursor: pointer; transition: all 0.18s; color: var(--sub); }
+  .cls-btn:hover { border-color: var(--primary); color: var(--primary); }
+  .cls-btn.sel { border-color: var(--primary); background: var(--primary); color: #fff; }
+
+  /* 이미 제출 안내 */
+  .already-box { background: #e0fff0; border: 1px solid #6ee7b7; border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; font-size: 0.84rem; color: #065f46; display: none; }
+
+  /* 전체 설정 버튼 */
+  .bulk-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .bulk-btn { padding: 7px 14px; border-radius: 8px; border: 1.5px solid var(--border); background: #fff; font-family: inherit; font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: all 0.15s; }
+  .bulk-swim { color: var(--swim); border-color: var(--swim); }
+  .bulk-swim:hover { background: var(--swim); color: #fff; }
+  .bulk-indoor { color: var(--indoor); border-color: var(--indoor); }
+  .bulk-indoor:hover { background: var(--indoor); color: #fff; }
+  .bulk-absent { color: var(--absent); border-color: var(--absent); }
+  .bulk-absent:hover { background: var(--absent); color: #fff; }
+
+  /* 아동 리스트 */
+  .child-list { display: flex; flex-direction: column; gap: 8px; }
+  .child-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px; background: #f8fbff; border-radius: 12px;
+    border: 1.5px solid var(--border); transition: all 0.15s;
+  }
+  .child-name { font-weight: 700; font-size: 0.9rem; min-width: 64px; color: var(--text); }
+  .status-btns { display: flex; gap: 6px; flex: 1; }
+  .status-btn {
+    flex: 1; padding: 8px 4px; border-radius: 8px; border: 1.5px solid var(--border);
+    background: #fff; font-family: inherit; font-size: 0.75rem; font-weight: 700;
+    cursor: pointer; transition: all 0.15s; color: var(--muted); text-align: center;
+  }
+  .status-btn.swim.sel { background: var(--swim); border-color: var(--swim); color: #fff; }
+  .status-btn.indoor.sel { background: var(--indoor); border-color: var(--indoor); color: #fff; }
+  .status-btn.absent.sel { background: var(--absent); border-color: var(--absent); color: #fff; }
+  .status-btn:hover:not(.sel) { border-color: var(--accent); }
+
+  /* 요약 바 */
+  .summary-bar { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+  .sum-item { display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 30px; font-size: 0.82rem; font-weight: 700; }
+  .sum-swim { background: #dbeafe; color: var(--swim); }
+  .sum-indoor { background: #fef3c7; color: #b45309; }
+  .sum-absent { background: #f3f4f6; color: var(--absent); }
+  .sum-num { font-family: 'DM Mono', monospace; font-size: 1rem; font-weight: 900; }
+
+  /* 제출 버튼 */
+  .submit-btn { width: 100%; margin-top: 20px; padding: 16px; border: none; border-radius: 14px; background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; font-family: inherit; font-size: 1rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 20px rgba(0,119,182,0.3); transition: all 0.2s; }
+  .submit-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 7px 24px rgba(0,119,182,0.4); }
+  .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  /* 완료 */
+  .done-card { text-align: center; padding: 48px 24px; background: var(--card); border-radius: 18px; border: 1.5px solid var(--border); box-shadow: 0 2px 16px rgba(0,119,182,0.08); display: none; }
+  .done-icon { font-size: 3.5rem; margin-bottom: 16px; }
+  .done-card h2 { font-size: 1.4rem; font-weight: 900; color: var(--primary); margin-bottom: 8px; }
+  .done-card p { color: var(--sub); font-size: 0.9rem; line-height: 1.8; }
+  .done-summary { background: var(--light); border-radius: 12px; padding: 16px 20px; margin: 20px 0; text-align: left; font-size: 0.88rem; line-height: 2.2; }
+  .done-summary span { font-weight: 700; color: var(--primary); }
+  .back-btn { margin-top: 16px; padding: 12px 28px; border: 1.5px solid var(--border); border-radius: 30px; background: transparent; font-family: inherit; font-size: 0.88rem; font-weight: 700; color: var(--sub); cursor: pointer; transition: all 0.2s; }
+  .back-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(70px); background: var(--primary); color: #fff; padding: 12px 22px; border-radius: 30px; font-size: 0.88rem; font-weight: 600; box-shadow: 0 5px 20px rgba(0,119,182,0.3); transition: transform 0.3s cubic-bezier(.34,1.56,.64,1); z-index: 999; white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  #step2card, #doneCard { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr-inner">
+    <h1>🏊 수영장 참여 조사</h1>
+    <div class="hdr-sub">무지개어린이집 · 아동별 참여 여부 입력</div>
+    <div class="event-badge">📅 2026년 4월 24일 (금)</div>
+  </div>
+</header>
+
+<main>
+  <div class="steps">
+    <div class="step active" id="st1"><div class="step-num">1</div><br>반 선택</div>
+    <div class="step" id="st2"><div class="step-num">2</div><br>아동별 입력</div>
+  </div>
+
+  <!-- STEP 1 -->
+  <div class="card" id="step1card">
+    <div class="card-title">🏫 담당 반 선택</div>
+    <div class="inst-label">무지개어린이집</div>
+    <div class="class-grid" id="g-무지개"></div>
+    <div class="inst-label">우리무지개어린이집</div>
+    <div class="class-grid" id="g-우리무지개"></div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="card" id="step2card">
+    <div class="card-title" id="step2title">👶 아동별 참여 여부</div>
+
+    <div class="already-box" id="alreadyBox">
+      ✅ 이미 제출한 내역이 있어요. 수정 후 다시 제출하면 덮어써져요.
+    </div>
+
+    <!-- 전체 일괄 설정 -->
+    <div class="bulk-row">
+      <span style="font-size:0.78rem;color:var(--muted);align-self:center;">전체:</span>
+      <button class="bulk-btn bulk-swim" onclick="setAll('swim')">🏊 전원 수영장</button>
+      <button class="bulk-btn bulk-indoor" onclick="setAll('indoor')">🏠 전원 원내보육</button>
+      <button class="bulk-btn bulk-absent" onclick="setAll('absent')">❌ 전원 결석</button>
+    </div>
+
+    <div class="child-list" id="childList"></div>
+
+    <!-- 요약 -->
+    <div class="summary-bar">
+      <div class="sum-item sum-swim">🏊 수영장 <span class="sum-num" id="cnt-swim">0</span>명</div>
+      <div class="sum-item sum-indoor">🏠 원내보육 <span class="sum-num" id="cnt-indoor">0</span>명</div>
+      <div class="sum-item sum-absent">❌ 결석 <span class="sum-num" id="cnt-absent">0</span>명</div>
+    </div>
+
+    <button class="submit-btn" id="submitBtn" onclick="submit()" disabled>✅ 제출하기</button>
+  </div>
+
+  <!-- 완료 -->
+  <div class="done-card" id="doneCard">
+    <div class="done-icon">🏊</div>
+    <h2>제출 완료!</h2>
+    <p>참여 현황이 저장됐어요.<br>감사합니다 😊</p>
+    <div class="done-summary" id="doneSummary"></div>
+    <button class="back-btn" onclick="resetForm()">↩ 다른 반 입력하기</button>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDojXJ_9pOnla8uG240APwo3Ik9gBddMw4",
+  authDomain: "mujigae-swimming.firebaseapp.com",
+  databaseURL: "https://mujigae-swimming-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "mujigae-swimming",
+  storageBucket: "mujigae-swimming.firebasestorage.app",
+  messagingSenderId: "279953220805",
+  appId: "1:279953220805:web:b24cbe70f8556416c0bcac"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const ROSTER = {
+  "무지개": {
+    "은빛물결": ["이재헌","박수현","김성원","정하준","송유담","박승빈","김정후","주현우","신승혁","김수호","정연우","최보민","한다윤"],
+    "초롱이슬": ["전유주","박유준","양선우","박하엘","박유하","정이안","정이준"]
+  },
+  "우리무지개": {
+    "아침햇살": ["정태호","고은호","김이안","전수호","위단우","서현우","김윤우","김지안"],
+    "고운햇살": ["박재희","박지유","김민준","곽나율","김은서","장태양","홍하루","김동휘","임라희"],
+    "들꽃향기": ["한지후","박은진","곽시안","박찬율","설재은","류시환","강은호","박다엘","김사랑","손리완","이로아","이소민","방서윤","김인우","이은우","임서우","이하린","김세윤"],
+    "푸른하늘": ["김아린","김강준","박진우","한서후","윤태언","김서우","백민지","이하민","강태희","곽다온","박준","김세윤","김지민"],
+    "파도소리": ["윤지아","김수겸","돌란샤나","권민서","최도윤","장시영"],
+    "푸른바다": ["김평온","김별리","양준우","강지호","김도우","백이엘","이태헌","오주원","서연석","임하라","김태유","조믿음","유이서","윤예나","윤예지","조가온","곽시후","이소민2"]
+  }
+};
+
+const EVENT_DATE = "2026-04-24";
+let selectedClass = null;
+// { 아동명: 'swim'|'indoor'|'absent'|null }
+let childStatus = {};
+
+// ── 반 버튼 생성 ──────────────────────────────────────────
+Object.entries(ROSTER).forEach(([inst, classes]) => {
+  const grid = document.getElementById('g-' + inst);
+  Object.keys(classes).forEach(cls => {
+    const btn = document.createElement('button');
+    btn.className = 'cls-btn';
+    btn.textContent = cls + '반';
+    btn.onclick = () => selectClass(cls, btn);
+    grid.appendChild(btn);
+  });
+});
+
+function selectClass(cls, btn) {
+  document.querySelectorAll('.cls-btn').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  selectedClass = cls;
+  childStatus = {};
+  loadClass(cls);
+}
+
+async function loadClass(cls) {
+  const children = ROSTER["무지개"][cls] || ROSTER["우리무지개"][cls] || [];
+
+  // 기존 제출 불러오기
+  const key = EVENT_DATE + '_' + cls;
+  let existing = null;
+  try {
+    const snap = await get(ref(db, 'swimming_survey/' + key));
+    existing = snap.val();
+  } catch(e) {}
+
+  const alreadyBox = document.getElementById('alreadyBox');
+  if (existing && existing.children) {
+    alreadyBox.style.display = 'block';
+    childStatus = Object.assign({}, existing.children);
+  } else {
+    alreadyBox.style.display = 'none';
+    children.forEach(n => { childStatus[n] = null; });
+  }
+
+  renderChildList(children);
+  document.getElementById('step2title').textContent = cls + '반 · 아동별 참여 여부';
+  document.getElementById('step2card').style.display = 'block';
+  document.getElementById('doneCard').style.display = 'none';
+  setStep(2);
+  updateSummary();
+  document.getElementById('step2card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderChildList(children) {
+  const list = document.getElementById('childList');
+  list.innerHTML = '';
+  children.forEach(name => {
+    const row = document.createElement('div');
+    row.className = 'child-row';
+    row.id = 'row-' + name;
+    row.innerHTML =
+      '<span class="child-name">' + name + '</span>' +
+      '<div class="status-btns">' +
+        '<button class="status-btn swim ' + (childStatus[name]==='swim'?'sel':'') + '" onclick="setStatus(\'' + name + '\',\'swim\')">🏊 수영장</button>' +
+        '<button class="status-btn indoor ' + (childStatus[name]==='indoor'?'sel':'') + '" onclick="setStatus(\'' + name + '\',\'indoor\')">🏠 원내보육</button>' +
+        '<button class="status-btn absent ' + (childStatus[name]==='absent'?'sel':'') + '" onclick="setStatus(\'' + name + '\',\'absent\')">❌ 결석</button>' +
+      '</div>';
+    list.appendChild(row);
+  });
+}
+
+function setStatus(name, status) {
+  // 같은 버튼 재클릭 시 해제
+  childStatus[name] = (childStatus[name] === status) ? null : status;
+  // 버튼 스타일 갱신
+  const row = document.getElementById('row-' + name);
+  row.querySelectorAll('.status-btn').forEach(b => b.classList.remove('sel'));
+  if (childStatus[name]) {
+    row.querySelector('.' + childStatus[name]).classList.add('sel');
+  }
+  updateSummary();
+}
+
+function setAll(status) {
+  const children = ROSTER["무지개"][selectedClass] || ROSTER["우리무지개"][selectedClass] || [];
+  children.forEach(name => { childStatus[name] = status; });
+  renderChildList(children);
+  updateSummary();
+}
+
+function updateSummary() {
+  const vals = Object.values(childStatus);
+  document.getElementById('cnt-swim').textContent = vals.filter(v => v === 'swim').length;
+  document.getElementById('cnt-indoor').textContent = vals.filter(v => v === 'indoor').length;
+  document.getElementById('cnt-absent').textContent = vals.filter(v => v === 'absent').length;
+  // 전원 선택됐으면 제출 가능
+  const allSelected = vals.length > 0 && vals.every(v => v !== null);
+  document.getElementById('submitBtn').disabled = !allSelected;
+}
+
+async function submit() {
+  if (!selectedClass) return;
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '저장 중...';
+
+  try {
+    const key = EVENT_DATE + '_' + selectedClass;
+    const swimList = Object.entries(childStatus).filter(([,v]) => v==='swim').map(([k]) => k);
+    const indoorList = Object.entries(childStatus).filter(([,v]) => v==='indoor').map(([k]) => k);
+    const absentList = Object.entries(childStatus).filter(([,v]) => v==='absent').map(([k]) => k);
+
+    await set(ref(db, 'swimming_survey/' + key), {
+      cls: selectedClass,
+      date: EVENT_DATE,
+      children: childStatus,
+      counts: { swim: swimList.length, indoor: indoorList.length, absent: absentList.length },
+      savedAt: new Date().toISOString()
+    });
+
+    document.getElementById('doneSummary').innerHTML =
+      '<span>반</span> ' + selectedClass + '반<br>' +
+      '<span>🏊 수영장</span> ' + swimList.length + '명 · ' + (swimList.join(', ') || '없음') + '<br>' +
+      '<span>🏠 원내보육</span> ' + indoorList.length + '명 · ' + (indoorList.join(', ') || '없음') + '<br>' +
+      '<span>❌ 결석</span> ' + absentList.length + '명 · ' + (absentList.join(', ') || '없음');
+
+    document.getElementById('step1card').style.display = 'none';
+    document.getElementById('step2card').style.display = 'none';
+    document.getElementById('doneCard').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  } catch(e) {
+    showToast('❌ 저장 실패: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = '✅ 제출하기';
+  }
+}
+
+function resetForm() {
+  selectedClass = null;
+  childStatus = {};
+  document.querySelectorAll('.cls-btn').forEach(b => b.classList.remove('sel'));
+  document.getElementById('step1card').style.display = 'block';
+  document.getElementById('step2card').style.display = 'none';
+  document.getElementById('doneCard').style.display = 'none';
+  setStep(1);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function setStep(n) {
+  [1,2].forEach(i => {
+    const el = document.getElementById('st' + i);
+    el.className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
+  });
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+window.setStatus = setStatus;
+window.setAll = setAll;
+window.submit = submit;
+window.resetForm = resetForm;
+</script>
+</body>
+</html>

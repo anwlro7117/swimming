@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏊 수영장 참여 현황</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f0f8ff; --card: #fff; --border: #d0e8f8;
+    --primary: #0077b6; --accent: #00b4d8; --light: #e0f4ff;
+    --text: #03045e; --sub: #4a7a9b; --muted: #8aaec0;
+    --swim: #0077b6; --indoor: #f59e0b; --absent: #6b7280;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* 로그인 */
+  #loginOverlay { position: fixed; inset: 0; background: rgba(3,4,94,0.7); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(6px); }
+  .login-box { background: var(--card); border: 1.5px solid var(--border); border-radius: 24px; padding: 40px 36px; text-align: center; max-width: 320px; width: 90%; box-shadow: 0 8px 40px rgba(0,119,182,0.2); }
+  .login-box .icon { font-size: 2.4rem; margin-bottom: 12px; }
+  .login-box h2 { font-size: 1.2rem; font-weight: 900; color: var(--text); margin-bottom: 6px; }
+  .login-box p { font-size: 0.82rem; color: var(--muted); margin-bottom: 22px; }
+  .pw-input { width: 100%; padding: 13px; border: 1.5px solid var(--border); border-radius: 12px; background: var(--light); font-family: 'DM Mono', monospace; font-size: 1.4rem; text-align: center; letter-spacing: 8px; outline: none; color: var(--text); margin-bottom: 12px; transition: border-color 0.2s; }
+  .pw-input:focus { border-color: var(--primary); }
+  .pw-input.shake { animation: shake 0.4s; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-6px)} 80%{transform:translateX(6px)} }
+  .login-btn { width: 100%; padding: 13px; border: none; border-radius: 12px; background: linear-gradient(135deg, var(--primary), var(--accent)); font-family: inherit; font-size: 0.95rem; font-weight: 700; color: #fff; cursor: pointer; }
+  .pw-err { color: #dc2626; font-size: 0.8rem; margin-top: 8px; min-height: 18px; }
+
+  header { background: linear-gradient(135deg, #03045e 0%, #0077b6 100%); padding: 28px 24px 48px; position: relative; overflow: hidden; }
+  header::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 28px; background: var(--bg); clip-path: ellipse(55% 100% at 50% 100%); }
+  .hdr-inner { max-width: 900px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
+  header h1 { font-size: 1.4rem; font-weight: 900; color: #fff; }
+  header p { color: #90e0ef; font-size: 0.82rem; margin-top: 4px; }
+  .refresh-btn { padding: 8px 16px; border: 1.5px solid rgba(255,255,255,0.3); border-radius: 10px; background: transparent; font-family: inherit; font-size: 0.82rem; font-weight: 700; color: #fff; cursor: pointer; transition: all 0.15s; }
+  .refresh-btn:hover { background: rgba(255,255,255,0.15); }
+
+  main { max-width: 900px; margin: 0 auto; padding: 0 16px 60px; }
+
+  /* 요약 카드 */
+  .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 14px; }
+  .s-card { background: var(--card); border-radius: 14px; padding: 16px; border: 1.5px solid var(--border); border-top: 4px solid var(--primary); text-align: center; box-shadow: 0 2px 10px rgba(0,119,182,0.07); }
+  .s-card.swim { border-top-color: var(--swim); }
+  .s-card.indoor { border-top-color: var(--indoor); }
+  .s-card.absent { border-top-color: var(--absent); }
+  .s-card.pending { border-top-color: #e5e7eb; }
+  .s-num { font-size: 1.8rem; font-weight: 900; color: var(--primary); font-family: 'DM Mono', monospace; }
+  .s-card.swim .s-num { color: var(--swim); }
+  .s-card.indoor .s-num { color: var(--indoor); }
+  .s-card.absent .s-num { color: var(--absent); }
+  .s-card.pending .s-num { color: #9ca3af; }
+  .s-lbl { font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
+
+  /* 반별 카드 */
+  .card { background: var(--card); border-radius: 18px; box-shadow: 0 2px 14px rgba(0,119,182,0.08); padding: 24px; margin-bottom: 14px; border: 1.5px solid var(--border); }
+  .card-title { font-size: 0.88rem; font-weight: 700; color: var(--primary); margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+  .card-title::before { content: ''; display: block; width: 4px; height: 18px; border-radius: 2px; background: linear-gradient(var(--primary), var(--accent)); }
+
+  .cls-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+  .cls-card { background: var(--light); border-radius: 14px; border: 1.5px solid var(--border); padding: 18px; }
+  .cls-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .cls-name { font-size: 0.95rem; font-weight: 700; color: var(--text); }
+  .cls-time { font-size: 0.7rem; color: var(--muted); }
+  .not-submitted { font-size: 0.8rem; color: var(--muted); font-style: italic; padding: 8px 0; }
+
+  /* 참여 현황 바 */
+  .status-bars { display: flex; gap: 3px; height: 8px; border-radius: 30px; overflow: hidden; margin-bottom: 12px; background: #e5e7eb; }
+  .bar-swim { background: var(--swim); }
+  .bar-indoor { background: var(--indoor); }
+  .bar-absent { background: var(--absent); }
+
+  /* 아동 태그 그룹 */
+  .group-label { font-size: 0.7rem; font-weight: 700; margin: 8px 0 5px; }
+  .lbl-swim { color: var(--swim); }
+  .lbl-indoor { color: var(--indoor); }
+  .lbl-absent { color: var(--absent); }
+  .name-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+  .name-tag { padding: 3px 9px; border-radius: 20px; font-size: 0.72rem; font-weight: 600; }
+  .tag-swim { background: #dbeafe; color: var(--swim); }
+  .tag-indoor { background: #fef3c7; color: #92400e; }
+  .tag-absent { background: #f3f4f6; color: var(--absent); }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(70px); background: var(--primary); color: #fff; padding: 12px 22px; border-radius: 30px; font-size: 0.88rem; font-weight: 600; box-shadow: 0 5px 20px rgba(0,119,182,0.3); transition: transform 0.3s cubic-bezier(.34,1.56,.64,1); z-index: 999; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 600px) { .summary-grid { grid-template-columns: repeat(2, 1fr); } }
+</style>
+</head>
+<body>
+
+<!-- 초기화 확인 모달 -->
+<div id="resetOverlay" style="display:none;position:fixed;inset:0;background:rgba(3,4,94,0.7);display:none;align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(6px);">
+  <div style="background:#fff;border:1.5px solid #fecaca;border-radius:20px;padding:36px 30px;text-align:center;max-width:320px;width:90%;box-shadow:0 8px 40px rgba(220,38,38,0.15);">
+    <div style="font-size:2.4rem;margin-bottom:12px;">⚠️</div>
+    <h2 style="font-size:1.1rem;font-weight:900;color:#03045e;margin-bottom:8px;">데이터를 초기화할까요?</h2>
+    <p style="font-size:0.84rem;color:#6b7280;margin-bottom:24px;line-height:1.7;">4월 24일 수영장 참여 조사 데이터가<br><strong style="color:#dc2626;">전부 삭제</strong>됩니다. 되돌릴 수 없어요.</p>
+    <div style="display:flex;gap:10px;">
+      <button onclick="closeReset()" style="flex:1;padding:12px;border:1.5px solid #e5e7eb;border-radius:12px;background:#fff;font-family:inherit;font-size:0.9rem;font-weight:700;color:#6b7280;cursor:pointer;">취소</button>
+      <button onclick="doReset()" style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#dc2626,#ef4444);font-family:inherit;font-size:0.9rem;font-weight:700;color:#fff;cursor:pointer;">삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- 로그인 -->
+<div id="loginOverlay">
+  <div class="login-box">
+    <div class="icon">🏊</div>
+    <h2>관리자 로그인</h2>
+    <p>수영장 참여 현황 페이지</p>
+    <input type="password" class="pw-input" id="pwInput" maxlength="6" placeholder="••••" onkeydown="if(event.key==='Enter')tryLogin()">
+    <button class="login-btn" onclick="tryLogin()">확인</button>
+    <div class="pw-err" id="pwErr"></div>
+  </div>
+</div>
+
+<header>
+  <div class="hdr-inner">
+    <div>
+      <h1>🏊 수영장 참여 현황</h1>
+      <p>2026년 4월 24일 (금) · 무지개어린이집</p>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="refresh-btn" onclick="loadData()">🔄 새로고침</button>
+      <button class="refresh-btn" style="border-color:rgba(239,68,68,0.5);color:#fca5a5;" onclick="confirmReset()">🗑 데이터 초기화</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- 요약 -->
+  <div class="summary-grid">
+    <div class="s-card swim"><div class="s-num" id="s-swim">-</div><div class="s-lbl">🏊 수영장</div></div>
+    <div class="s-card indoor"><div class="s-num" id="s-indoor">-</div><div class="s-lbl">🏠 원내보육</div></div>
+    <div class="s-card absent"><div class="s-num" id="s-absent">-</div><div class="s-lbl">❌ 결석</div></div>
+    <div class="s-card pending"><div class="s-num" id="s-pending">-</div><div class="s-lbl">⏳ 미제출 반</div></div>
+  </div>
+
+  <!-- 반별 현황 -->
+  <div class="card">
+    <div class="card-title">📋 반별 참여 현황</div>
+    <div class="cls-cards" id="clsCards">
+      <div style="color:var(--muted);font-size:0.88rem;">불러오는 중...</div>
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, get, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDojXJ_9pOnla8uG240APwo3Ik9gBddMw4",
+  authDomain: "mujigae-swimming.firebaseapp.com",
+  databaseURL: "https://mujigae-swimming-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "mujigae-swimming",
+  storageBucket: "mujigae-swimming.firebasestorage.app",
+  messagingSenderId: "279953220805",
+  appId: "1:279953220805:web:b24cbe70f8556416c0bcac"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const ROSTER = {
+  "은빛물결": ["이재헌","박수현","김성원","정하준","송유담","박승빈","김정후","주현우","신승혁","김수호","정연우","최보민","한다윤"],
+  "초롱이슬": ["전유주","박유준","양선우","박하엘","박유하","정이안","정이준"],
+  "아침햇살": ["정태호","고은호","김이안","전수호","위단우","서현우","김윤우","김지안"],
+  "고운햇살": ["박재희","박지유","김민준","곽나율","김은서","장태양","홍하루","김동휘","임라희"],
+  "들꽃향기": ["한지후","박은진","곽시안","박찬율","설재은","류시환","강은호","박다엘","김사랑","손리완","이로아","이소민","방서윤","김인우","이은우","임서우","이하린","김세윤"],
+  "푸른하늘": ["김아린","김강준","박진우","한서후","윤태언","김서우","백민지","이하민","강태희","곽다온","박준","김세윤","김지민"],
+  "파도소리": ["윤지아","김수겸","돌란샤나","권민서","최도윤","장시영"],
+  "푸른바다": ["김평온","김별리","양준우","강지호","김도우","백이엘","이태헌","오주원","서연석","임하라","김태유","조믿음","유이서","윤예나","윤예지","조가온","곽시후","이소민2"]
+};
+
+const EVENT_DATE = "2026-04-24";
+const ADMIN_PW = '7117';
+
+(function() {
+  if (sessionStorage.getItem('mujigae_auth') === 'ok') {
+    document.getElementById('loginOverlay').style.display = 'none';
+    loadData();
+  }
+})();
+
+function tryLogin() {
+  const pw = document.getElementById('pwInput').value;
+  if (pw === ADMIN_PW) {
+    sessionStorage.setItem('mujigae_auth', 'ok');
+    document.getElementById('loginOverlay').style.display = 'none';
+    loadData();
+  } else {
+    const input = document.getElementById('pwInput');
+    input.classList.remove('shake');
+    void input.offsetWidth;
+    input.classList.add('shake');
+    input.value = '';
+    document.getElementById('pwErr').textContent = '비밀번호가 틀렸어요';
+  }
+}
+
+async function loadData() {
+  try {
+    const snap = await get(ref(db, 'swimming_survey'));
+    const data = snap.val() || {};
+
+    let totalSwim = 0, totalIndoor = 0, totalAbsent = 0, pending = 0;
+    const container = document.getElementById('clsCards');
+    container.innerHTML = '';
+
+    Object.entries(ROSTER).forEach(([cls, allChildren]) => {
+      const key = EVENT_DATE + '_' + cls;
+      const entry = data[key];
+      const isSubmitted = !!(entry && entry.children);
+
+      const swimList = [], indoorList = [], absentList = [];
+      if (isSubmitted) {
+        Object.entries(entry.children).forEach(([name, status]) => {
+          if (status === 'swim') swimList.push(name);
+          else if (status === 'indoor') indoorList.push(name);
+          else if (status === 'absent') absentList.push(name);
+        });
+        totalSwim += swimList.length;
+        totalIndoor += indoorList.length;
+        totalAbsent += absentList.length;
+      } else {
+        pending++;
+      }
+
+      const total = allChildren.length;
+      const swimPct = isSubmitted ? (swimList.length / total * 100) : 0;
+      const indoorPct = isSubmitted ? (indoorList.length / total * 100) : 0;
+      const absentPct = isSubmitted ? (absentList.length / total * 100) : 0;
+      const time = isSubmitted && entry.savedAt
+        ? new Date(entry.savedAt).toLocaleString('ko-KR', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})
+        : null;
+
+      const card = document.createElement('div');
+      card.className = 'cls-card';
+      card.innerHTML =
+        '<div class="cls-head">' +
+          '<span class="cls-name">' + cls + '반</span>' +
+          (time ? '<span class="cls-time">제출 ' + time + '</span>' : '<span class="cls-time" style="color:#dc2626;">미제출</span>') +
+        '</div>' +
+        (isSubmitted
+          ? '<div class="status-bars">' +
+              '<div class="bar-swim" style="width:' + swimPct + '%"></div>' +
+              '<div class="bar-indoor" style="width:' + indoorPct + '%"></div>' +
+              '<div class="bar-absent" style="width:' + absentPct + '%"></div>' +
+            '</div>' +
+            (swimList.length ? '<div class="group-label lbl-swim">🏊 수영장 ' + swimList.length + '명</div><div class="name-tags">' + swimList.map(n => '<span class="name-tag tag-swim">' + n + '</span>').join('') + '</div>' : '') +
+            (indoorList.length ? '<div class="group-label lbl-indoor">🏠 원내보육 ' + indoorList.length + '명</div><div class="name-tags">' + indoorList.map(n => '<span class="name-tag tag-indoor">' + n + '</span>').join('') + '</div>' : '') +
+            (absentList.length ? '<div class="group-label lbl-absent">❌ 결석 ' + absentList.length + '명</div><div class="name-tags">' + absentList.map(n => '<span class="name-tag tag-absent">' + n + '</span>').join('') + '</div>' : '')
+          : '<div class="not-submitted">아직 제출 전이에요</div>');
+
+      container.appendChild(card);
+    });
+
+    document.getElementById('s-swim').textContent = totalSwim + '명';
+    document.getElementById('s-indoor').textContent = totalIndoor + '명';
+    document.getElementById('s-absent').textContent = totalAbsent + '명';
+    document.getElementById('s-pending').textContent = pending + '반';
+
+  } catch(e) {
+    showToast('❌ 불러오기 실패: ' + e.message);
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+window.tryLogin = tryLogin;
+
+function confirmReset() {
+  document.getElementById('resetOverlay').style.display = 'flex';
+}
+
+function closeReset() {
+  document.getElementById('resetOverlay').style.display = 'none';
+}
+
+async function doReset() {
+  closeReset();
+  try {
+    await remove(ref(db, 'swimming_survey'));
+    showToast('✅ 데이터가 초기화됐어요');
+    loadData();
+  } catch(e) {
+    showToast('❌ 초기화 실패: ' + e.message);
+  }
+}
+
+window.confirmReset = confirmReset;
+window.closeReset = closeReset;
+window.doReset = doReset;
+window.loadData = loadData;
+</script>
+</body>
+</html>
