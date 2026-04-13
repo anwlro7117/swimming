@@ -130,10 +130,22 @@
 <main>
   <!-- 요약 -->
   <div class="summary-grid">
-    <div class="s-card swim"><div class="s-num" id="s-swim">-</div><div class="s-lbl">🏊 수영장</div></div>
+    <div class="s-card swim"><div class="s-num" id="s-swim">-</div><div class="s-lbl">🏊 수영장(아동)</div></div>
     <div class="s-card indoor"><div class="s-num" id="s-indoor">-</div><div class="s-lbl">🏠 원내보육</div></div>
     <div class="s-card absent"><div class="s-num" id="s-absent">-</div><div class="s-lbl">❌ 결석</div></div>
     <div class="s-card pending"><div class="s-num" id="s-pending">-</div><div class="s-lbl">⏳ 미제출 반</div></div>
+  </div>
+
+  <!-- 교사 요약 -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+    <div class="s-card swim"><div class="s-num" id="s-t-available">-</div><div class="s-lbl">✅ 수영장 가능(교사)</div></div>
+    <div class="s-card absent"><div class="s-num" id="s-t-unavailable">-</div><div class="s-lbl">❌ 불가능(교사)</div></div>
+  </div>
+
+  <!-- 교사 현황 -->
+  <div class="card">
+    <div class="card-title">👩‍🏫 교사 수영장 참석 현황</div>
+    <div id="teacherSection" style="font-size:0.84rem;color:var(--muted);">불러오는 중...</div>
   </div>
 
   <!-- 반별 현황 -->
@@ -165,15 +177,24 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 const ROSTER = {
-  "은빛물결": ["이재헌","박수현","김성원","정하준","송유담","박승빈","김정후","주현우","신승혁","김수호","정연우","최보민","한다윤"],
-  "초롱이슬": ["전유주","박유준","양선우","박하엘","박유하","정이안","정이준"],
+  "은빛물결": ["이재헌","박수현","김성원","정하준","송유담","박승빈","김정후","주현수","신승혁","김수호","정연우","최보민","한다윤"],
   "아침햇살": ["정태호","고은호","김이안","전수호","위단우","서현우","김윤우","김지안"],
-  "고운햇살": ["박재희","박지유","김민준","곽나율","김은서","장태양","홍하루","김동휘","임라희"],
+  "고운햇살": ["박재희","박지유","김민준","곽나율","김은서","장태양","홍하루","김동휘"],
   "들꽃향기": ["한지후","박은진","곽시안","박찬율","설재은","류시환","강은호","박다엘","김사랑","손리완","이로아","이소민","방서윤","김인우","이은우","임서우","이하린","김세윤"],
   "푸른하늘": ["김아린","김강준","박진우","한서후","윤태언","김서우","백민지","이하민","강태희","곽다온","박준","김세윤","김지민"],
   "파도소리": ["윤지아","김수겸","돌란샤나","권민서","최도윤","장시영"],
   "푸른바다": ["김평온","김별리","양준우","강지호","김도우","백이엘","이태헌","오주원","서연석","임하라","김태유","조믿음","유이서","윤예나","윤예지","조가온","곽시후","이소민2"]
 };
+
+const ALL_TEACHERS = [
+  "채준범","이왕성","서명화","임민주",
+  "강수지","김보라","김하민",
+  "박서정","천은주","모정아",
+  "박초롱","이효선",
+  "조현아","황선하",
+  "임정연","조명원",
+  "백장미","이슬아","유주환"
+];
 
 const EVENT_DATE = "2026-04-24";
 const ADMIN_PW = '7117';
@@ -255,6 +276,21 @@ async function loadData() {
             (absentList.length ? '<div class="group-label lbl-absent">❌ 결석 ' + absentList.length + '명</div><div class="name-tags">' + absentList.map(n => '<span class="name-tag tag-absent">' + n + '</span>').join('') + '</div>' : '')
           : '<div class="not-submitted">아직 제출 전이에요</div>');
 
+      // 교사 데이터 추가
+      if (isSubmitted && entry.teachers) {
+        const tSwim = Object.entries(entry.teachers).filter(([,v])=>v==='swim').map(([k])=>k);
+        const tIndoor = Object.entries(entry.teachers).filter(([,v])=>v==='indoor').map(([k])=>k);
+        const tAbsent = Object.entries(entry.teachers).filter(([,v])=>v==='absent').map(([k])=>k);
+        const teacherDiv = document.createElement('div');
+        teacherDiv.style.cssText = 'margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);';
+        teacherDiv.innerHTML =
+          '<div class="group-label" style="color:var(--sub);margin-bottom:5px;">👩‍🏫 교사</div>' +
+          (tSwim.length ? '<div class="name-tags">' + tSwim.map(n=>'<span class="name-tag tag-swim">🏊 '+n+'</span>').join('') + '</div>' : '') +
+          (tIndoor.length ? '<div class="name-tags">' + tIndoor.map(n=>'<span class="name-tag tag-indoor">🏠 '+n+'</span>').join('') + '</div>' : '') +
+          (tAbsent.length ? '<div class="name-tags">' + tAbsent.map(n=>'<span class="name-tag tag-absent">❌ '+n+'</span>').join('') + '</div>' : '');
+        card.appendChild(teacherDiv);
+      }
+
       container.appendChild(card);
     });
 
@@ -262,6 +298,26 @@ async function loadData() {
     document.getElementById('s-indoor').textContent = totalIndoor + '명';
     document.getElementById('s-absent').textContent = totalAbsent + '명';
     document.getElementById('s-pending').textContent = pending + '반';
+
+    // 교사 현황
+    const tSnap = await get(ref(db, 'swimming_survey/teachers_' + EVENT_DATE));
+    const tData = tSnap.val();
+    const tSection = document.getElementById('teacherSection');
+    if (tData && tData.teachers) {
+      const availList = ALL_TEACHERS.filter(n => tData.teachers[n]==='available');
+      const unavailList = ALL_TEACHERS.filter(n => tData.teachers[n]==='unavailable');
+      const unknownList = ALL_TEACHERS.filter(n => !tData.teachers[n]);
+      document.getElementById('s-t-available').textContent = availList.length + '명';
+      document.getElementById('s-t-unavailable').textContent = unavailList.length + '명';
+      tSection.innerHTML =
+        (availList.length ? '<div style="margin-bottom:10px;"><div style="font-size:0.72rem;font-weight:700;color:#0077b6;margin-bottom:5px;">✅ 수영장 가능 ' + availList.length + '명</div><div class="name-tags">' + availList.map(n=>'<span class="name-tag tag-swim">'+n+'</span>').join('') + '</div></div>' : '') +
+        (unavailList.length ? '<div style="margin-bottom:10px;"><div style="font-size:0.72rem;font-weight:700;color:#dc2626;margin-bottom:5px;">❌ 불가능 ' + unavailList.length + '명</div><div class="name-tags">' + unavailList.map(n=>'<span class="name-tag tag-absent">'+n+'</span>').join('') + '</div></div>' : '') +
+        (unknownList.length ? '<div><div style="font-size:0.72rem;font-weight:700;color:var(--muted);margin-bottom:5px;">⏳ 미입력 ' + unknownList.length + '명</div><div class="name-tags">' + unknownList.map(n=>'<span class="name-tag" style="background:#f3f4f6;color:#9ca3af;">'+n+'</span>').join('') + '</div></div>' : '');
+    } else {
+      document.getElementById('s-t-available').textContent = '-';
+      document.getElementById('s-t-unavailable').textContent = '-';
+      tSection.innerHTML = '<span style="color:var(--muted);font-style:italic;">아직 제출 전이에요</span>';
+    }
 
   } catch(e) {
     showToast('❌ 불러오기 실패: ' + e.message);
