@@ -356,8 +356,8 @@ function updateSummary() {
   document.getElementById('cnt-indoor').textContent = vals.filter(v => v === 'indoor').length;
   document.getElementById('cnt-absent').textContent = vals.filter(v => v === 'absent').length;
   // 전원 선택됐으면 제출 가능
-  const allSelected = vals.length > 0 && vals.every(v => v !== null);
-  document.getElementById('submitBtn').disabled = !allSelected;
+  const anySelected = vals.some(v => v !== null);
+  document.getElementById('submitBtn').disabled = !anySelected;
 }
 
 async function submit() {
@@ -466,7 +466,9 @@ function updateTeacherSummary() {
   document.getElementById('cnt-t-avail').textContent = vals.filter(v => v==='available').length;
   document.getElementById('cnt-t-unavail').textContent = vals.filter(v => v==='unavailable').length;
   document.getElementById('cnt-t-none').textContent = vals.filter(v => !v).length;
-  document.getElementById('teacherSubmitBtn').disabled = !ALL_TEACHERS.every(n => teacherStatus[n]);
+  // 1명 이상 선택되면 제출 가능
+  const anySelected = ALL_TEACHERS.some(n => teacherStatus[n]);
+  document.getElementById('teacherSubmitBtn').disabled = !anySelected;
 }
 
 async function submitTeacher() {
