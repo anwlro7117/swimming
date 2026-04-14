@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>연차 사용 계획 관리 | 무지개어린이집</title>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<!-- SheetJS -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
+<style>
+:root {
+  --bg: #f5f4f0;
+  --surface: #ffffff;
+  --surface2: #f0efe9;
+  --border: rgba(0,0,0,0.09);
+  --border2: rgba(0,0,0,0.16);
+  --text: #1a1a18;
+  --text2: #6b6b66;
+  --text3: #a0a09a;
+  --blue: #185FA5;
+  --blue-bg: #e6f1fb;
+  --blue-dark: #0C447C;
+  --green: #3B6D11;
+  --green-bg: #eaf3de;
+  --amber: #854F0B;
+  --amber-bg: #faeeda;
+  --red: #A32D2D;
+  --red-bg: #fcebeb;
+  --teal: #0F6E56;
+  --teal-bg: #e1f5ee;
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* ── Header ── */
+.header{background:var(--surface);border-bottom:0.5px solid var(--border2);padding:0 28px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.header-left{display:flex;align-items:center;gap:10px}
+.header-title{font-size:15px;font-weight:600}
+.header-badge{font-size:11px;background:var(--blue-bg);color:var(--blue);padding:3px 10px;border-radius:20px;font-weight:500}
+.header-right{display:flex;align-items:center;gap:8px}
+
+/* ── Login overlay ── */
+.login-overlay{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999}
+.login-card{background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--radius);padding:36px 32px;width:340px;text-align:center}
+.login-icon{font-size:36px;margin-bottom:14px}
+.login-title{font-size:18px;font-weight:600;margin-bottom:6px}
+.login-sub{font-size:13px;color:var(--text2);margin-bottom:24px;line-height:1.5}
+.login-input{width:100%;height:42px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:0 14px;font-size:15px;text-align:center;letter-spacing:.2em;color:var(--text);background:var(--surface);margin-bottom:12px}
+.login-input:focus{outline:none;border-color:var(--blue)}
+.login-btn{width:100%;height:42px;background:var(--blue);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:500;cursor:pointer}
+.login-btn:hover{background:var(--blue-dark)}
+.login-error{font-size:12px;color:var(--red);margin-top:8px;display:none}
+
+/* ── Page ── */
+.page{max-width:1100px;margin:0 auto;padding:24px 20px 60px}
+
+/* ── Stats row ── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:16px 18px}
+.stat-label{font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:500;text-transform:uppercase;letter-spacing:.05em}
+.stat-value{font-size:26px;font-weight:600;color:var(--text)}
+.stat-value.blue{color:var(--blue)}
+.stat-value.green{color:var(--green)}
+.stat-value.amber{color:var(--amber)}
+.stat-sub{font-size:11px;color:var(--text3);margin-top:3px}
+
+/* ── Toolbar ── */
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.toolbar-left{display:flex;gap:8px;flex:1;flex-wrap:wrap}
+.filter-select{height:34px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:0 10px;font-size:13px;color:var(--text);background:var(--surface);min-width:120px}
+.filter-select:focus{outline:none;border-color:var(--blue)}
+.search-input{height:34px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:0 12px;font-size:13px;color:var(--text);background:var(--surface);width:160px}
+.search-input:focus{outline:none;border-color:var(--blue)}
+.btn{height:34px;padding:0 16px;border-radius:var(--radius-sm);border:0.5px solid var(--border2);background:transparent;font-size:13px;cursor:pointer;color:var(--text);white-space:nowrap}
+.btn:hover{background:var(--surface2)}
+.btn.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn.primary:hover{background:var(--blue-dark)}
+.btn.green{background:var(--green);color:#fff;border-color:var(--green)}
+.btn.green:hover{background:#27500A}
+
+/* ── Table ── */
+.table-wrap{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px}
+.main-table{width:100%;border-collapse:collapse;font-size:13px}
+.main-table th{font-size:11px;font-weight:600;color:var(--text2);text-align:left;padding:10px 14px;border-bottom:0.5px solid var(--border2);background:var(--surface2);white-space:nowrap;cursor:pointer;user-select:none}
+.main-table th:hover{color:var(--text)}
+.main-table th.sorted{color:var(--blue)}
+.main-table td{padding:10px 14px;border-bottom:0.5px solid var(--border);vertical-align:middle}
+.main-table tr:last-child td{border-bottom:none}
+.main-table tr:hover td{background:var(--surface2)}
+.main-table tr.expand-row td{background:var(--blue-bg);border-bottom:0.5px solid var(--border2)}
+
+/* ── Badges ── */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500;white-space:nowrap}
+.badge-blue{background:var(--blue-bg);color:var(--blue)}
+.badge-green{background:var(--green-bg);color:var(--green)}
+.badge-amber{background:var(--amber-bg);color:var(--amber)}
+.badge-red{background:var(--red-bg);color:var(--red)}
+.badge-gray{background:var(--surface2);color:var(--text2)}
+
+/* ── Progress mini ── */
+.prog-mini{height:5px;background:var(--surface2);border-radius:3px;overflow:hidden;width:80px;display:inline-block;vertical-align:middle;margin-left:6px}
+.prog-mini-fill{height:100%;border-radius:3px;background:var(--blue)}
+.prog-mini-fill.ok{background:var(--green)}
+.prog-mini-fill.over{background:var(--red)}
+
+/* ── Expand detail ── */
+.detail-panel{padding:16px 14px;display:none}
+.detail-panel.open{display:block}
+.detail-title{font-size:12px;font-weight:600;color:var(--blue);margin-bottom:10px}
+.date-chips{display:flex;flex-wrap:wrap;gap:6px}
+.date-chip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:12px;border:0.5px solid var(--border2)}
+.chip-full{background:var(--blue);color:#fff;border-color:var(--blue)}
+.chip-half{background:#9FE1CB;color:#085041;border-color:#5DCAA5}
+.no-dates{font-size:12px;color:var(--text3);font-style:italic}
+
+/* ── Mini calendar (popup) ── */
+.cal-popup{position:fixed;inset:0;background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;z-index:200;display:none}
+.cal-popup.open{display:flex}
+.cal-popup-box{background:var(--surface);border-radius:var(--radius);padding:20px;width:340px;max-height:90vh;overflow-y:auto}
+.cal-popup-title{font-size:15px;font-weight:600;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.cal-close{cursor:pointer;color:var(--text2);font-size:18px;line-height:1}
+.mini-cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.mini-cal-title{font-size:13px;font-weight:500}
+.mini-nav-btn{width:28px;height:28px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);background:transparent;cursor:pointer;font-size:13px;color:var(--text2);display:flex;align-items:center;justify-content:center}
+.mini-nav-btn:hover{background:var(--surface2)}
+.mini-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.mini-dow{text-align:center;font-size:10px;color:var(--text3);padding:4px 0;font-weight:500}
+.mini-cell{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:4px;font-size:11px;position:relative}
+.mini-cell.empty{pointer-events:none}
+.mini-cell.disabled{color:var(--text3)}
+.mini-cell.wk{color:var(--text3)}
+.mini-cell.sun{color:var(--red)}
+.mini-cell.sat{color:var(--blue)}
+.mini-cell.has-full{background:var(--blue);color:#fff}
+.mini-cell.has-half{background:#9FE1CB;color:#085041}
+.mini-cell .mn{font-size:10px}
+.mini-cell .mb{font-size:7px;margin-top:1px}
+
+/* ── 미제출자 섹션 ── */
+.not-submitted{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:16px 18px;margin-bottom:20px}
+.not-submitted-title{font-size:13px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.ns-chips{display:flex;flex-wrap:wrap;gap:6px}
+.ns-chip{font-size:12px;background:var(--red-bg);color:var(--red);padding:3px 10px;border-radius:20px}
+
+/* ── Empty / loading ── */
+.empty-state{text-align:center;padding:48px 0;color:var(--text3)}
+.empty-state .ei{font-size:32px;margin-bottom:10px}
+.loading{text-align:center;padding:48px 0;color:var(--text2);font-size:13px}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;font-size:13px;padding:10px 20px;border-radius:20px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast.show{opacity:1}
+
+/* ── Sort arrow ── */
+.sort-arrow{display:inline-block;margin-left:4px;font-size:10px;opacity:.5}
+.sort-arrow.active{opacity:1;color:var(--blue)}
+
+@media(max-width:768px){
+  .stats-row{grid-template-columns:1fr 1fr}
+  .page{padding:16px 12px 60px}
+  .header{padding:0 14px}
+  .toolbar{gap:6px}
+  .search-input{width:120px}
+}
+</style>
+</head>
+<body>
+
+<!-- 로그인 -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <div class="login-icon">🔐</div>
+    <div class="login-title">관리자 로그인</div>
+    <div class="login-sub">연차 사용 계획 조회 페이지입니다.<br>관리자 비밀번호를 입력해주세요.</div>
+    <input class="login-input" type="password" id="pwInput" placeholder="비밀번호"
+      onkeydown="if(event.key==='Enter')checkPw()">
+    <button class="login-btn" onclick="checkPw()">로그인</button>
+    <div class="login-error" id="pwError">비밀번호가 올바르지 않습니다.</div>
+  </div>
+</div>
+
+<!-- 헤더 -->
+<div class="header">
+  <div class="header-left">
+    <div class="header-title">🌈 연차 사용 계획 관리</div>
+    <div class="header-badge" id="lastUpdated">불러오는 중...</div>
+  </div>
+  <div class="header-right">
+    <button class="btn" onclick="loadData()">↻ 새로고침</button>
+    <button class="btn primary" onclick="exportExcel()">엑셀 내보내기</button>
+  </div>
+</div>
+
+<div class="page" id="mainPage" style="display:none">
+
+  <!-- 통계 -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">전체 인원</div>
+      <div class="stat-value blue" id="sTotalStaff">-</div>
+      <div class="stat-sub">양 기관 합계</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">제출 완료</div>
+      <div class="stat-value green" id="sSubmitted">-</div>
+      <div class="stat-sub" id="sSubmittedPct">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">미제출</div>
+      <div class="stat-value amber" id="sNotSubmitted">-</div>
+      <div class="stat-sub">제출 대기 중</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">평균 계획일수</div>
+      <div class="stat-value" id="sAvgDays">-</div>
+      <div class="stat-sub">제출자 기준</div>
+    </div>
+  </div>
+
+  <!-- 미제출자 -->
+  <div class="not-submitted" id="notSubmittedBox" style="display:none">
+    <div class="not-submitted-title">
+      <span>⚠ 미제출 교직원</span>
+      <span style="font-size:11px;color:var(--text2);font-weight:400" id="nsCount"></span>
+    </div>
+    <div class="ns-chips" id="nsChips"></div>
+  </div>
+
+  <!-- 필터 툴바 -->
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <select class="filter-select" id="filterInst" onchange="applyFilter()">
+        <option value="">전체 기관</option>
+        <option value="무지개어린이집">무지개어린이집</option>
+        <option value="우리무지개어린이집">우리무지개어린이집</option>
+      </select>
+      <select class="filter-select" id="filterDept" onchange="applyFilter()">
+        <option value="">전체 부서</option>
+        <option value="종일보육팀">종일보육팀</option>
+        <option value="방과후보육팀">방과후보육팀</option>
+        <option value="치료팀">치료팀</option>
+        <option value="운영지원팀">운영지원팀</option>
+        <option value="경영진">경영진</option>
+      </select>
+      <select class="filter-select" id="filterStatus" onchange="applyFilter()">
+        <option value="">전체 상태</option>
+        <option value="submitted">제출 완료</option>
+        <option value="pending">미제출</option>
+      </select>
+      <input class="search-input" id="searchInput" placeholder="이름 검색..." oninput="applyFilter()">
+    </div>
+    <div style="font-size:12px;color:var(--text2)" id="filterCount"></div>
+  </div>
+
+  <!-- 테이블 -->
+  <div class="table-wrap">
+    <div class="loading" id="loadingMsg">데이터 불러오는 중...</div>
+    <table class="main-table" id="mainTable" style="display:none">
+      <thead>
+        <tr>
+          <th onclick="sortBy('기관')" id="th_기관">기관 <span class="sort-arrow" id="sa_기관">↕</span></th>
+          <th onclick="sortBy('이름')" id="th_이름">이름 <span class="sort-arrow" id="sa_이름">↕</span></th>
+          <th onclick="sortBy('소속')" id="th_소속">소속 <span class="sort-arrow" id="sa_소속">↕</span></th>
+          <th onclick="sortBy('부여연차')" id="th_부여연차">부여연차 <span class="sort-arrow" id="sa_부여연차">↕</span></th>
+          <th onclick="sortBy('잔여연차')" id="th_잔여연차">잔여연차 <span class="sort-arrow" id="sa_잔여연차">↕</span></th>
+          <th onclick="sortBy('계획사용일수')" id="th_계획사용일수">계획 <span class="sort-arrow" id="sa_계획사용일수">↕</span></th>
+          <th>진행</th>
+          <th onclick="sortBy('제출일시')" id="th_제출일시">제출일시 <span class="sort-arrow" id="sa_제출일시">↕</span></th>
+          <th>달력</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+    <div class="empty-state" id="emptyMsg" style="display:none">
+      <div class="ei">📭</div>
+      <div>조건에 맞는 데이터가 없습니다</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 달력 팝업 -->
+<div class="cal-popup" id="calPopup" onclick="if(event.target===this)closeCalPopup()">
+  <div class="cal-popup-box">
+    <div class="cal-popup-title">
+      <span id="calPopupName">달력</span>
+      <span class="cal-close" onclick="closeCalPopup()">✕</span>
+    </div>
+    <div class="mini-cal-nav">
+      <button class="mini-nav-btn" onclick="calPopupMonth(-1)">‹</button>
+      <div class="mini-cal-title" id="calPopupTitle"></div>
+      <button class="mini-nav-btn" onclick="calPopupMonth(1)">›</button>
+    </div>
+    <div class="mini-cal-grid" id="calPopupGrid"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Firebase 설정 ──
+const firebaseConfig = {
+  apiKey: "여기에_apiKey",
+  authDomain: "여기에_authDomain",
+  databaseURL: "여기에_databaseURL",
+  projectId: "여기에_projectId",
+  storageBucket: "여기에_storageBucket",
+  messagingSenderId: "여기에_messagingSenderId",
+  appId: "여기에_appId"
+};
+
+let db = null;
+try {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.database();
+} catch(e) {
+  console.warn('Firebase 미설정:', e.message);
+}
+
+// ── 관리자 비밀번호 ──
+const ADMIN_PW = '7117';
+
+// ── 전체 교직원 명단 (제출 여부 확인용) ──
+const ALL_STAFF = {
+  '무지개어린이집': ['강수민','마미선','박정민','서명화','서홍련','양정임','우지선','이승원','이왕성','임민주','전채민','정선윤','정소윤','정아영','채준범','최하나','황경하'],
+  '우리무지개어린이집': ['강수지','권다애','김보라','김용석','김태은','김하민','마호진','모정아','박규리','박기애','박서정','박정숙','박초롱','백장미','변아진','송태헌','유주환','윤아름','윤창식','윤혜정','이미화','이숙현','이슬아','이효선','임정연','임주현','전나인','정다송','정인애','조명원','조현아','주은아','천은주','표영민','황선하']
+};
+const TOTAL_STAFF = Object.values(ALL_STAFF).flat().length;
+
+// ── 앱 상태 ──
+let allData = {};      // Firebase에서 가져온 원본
+let displayRows = [];  // 현재 표시 중인 행
+let sortKey = '기관';
+let sortAsc = true;
+let calPopupData = {}; // 달력 팝업용
+let calPopupCy = 2026;
+let calPopupCm = 4; // 5월
+
+const DAYS = ['일','월','화','수','목','금','토'];
+const MONTHS = ['1월','2월','3월','4월','5월','6월','7월','8월'];
+
+// ── 비밀번호 ──
+function checkPw() {
+  const v = document.getElementById('pwInput').value;
+  if (v === ADMIN_PW) {
+    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('mainPage').style.display = 'block';
+    loadData();
+  } else {
+    document.getElementById('pwError').style.display = 'block';
+    document.getElementById('pwInput').value = '';
+    document.getElementById('pwInput').focus();
+  }
+}
+
+// ── 데이터 로드 ──
+async function loadData() {
+  document.getElementById('loadingMsg').style.display = 'block';
+  document.getElementById('mainTable').style.display = 'none';
+  document.getElementById('emptyMsg').style.display = 'none';
+
+  if (!db) {
+    // Firebase 미설정 시 샘플 데이터로 테스트
+    allData = {};
+    renderAll();
+    document.getElementById('lastUpdated').textContent = 'Firebase 미설정 (테스트 모드)';
+    return;
+  }
+
+  try {
+    const snap = await db.ref('연차계획').get();
+    allData = snap.exists() ? snap.val() : {};
+    const now = new Date();
+    document.getElementById('lastUpdated').textContent =
+      `${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')} 기준`;
+    renderAll();
+  } catch(e) {
+    console.error(e);
+    toast('데이터 로드 실패: ' + e.message);
+    document.getElementById('loadingMsg').style.display = 'none';
+  }
+}
+
+// ── 전체 렌더 ──
+function renderAll() {
+  // 제출된 키 목록
+  const submittedKeys = Object.keys(allData);
+
+  // 미제출자 계산
+  const notSubmitted = [];
+  Object.entries(ALL_STAFF).forEach(([inst, names]) => {
+    names.forEach(name => {
+      const key = `${inst}_${name}`;
+      if (!submittedKeys.includes(key)) notSubmitted.push({ inst, name });
+    });
+  });
+
+  // 통계 업데이트
+  const submitted = submittedKeys.length;
+  document.getElementById('sTotalStaff').textContent = TOTAL_STAFF;
+  document.getElementById('sSubmitted').textContent = submitted;
+  document.getElementById('sSubmittedPct').textContent =
+    `전체의 ${Math.round(submitted/TOTAL_STAFF*100)}%`;
+  document.getElementById('sNotSubmitted').textContent = notSubmitted.length;
+
+  if (submitted > 0) {
+    const avg = Object.values(allData).reduce((s,d)=>s+(d.계획사용일수||0),0) / submitted;
+    document.getElementById('sAvgDays').textContent = avg.toFixed(1) + '일';
+  } else {
+    document.getElementById('sAvgDays').textContent = '-';
+  }
+
+  // 미제출자 표시
+  if (notSubmitted.length > 0) {
+    document.getElementById('notSubmittedBox').style.display = 'block';
+    document.getElementById('nsCount').textContent = `${notSubmitted.length}명`;
+    document.getElementById('nsChips').innerHTML = notSubmitted
+      .map(({inst,name}) => `<span class="ns-chip">${name} <span style="opacity:.6;font-size:10px">${inst==='무지개어린이집'?'무':'우'}</span></span>`)
+      .join('');
+  } else {
+    document.getElementById('notSubmittedBox').style.display = 'none';
+  }
+
+  // 제출자 rows 생성 (미제출자도 빈 행으로 포함)
+  const rows = [];
+  Object.entries(ALL_STAFF).forEach(([inst, names]) => {
+    names.forEach(name => {
+      const key = `${inst}_${name}`;
+      const d = allData[key];
+      if (d) {
+        rows.push({ ...d, _key: key, _submitted: true });
+      }
+      // 미제출자는 테이블에서 필터 '미제출' 선택 시에만 표시
+    });
+  });
+  // 미제출자도 pending row로 추가
+  notSubmitted.forEach(({inst, name}) => {
+    rows.push({ 기관: inst, 이름: name, 소속: '-', 부여연차: '-', 계획사용일수: null, 제출일시: null, 날짜목록: [], _key: `${inst}_${name}`, _submitted: false });
+  });
+
+  displayRows = rows;
+  applyFilter();
+}
+
+// ── 필터 ──
+function applyFilter() {
+  const inst   = document.getElementById('filterInst').value;
+  const dept   = document.getElementById('filterDept').value;
+  const status = document.getElementById('filterStatus').value;
+  const search = document.getElementById('searchInput').value.trim();
+
+  let rows = displayRows.filter(r => {
+    if (inst   && r.기관 !== inst) return false;
+    if (dept   && r.소속 !== dept) return false;
+    if (status === 'submitted' && !r._submitted) return false;
+    if (status === 'pending'   && r._submitted)  return false;
+    if (search && !r.이름.includes(search)) return false;
+    return true;
+  });
+
+  // 정렬
+  rows = sortRows(rows);
+
+  document.getElementById('filterCount').textContent = `${rows.length}건`;
+  renderTable(rows);
+}
+
+// ── 정렬 ──
+function sortBy(key) {
+  if (sortKey === key) sortAsc = !sortAsc;
+  else { sortKey = key; sortAsc = true; }
+  // 화살표 업데이트
+  document.querySelectorAll('.sort-arrow').forEach(el => {
+    el.className = 'sort-arrow';
+    el.textContent = '↕';
+  });
+  const sa = document.getElementById('sa_'+key);
+  if (sa) { sa.className = 'sort-arrow active'; sa.textContent = sortAsc ? '↑' : '↓'; }
+  applyFilter();
+}
+
+function sortRows(rows) {
+  return [...rows].sort((a,b) => {
+    let va = a[sortKey] ?? '';
+    let vb = b[sortKey] ?? '';
+    if (sortKey === '제출일시') {
+      va = va || '9999'; vb = vb || '9999';
+    }
+    if (typeof va === 'number' && typeof vb === 'number') return sortAsc ? va-vb : vb-va;
+    return sortAsc ? String(va).localeCompare(String(vb),'ko') : String(vb).localeCompare(String(va),'ko');
+  });
+}
+
+// ── 테이블 렌더 ──
+function renderTable(rows) {
+  document.getElementById('loadingMsg').style.display = 'none';
+
+  if (rows.length === 0) {
+    document.getElementById('mainTable').style.display = 'none';
+    document.getElementById('emptyMsg').style.display = 'block';
+    return;
+  }
+
+  document.getElementById('emptyMsg').style.display = 'none';
+  document.getElementById('mainTable').style.display = 'table';
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+
+  rows.forEach((r, idx) => {
+    const tr = document.createElement('tr');
+    tr.id = `row_${idx}`;
+
+    if (!r._submitted) {
+      // 미제출 행
+      tr.innerHTML = `
+        <td><span class="badge badge-gray">${r.기관==='무지개어린이집'?'무지개':'우리무지개'}</span></td>
+        <td style="font-weight:500">${r.이름}</td>
+        <td style="color:var(--text3)">-</td>
+        <td style="color:var(--text3)">-</td>
+        <td style="color:var(--text3)">-</td>
+        <td><span class="badge badge-amber">미제출</span></td>
+        <td>-</td>
+        <td style="color:var(--text3)">-</td>
+        <td>-</td>`;
+      tbody.appendChild(tr);
+      return;
+    }
+
+    const used = r.계획사용일수 || 0;
+    const total = r.부여연차 || 0;
+    const remain = r.잔여연차 !== undefined ? r.잔여연차 : (total - (r.기사용 || 0));
+    const pct = remain > 0 ? Math.min(used/remain*100, 100) : 0;
+    const isOver = used > remain;
+    const isOk = used >= remain * 0.9;
+
+    // 상태 뱃지
+    let statusBadge;
+    if (used === 0) statusBadge = '<span class="badge badge-gray">0일</span>';
+    else if (isOver) statusBadge = `<span class="badge badge-red">${used}일</span>`;
+    else if (isOk) statusBadge = `<span class="badge badge-green">${used}일</span>`;
+    else statusBadge = `<span class="badge badge-amber">${used}일</span>`;
+
+    // 제출일시 포맷
+    let dtStr = '-';
+    if (r.제출일시) {
+      const d = new Date(r.제출일시);
+      dtStr = `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+    }
+
+    tr.innerHTML = `
+      <td><span class="badge badge-blue">${r.기관==='무지개어린이집'?'무지개':'우리무지개'}</span></td>
+      <td style="font-weight:500;cursor:pointer" onclick="toggleDetail(${idx})">${r.이름} <span style="font-size:10px;color:var(--text3)">▾</span></td>
+      <td style="color:var(--text2)">${r.소속||'-'}</td>
+      <td>${total}일</td>
+      <td>${remain !== undefined ? remain+'일' : '-'}</td>
+      <td>${statusBadge}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:4px">
+          <div class="prog-mini">
+            <div class="prog-mini-fill ${isOver?'over':isOk?'ok':''}" style="width:${pct}%"></div>
+          </div>
+          <span style="font-size:10px;color:var(--text3)">${Math.round(pct)}%</span>
+        </div>
+      </td>
+      <td style="font-size:12px;color:var(--text2)">${dtStr}</td>
+      <td><button class="btn" style="height:26px;padding:0 10px;font-size:11px" onclick="openCalPopup(${idx})">달력 보기</button></td>`;
+
+    tbody.appendChild(tr);
+
+    // 상세 행
+    const detailTr = document.createElement('tr');
+    detailTr.className = 'expand-row';
+    detailTr.id = `detail_${idx}`;
+    detailTr.style.display = 'none';
+    const dates = r.날짜목록 || [];
+    const chips = dates.length > 0
+      ? dates.map(d => `<span class="date-chip ${d.종류==='종일'?'chip-full':'chip-half'}">${fmtDateKr(d.날짜)} ${DAYS[new Date(d.날짜).getDay()]} · ${d.종류}</span>`).join('')
+      : '<span class="no-dates">선택된 날짜 없음</span>';
+    detailTr.innerHTML = `<td colspan="9"><div class="detail-panel open"><div class="detail-title">📅 ${r.이름} 선생님 선택 날짜 (${dates.length}건)</div><div class="date-chips">${chips}</div></div></td>`;
+    tbody.appendChild(detailTr);
+  });
+
+  // displayRows 인덱스 참조용으로 현재 rows 저장
+  window._currentRows = rows;
+}
+
+// ── 상세 토글 ──
+function toggleDetail(idx) {
+  const detailTr = document.getElementById(`detail_${idx}`);
+  if (!detailTr) return;
+  detailTr.style.display = detailTr.style.display === 'none' ? '' : 'none';
+}
+
+// ── 달력 팝업 ──
+function openCalPopup(idx) {
+  const r = window._currentRows[idx];
+  if (!r) return;
+  calPopupData = {};
+  (r.날짜목록||[]).forEach(d => { calPopupData[d.날짜] = d.종류; });
+  calPopupCy = 2026; calPopupCm = 4;
+  document.getElementById('calPopupName').textContent = `${r.이름} 선생님 달력`;
+  renderCalPopup();
+  document.getElementById('calPopup').classList.add('open');
+}
+
+function closeCalPopup() {
+  document.getElementById('calPopup').classList.remove('open');
+}
+
+function calPopupMonth(d) {
+  calPopupCm += d;
+  if (calPopupCm > 7) calPopupCm = 7;
+  if (calPopupCm < 4) calPopupCm = 4;
+  renderCalPopup();
+}
+
+function renderCalPopup() {
+  const y = calPopupCy, m = calPopupCm;
+  const mnames = ['','','','','5월','6월','7월','8월','9월'];
+  document.getElementById('calPopupTitle').textContent = `2026년 ${mnames[m]}`;
+  const g = document.getElementById('calPopupGrid');
+  g.innerHTML = '';
+  ['일','월','화','수','목','금','토'].forEach((d,i) => {
+    const el = document.createElement('div');
+    el.className = 'mini-dow';
+    el.textContent = d;
+    g.appendChild(el);
+  });
+  const first = new Date(y, m, 1);
+  const dow = first.getDay();
+  const dim = new Date(y, m+1, 0).getDate();
+  for(let i=0;i<dow;i++){const e=document.createElement('div');e.className='mini-cell empty';g.appendChild(e);}
+  for(let d=1;d<=dim;d++){
+    const date = new Date(y,m,d);
+    const key = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dw = date.getDay();
+    const isWk = dw===0||dw===6;
+    const sel = calPopupData[key];
+    const el = document.createElement('div');
+    let cls = 'mini-cell';
+    if (isWk) cls += dw===0?' sun':' sat';
+    if (sel==='종일') cls += ' has-full';
+    else if (sel==='반차') cls += ' has-half';
+    el.className = cls;
+    el.innerHTML = `<span class="mn">${d}</span>${sel?`<span class="mb">${sel==='종일'?'종':'반'}</span>`:''}`;
+    g.appendChild(el);
+  }
+}
+
+// ── 엑셀 내보내기 ──
+function exportExcel() {
+  if (!window.XLSX) { toast('SheetJS 라이브러리 로딩 중...'); return; }
+  const rows = window._currentRows || [];
+  if (rows.length === 0) { toast('내보낼 데이터가 없습니다.'); return; }
+
+  // 시트1: 요약
+  const summary = [['기관','이름','소속','직위','부여연차','잔여연차','계획사용일수','권장사용일수','제출일시','날짜수','비고']];
+  rows.forEach(r => {
+    if (!r._submitted) {
+      summary.push([r.기관, r.이름, '-', '-', '-', '-', '-', '-', '-', '-', '미제출']);
+      return;
+    }
+    const used = r.계획사용일수||0;
+    const remain = r.잔여연차 ?? '-';
+    const note = used === 0 ? '계획없음' : used > (r.잔여연차||0) ? '잔여초과' : '정상';
+    summary.push([
+      r.기관, r.이름, r.소속||'-', r.직위||'-',
+      r.부여연차||'-', remain,
+      used, r.권장사용일수||'-',
+      r.제출일시 ? new Date(r.제출일시).toLocaleString('ko-KR') : '-',
+      (r.날짜목록||[]).length,
+      note
+    ]);
+  });
+
+  // 시트2: 날짜 상세
+  const detail = [['기관','이름','날짜','요일','종류','연차']];
+  rows.forEach(r => {
+    if (!r._submitted) return;
+    (r.날짜목록||[]).forEach(d => {
+      const date = new Date(d.날짜);
+      detail.push([r.기관, r.이름, d.날짜, DAYS[date.getDay()]+'요일', d.종류, d.일수]);
+    });
+  });
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summary), '연차계획요약');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(detail), '날짜상세');
+  XLSX.writeFile(wb, `연차사용계획_${new Date().toLocaleDateString('ko-KR').replace(/\. /g,'-').replace('.','')}.xlsx`);
+  toast('엑셀 파일이 저장되었습니다.');
+}
+
+// ── 유틸 ──
+function fmtDateKr(s) {
+  const d = new Date(s);
+  return `${d.getMonth()+1}월 ${d.getDate()}일`;
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// 엔터로 로그인
+document.getElementById('pwInput').focus();
+</script>
+</body>
+</html>
