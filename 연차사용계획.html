@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>연차 사용 계획 | 무지개어린이집</title>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<style>
+:root {
+  --bg: #f5f4f0;
+  --surface: #ffffff;
+  --surface2: #f0efe9;
+  --border: rgba(0,0,0,0.1);
+  --border2: rgba(0,0,0,0.18);
+  --text: #1a1a18;
+  --text2: #6b6b66;
+  --text3: #a0a09a;
+  --blue: #185FA5;
+  --blue-bg: #e6f1fb;
+  --green: #3B6D11;
+  --green-bg: #eaf3de;
+  --amber: #854F0B;
+  --amber-bg: #faeeda;
+  --red: #A32D2D;
+  --red-bg: #fcebeb;
+  --teal: #0F6E56;
+  --teal-bg: #e1f5ee;
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ── Header ── */
+.header { background: var(--surface); border-bottom: 0.5px solid var(--border); padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+.header-title { font-size: 15px; font-weight: 600; color: var(--text); }
+.header-sub { font-size: 12px; color: var(--text2); margin-top: 1px; }
+.saved-badge { font-size: 11px; color: var(--green); background: var(--green-bg); padding: 3px 10px; border-radius: 20px; display: none; }
+
+/* ── Layout ── */
+.page { max-width: 680px; margin: 0 auto; padding: 24px 16px 60px; }
+
+/* ── Step indicator ── */
+.steps { display: flex; align-items: center; gap: 0; margin-bottom: 28px; }
+.step-item { display: flex; align-items: center; gap: 8px; flex: 1; }
+.step-item:last-child { flex: 0; }
+.step-dot { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--border2); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: var(--text3); flex-shrink: 0; transition: all .2s; }
+.step-dot.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+.step-dot.done { background: var(--teal-bg); color: var(--teal); border-color: var(--teal); }
+.step-label { font-size: 12px; color: var(--text3); white-space: nowrap; }
+.step-label.active { color: var(--blue); font-weight: 500; }
+.step-line { flex: 1; height: 1px; background: var(--border); margin: 0 8px; }
+
+/* ── Card ── */
+.card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 12px; }
+.card-title { font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 16px; }
+
+/* ── Form ── */
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 6px; }
+.form-group select, .form-group input { width: 100%; height: 40px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); padding: 0 12px; font-size: 14px; color: var(--text); background: var(--surface); appearance: none; -webkit-appearance: none; }
+.form-group select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236b6b66' d='M6 8L0 0h12z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+.form-group select:focus, .form-group input:focus { outline: none; border-color: var(--blue); }
+
+/* ── Info box ── */
+.info-box { background: var(--blue-bg); border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 14px; display: none; }
+.info-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+.info-item .il { font-size: 11px; color: var(--blue); margin-bottom: 3px; }
+.info-item .iv { font-size: 17px; font-weight: 600; color: var(--blue); }
+.info-item .iv.sm { font-size: 13px; font-weight: 500; }
+
+/* ── Calendar ── */
+.cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.cal-month-title { font-size: 15px; font-weight: 600; }
+.cal-nav-btn { width: 32px; height: 32px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: transparent; cursor: pointer; font-size: 14px; color: var(--text2); display: flex; align-items: center; justify-content: center; }
+.cal-nav-btn:hover { background: var(--surface2); }
+
+.cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; }
+.cal-dow { text-align: center; font-size: 10px; font-weight: 600; color: var(--text3); padding: 6px 0; }
+.cal-dow.sun { color: var(--red); }
+.cal-dow.sat { color: var(--blue); }
+.cal-cell { aspect-ratio: 1; border-radius: var(--radius-sm); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; cursor: pointer; border: 0.5px solid transparent; user-select: none; transition: background .12s; position: relative; }
+.cal-cell:hover:not(.empty):not(.disabled) { background: var(--surface2); }
+.cal-cell.empty { pointer-events: none; }
+.cal-cell.disabled { color: var(--text3); pointer-events: none; }
+.cal-cell.sun-col { color: var(--red); }
+.cal-cell.sat-col { color: var(--blue); }
+.cal-cell.today-ring { border-color: var(--border2); }
+.cal-cell.sel-full { background: var(--blue); color: #fff !important; border-color: var(--blue); }
+.cal-cell.sel-half { background: #9FE1CB; color: #085041 !important; border-color: #5DCAA5; }
+.cal-cell .day-n { font-size: 12px; line-height: 1; }
+.cal-cell .day-b { font-size: 8px; margin-top: 2px; opacity: .9; }
+
+/* ── Mode toggle ── */
+.mode-toggle { display: flex; gap: 6px; margin-bottom: 12px; }
+.mode-btn { flex: 1; height: 36px; border-radius: var(--radius-sm); border: 0.5px solid var(--border2); background: transparent; font-size: 13px; cursor: pointer; color: var(--text2); transition: all .15s; }
+.mode-btn.on-full { background: var(--blue); color: #fff; border-color: var(--blue); }
+.mode-btn.on-half { background: #5DCAA5; color: #085041; border-color: #5DCAA5; }
+
+/* ── Legend ── */
+.legend { display: flex; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
+.leg-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); }
+.leg-dot { width: 12px; height: 12px; border-radius: 3px; }
+.ld-full { background: var(--blue); }
+.ld-half { background: #9FE1CB; border: 0.5px solid #5DCAA5; }
+.ld-none { background: var(--surface2); border: 0.5px solid var(--border); }
+
+/* ── Progress ── */
+.progress-wrap { margin: 12px 0 6px; }
+.progress-bar { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 3px; background: var(--blue); transition: width .3s; }
+.progress-fill.over { background: var(--red); }
+.progress-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text3); margin-top: 4px; }
+.sel-count { font-size: 20px; font-weight: 600; color: var(--text); }
+.sel-count.under { color: var(--amber); }
+.sel-count.ok { color: var(--green); }
+.sel-count.over { color: var(--red); }
+
+/* ── Result table ── */
+.result-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.result-table th { font-size: 11px; font-weight: 600; color: var(--text2); text-align: left; padding: 6px 10px; border-bottom: 0.5px solid var(--border); background: var(--surface2); }
+.result-table td { padding: 7px 10px; border-bottom: 0.5px solid var(--border); color: var(--text); }
+.result-table tr:last-child td { border-bottom: none; }
+.td-date { color: var(--blue); font-weight: 500; }
+.td-full { background: var(--blue-bg); color: var(--blue); font-size: 11px; padding: 2px 7px; border-radius: 20px; }
+.td-half { background: var(--teal-bg); color: var(--teal); font-size: 11px; padding: 2px 7px; border-radius: 20px; }
+
+/* ── Buttons ── */
+.btn-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+.btn { height: 38px; padding: 0 20px; border-radius: var(--radius-sm); border: 0.5px solid var(--border2); background: transparent; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--text); transition: all .15s; }
+.btn:hover { background: var(--surface2); }
+.btn.primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+.btn.primary:hover { background: #0C447C; }
+.btn.success { background: var(--green); color: #fff; border-color: var(--green); }
+.btn.success:hover { background: #27500A; }
+
+/* ── Toast ── */
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--text); color: #fff; font-size: 13px; padding: 10px 20px; border-radius: 20px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 999; white-space: nowrap; }
+.toast.show { opacity: 1; }
+
+/* ── Complete screen ── */
+.complete-box { text-align: center; padding: 32px 16px; }
+.complete-icon { font-size: 48px; margin-bottom: 12px; }
+.complete-title { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+.complete-sub { font-size: 13px; color: var(--text2); line-height: 1.6; }
+
+/* ── Step visibility ── */
+.step-view { display: none; }
+.step-view.active { display: block; }
+
+/* ── Summary metrics ── */
+.metric-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 16px; }
+.metric { background: var(--surface2); border-radius: var(--radius-sm); padding: 12px; text-align: center; }
+.metric .ml { font-size: 11px; color: var(--text2); margin-bottom: 4px; }
+.metric .mv { font-size: 18px; font-weight: 600; color: var(--text); }
+.metric .mv.blue { color: var(--blue); }
+.metric .mv.green { color: var(--green); }
+.metric .mv.amber { color: var(--amber); }
+.metric .mv.red { color: var(--red); }
+
+@media (max-width: 480px) {
+  .page { padding: 16px 12px 60px; }
+  .info-grid, .metric-row { grid-template-columns: 1fr 1fr; }
+  .header { padding: 0 16px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">🌈 연차 사용 계획</div>
+    <div class="header-sub">무지개어린이집 · 우리무지개어린이집</div>
+  </div>
+  <div class="saved-badge" id="savedBadge">✓ 저장됨</div>
+</div>
+
+<div class="page">
+
+  <!-- Step indicator -->
+  <div class="steps">
+    <div class="step-item">
+      <div class="step-dot active" id="sd1">1</div>
+      <div class="step-label active" id="sl1">교사 선택</div>
+    </div>
+    <div class="step-line"></div>
+    <div class="step-item">
+      <div class="step-dot" id="sd2">2</div>
+      <div class="step-label" id="sl2">날짜 선택</div>
+    </div>
+    <div class="step-line"></div>
+    <div class="step-item">
+      <div class="step-dot" id="sd3">3</div>
+      <div class="step-label" id="sl3">확인 · 제출</div>
+    </div>
+  </div>
+
+  <!-- ────────── STEP 1 ────────── -->
+  <div class="step-view active" id="view1">
+    <div class="card">
+      <div class="card-title">기관 및 교사 선택</div>
+
+      <div class="form-group">
+        <label>기관</label>
+        <select id="selInst" onchange="onInstChange()">
+          <option value="">기관을 선택하세요</option>
+          <option value="무지개어린이집">무지개어린이집</option>
+          <option value="우리무지개어린이집">우리무지개어린이집</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>교사</label>
+        <select id="selTeacher" onchange="onTeacherChange()" disabled>
+          <option value="">먼저 기관을 선택하세요</option>
+        </select>
+      </div>
+
+      <div class="info-box" id="infoBox">
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="il">소속 / 직위</div>
+            <div class="iv sm" id="iDept">-</div>
+          </div>
+          <div class="info-item">
+            <div class="il">연차 시작일</div>
+            <div class="iv sm" id="iStart">-</div>
+          </div>
+          <div class="info-item">
+            <div class="il">부여 연차</div>
+            <div class="iv" id="iTotal">-</div>
+          </div>
+        </div>
+        <div style="margin-top:12px;padding-top:12px;border-top:0.5px solid rgba(24,95,165,.2)">
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="il">월 평균 사용</div>
+              <div class="iv sm" id="iMonthly">-</div>
+            </div>
+            <div class="info-item">
+              <div class="il">8월 31일까지</div>
+              <div class="iv sm" id="iPeriod">-</div>
+            </div>
+            <div class="info-item">
+              <div class="il">권장 사용일수</div>
+              <div class="iv" id="iTarget">-</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn primary" onclick="goTo(2)">날짜 선택하기 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────── STEP 2 ────────── -->
+  <div class="step-view" id="view2">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+        <div>
+          <div class="card-title" style="margin-bottom:2px">희망 연차 날짜 선택</div>
+          <div style="font-size:12px;color:var(--text2)" id="calHint"></div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:2px">선택 합계</div>
+          <div class="sel-count" id="selCount">0.0일</div>
+        </div>
+      </div>
+
+      <div class="mode-toggle">
+        <button class="mode-btn on-full" id="btnFull" onclick="setMode('full')">종일 (1.0일)</button>
+        <button class="mode-btn" id="btnHalf" onclick="setMode('half')">반차 (0.5일)</button>
+      </div>
+
+      <div class="legend">
+        <div class="leg-item"><div class="leg-dot ld-full"></div>종일</div>
+        <div class="leg-item"><div class="leg-dot ld-half"></div>반차</div>
+        <div class="leg-item"><div class="leg-dot ld-none"></div>미선택</div>
+      </div>
+
+      <div class="cal-header">
+        <button class="cal-nav-btn" onclick="chMonth(-1)">‹</button>
+        <div class="cal-month-title" id="calTitle"></div>
+        <button class="cal-nav-btn" onclick="chMonth(1)">›</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+
+      <div class="progress-wrap">
+        <div class="progress-bar"><div class="progress-fill" id="progFill" style="width:0%"></div></div>
+        <div class="progress-labels">
+          <span>0일</span>
+          <span id="progTarget">권장: -</span>
+          <span id="progMax">부여: -</span>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn" onclick="goTo(1)">← 돌아가기</button>
+        <button class="btn primary" onclick="goTo(3)">완료 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────── STEP 3 ────────── -->
+  <div class="step-view" id="view3">
+    <div class="card">
+      <div class="card-title" id="r_title">연차 사용 계획 확인</div>
+
+      <div class="metric-row">
+        <div class="metric"><div class="ml">부여 연차</div><div class="mv blue" id="r_total">-</div></div>
+        <div class="metric"><div class="ml">계획 사용</div><div class="mv" id="r_used">-</div></div>
+        <div class="metric"><div class="ml">권장 대비</div><div class="mv" id="r_diff">-</div></div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:13px;font-weight:600">선택 날짜 목록</div>
+        <div style="font-size:11px;color:var(--text2)" id="r_cnt"></div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="result-table">
+          <thead>
+            <tr><th>날짜</th><th>요일</th><th>종류</th><th>연차</th></tr>
+          </thead>
+          <tbody id="r_body"></tbody>
+        </table>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn" onclick="goTo(2)">← 수정</button>
+        <button class="btn success" onclick="submitPlan()">✓ 제출하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────── STEP 4 (완료) ────────── -->
+  <div class="step-view" id="view4">
+    <div class="card">
+      <div class="complete-box">
+        <div class="complete-icon">🎉</div>
+        <div class="complete-title" id="done_title">제출 완료!</div>
+        <div class="complete-sub" id="done_sub"></div>
+        <div style="margin-top:24px">
+          <button class="btn primary" onclick="resetAll()">다른 교사 입력하기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ──────────────────────────────────────────
+// Firebase 설정 — 아래 값을 본인 Firebase 설정값으로 교체하세요
+// ──────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "여기에_apiKey",
+  authDomain: "여기에_authDomain",
+  databaseURL: "여기에_databaseURL",
+  projectId: "여기에_projectId",
+  storageBucket: "여기에_storageBucket",
+  messagingSenderId: "여기에_messagingSenderId",
+  appId: "여기에_appId"
+};
+
+let db = null;
+try {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.database();
+} catch(e) {
+  console.warn('Firebase 미설정 — 로컬 모드로 동작합니다:', e.message);
+}
+
+// ──────────────────────────────────────────
+// 교직원 명단 (휴가관리대장에서 추출)
+// 형식: { 이름, 직위, 반, 연차시작일, 부여연차 }
+// ──────────────────────────────────────────
+const ROSTER = {
+  "무지개어린이집": [
+    { name:"강수민", role:"치료사",   dept:"치료팀",       start:"2026-03-17", total:15   },
+    { name:"마미선", role:"보조교사", dept:"종일보육팀",   start:"2026-03-01", total:11   },
+    { name:"박정민", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:15   },
+    { name:"서명화", role:"담임교사", dept:"종일보육팀",   start:"2025-05-01", total:25   },
+    { name:"서홍련", role:"치료사",   dept:"치료팀",       start:"2025-06-01", total:28   },
+    { name:"양정임", role:"운전원",   dept:"운영지원팀",   start:"2026-03-01", total:16   },
+    { name:"우지선", role:"담임교사", dept:"종일보육팀",   start:"2026-03-01", total:14   },
+    { name:"이승원", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:16   },
+    { name:"이왕성", role:"담임교사", dept:"종일보육팀",   start:"2025-08-16", total:16.5 },
+    { name:"임민주", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:16   },
+    { name:"전채민", role:"조리사",   dept:"운영지원팀",   start:"2025-07-01", total:14   },
+    { name:"정선윤", role:"담임교사", dept:"종일보육팀",   start:"2026-03-01", total:16   },
+    { name:"정소윤", role:"치료사",   dept:"치료팀",       start:"2025-05-01", total:20   },
+    { name:"정아영", role:"보조교사", dept:"종일보육팀",   start:"2026-03-01", total:16   },
+    { name:"채준범", role:"담임교사", dept:"종일보육팀",   start:"2026-03-01", total:22   },
+    { name:"최하나", role:"원장",     dept:"경영진",       start:"2025-09-01", total:26   },
+    { name:"황경하", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:15   },
+  ],
+  "우리무지개어린이집": [
+    { name:"강수지", role:"담임교사", dept:"종일보육팀",   start:"2026-02-01", total:17   },
+    { name:"권다애", role:"치료사",   dept:"치료팀",       start:"2026-03-05", total:17   },
+    { name:"김보라", role:"담임교사", dept:"종일보육팀",   start:"2026-03-01", total:15   },
+    { name:"김용석", role:"대표",     dept:"경영진",       start:"2025-09-01", total:21   },
+    { name:"김태은", role:"조리사",   dept:"운영지원팀",   start:"2026-03-25", total:15   },
+    { name:"김하민", role:"담임교사", dept:"종일보육팀",   start:"2026-03-01", total:13   },
+    { name:"마호진", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:16.5 },
+    { name:"모정아", role:"담임교사", dept:"종일보육팀",   start:"2026-03-01", total:14.5 },
+    { name:"박규리", role:"치료사",   dept:"치료팀",       start:"2025-08-01", total:15   },
+    { name:"박기애", role:"보조교사", dept:"종일보육팀",   start:"2026-03-01", total:22   },
+    { name:"박서정", role:"담임교사", dept:"종일보육팀",   start:"2026-03-01", total:18   },
+    { name:"박정숙", role:"원장",     dept:"경영진",       start:"2025-09-01", total:16   },
+    { name:"박초롱", role:"담임교사", dept:"종일보육팀",   start:"2026-03-01", total:16   },
+    { name:"백장미", role:"담임교사", dept:"종일보육팀",   start:"2026-03-01", total:17   },
+    { name:"변아진", role:"담임교사", dept:"방과후보육팀", start:"2025-08-01", total:22.5 },
+    { name:"송태헌", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:19   },
+    { name:"유주환", role:"담임교사", dept:"종일보육팀",   start:"2026-03-01", total:12.5 },
+    { name:"윤아름", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:13   },
+    { name:"윤창식", role:"운전원",   dept:"운영지원팀",   start:"2025-05-01", total:16   },
+    { name:"윤혜정", role:"보조교사", dept:"종일보육팀",   start:"2025-09-01", total:14   },
+    { name:"이미화", role:"치료사",   dept:"치료팀",       start:"2026-03-01", total:25   },
+    { name:"이숙현", role:"보조교사", dept:"종일보육팀",   start:"2025-11-05", total:14   },
+    { name:"이슬아", role:"담임교사", dept:"종일보육팀",   start:"2026-03-01", total:19   },
+    { name:"이효선", role:"담임교사", dept:"종일보육팀",   start:"2025-12-01", total:16.5 },
+    { name:"임정연", role:"담임교사", dept:"종일보육팀",   start:"2026-03-01", total:23   },
+    { name:"임주현", role:"치료사",   dept:"치료팀",       start:"2025-09-01", total:12   },
+    { name:"전나인", role:"치료사",   dept:"치료팀",       start:"2026-03-01", total:18   },
+    { name:"정다송", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:13   },
+    { name:"정인애", role:"담임교사", dept:"방과후보육팀", start:"2025-05-15", total:21.5 },
+    { name:"조명원", role:"보조교사", dept:"종일보육팀",   start:"2026-03-20", total:16   },
+    { name:"조현아", role:"담임교사", dept:"종일보육팀",   start:"2026-03-01", total:16   },
+    { name:"주은아", role:"보조교사", dept:"종일보육팀",   start:"2026-03-11", total:15   },
+    { name:"천은주", role:"담임교사", dept:"종일보육팀",   start:"2026-03-01", total:13.5 },
+    { name:"표영민", role:"치료사",   dept:"치료팀",       start:"2026-03-01", total:19   },
+    { name:"황선하", role:"담임교사", dept:"종일보육팀",   start:"2026-03-01", total:21   },
+  ]
+};
+
+// ──────────────────────────────────────────
+// 앱 상태
+// ──────────────────────────────────────────
+const SURVEY_END = new Date(2025, 7, 31); // 8월 31일
+const DAYS_KR = ['일','월','화','수','목','금','토'];
+const MONTHS_KR = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+
+let state = {
+  inst: '', teacher: null,
+  sel: {},       // { 'YYYY-MM-DD': 'full'|'half' }
+  cy: 2025, cm: 0,
+  mode: 'full',
+  monthly: 0, target: 0
+};
+
+// ──────────────────────────────────────────
+// Step 관리
+// ──────────────────────────────────────────
+function goTo(n) {
+  if (n === 2) {
+    if (!state.teacher) { toast('교사를 선택해주세요.'); return; }
+  }
+  if (n === 3) buildResult();
+
+  [1,2,3,4].forEach(i => {
+    document.getElementById('view'+i).classList.toggle('active', i===n);
+  });
+  [1,2,3].forEach(i => {
+    const dot = document.getElementById('sd'+i);
+    const lbl = document.getElementById('sl'+i);
+    dot.className = 'step-dot' + (i===n ? ' active' : i<n ? ' done' : '');
+    lbl.className = 'step-label' + (i===n ? ' active' : '');
+  });
+  window.scrollTo(0,0);
+}
+
+// ──────────────────────────────────────────
+// Step 1 – 교사 선택
+// ──────────────────────────────────────────
+function onInstChange() {
+  const inst = document.getElementById('selInst').value;
+  state.inst = inst;
+  state.teacher = null;
+  const sel = document.getElementById('selTeacher');
+  sel.innerHTML = '<option value="">교사를 선택하세요</option>';
+  document.getElementById('infoBox').style.display = 'none';
+  if (!inst) { sel.disabled = true; return; }
+  sel.disabled = false;
+  (ROSTER[inst] || []).forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t.name;
+    opt.textContent = `${t.name} (${t.role})`;
+    sel.appendChild(opt);
+  });
+}
+
+function onTeacherChange() {
+  const name = document.getElementById('selTeacher').value;
+  if (!name) { document.getElementById('infoBox').style.display='none'; return; }
+  const t = (ROSTER[state.inst]||[]).find(x=>x.name===name);
+  if (!t) return;
+  state.teacher = t;
+
+  // 계산
+  const startD = parseDate(t.start);
+  const monthly = t.total / 12;
+  const months = monthsDiff(startD, SURVEY_END);
+  const target = Math.round(monthly * months * 2) / 2;
+  state.monthly = monthly;
+  state.target = target;
+  state.cy = startD.getFullYear();
+  state.cm = startD.getMonth();
+
+  document.getElementById('iDept').textContent = `${t.dept} · ${t.role}`;
+  document.getElementById('iStart').textContent = fmtDateKr(startD);
+  document.getElementById('iTotal').textContent = t.total + '일';
+  document.getElementById('iMonthly').textContent = monthly.toFixed(2) + '일/월';
+  document.getElementById('iPeriod').textContent =
+    `${fmtDateKr(startD)} ~ ${fmtDateKr(SURVEY_END)}`;
+  document.getElementById('iTarget').textContent = target + '일';
+  document.getElementById('infoBox').style.display = 'block';
+  document.getElementById('calHint').textContent =
+    `${t.name} 선생님 | 권장 ${target}일 | 최대 ${t.total}일`;
+  document.getElementById('progTarget').textContent = `권장: ${target}일`;
+  document.getElementById('progMax').textContent = `부여: ${t.total}일`;
+}
+
+// ──────────────────────────────────────────
+// Step 2 – 달력
+// ──────────────────────────────────────────
+function setMode(m) {
+  state.mode = m;
+  document.getElementById('btnFull').className = 'mode-btn' + (m==='full' ? ' on-full' : '');
+  document.getElementById('btnHalf').className = 'mode-btn' + (m==='half' ? ' on-half' : '');
+}
+
+function chMonth(d) {
+  state.cm += d;
+  if (state.cm > 11) { state.cm = 0; state.cy++; }
+  if (state.cm < 0)  { state.cm = 11; state.cy--; }
+  renderCal();
+}
+
+function renderCal() {
+  const { cy:y, cm:m, teacher:t } = state;
+  document.getElementById('calTitle').textContent = `${y}년 ${MONTHS_KR[m]}`;
+  const g = document.getElementById('calGrid');
+  g.innerHTML = '';
+
+  // 요일 헤더
+  const hdrs = ['일','월','화','수','목','금','토'];
+  hdrs.forEach((d,i) => {
+    const el = document.createElement('div');
+    el.className = 'cal-dow' + (i===0?' sun':i===6?' sat':'');
+    el.textContent = d;
+    g.appendChild(el);
+  });
+
+  const first = new Date(y, m, 1);
+  const startDow = first.getDay();
+  const dim = new Date(y, m+1, 0).getDate();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const rangeStart = t ? parseDate(t.start) : today;
+
+  for (let i=0; i<startDow; i++) {
+    const el = document.createElement('div'); el.className='cal-cell empty'; g.appendChild(el);
+  }
+
+  for (let d=1; d<=dim; d++) {
+    const date = new Date(y,m,d);
+    const key = fmtDate(date);
+    const dow = date.getDay();
+    const isWk = dow===0||dow===6;
+    const isDisabled = date < rangeStart || date > SURVEY_END;
+    const sel = state.sel[key];
+
+    const el = document.createElement('div');
+    let cls = 'cal-cell';
+    if (isDisabled) cls += ' disabled';
+    else if (isWk) cls += (dow===0?' sun-col':' sat-col');
+    if (date.toDateString()===today.toDateString()) cls += ' today-ring';
+    if (sel==='full') cls += ' sel-full';
+    else if (sel==='half') cls += ' sel-half';
+    el.className = cls;
+    el.innerHTML = `<span class="day-n">${d}</span>${sel?`<span class="day-b">${sel==='full'?'종':'반'}</span>`:''}`;
+    if (!isDisabled && !isWk) el.onclick = () => toggleDay(key);
+    g.appendChild(el);
+  }
+  updateProg();
+}
+
+function toggleDay(key) {
+  const cur = state.sel[key];
+  if (cur === state.mode) delete state.sel[key];
+  else state.sel[key] = state.mode;
+  renderCal();
+}
+
+function getTotal() {
+  return Object.values(state.sel).reduce((s,v)=>s+(v==='full'?1:.5), 0);
+}
+
+function updateProg() {
+  const used = getTotal();
+  const max = state.teacher ? state.teacher.total : 15;
+  const target = state.target;
+  const pct = Math.min(used/max*100, 100);
+  const fill = document.getElementById('progFill');
+  fill.style.width = pct+'%';
+  fill.className = 'progress-fill' + (used>max?' over':'');
+  const sc = document.getElementById('selCount');
+  sc.textContent = used.toFixed(1)+'일';
+  sc.className = 'sel-count' + (used>max?' over':used>=target*0.9?' ok':' under');
+}
+
+// ──────────────────────────────────────────
+// Step 3 – 결과 확인
+// ──────────────────────────────────────────
+function buildResult() {
+  const t = state.teacher;
+  const used = getTotal();
+  const diff = used - state.target;
+  document.getElementById('r_title').textContent =
+    `${t.name} 선생님 (${t.dept}) 연차 사용 계획`;
+  document.getElementById('r_total').textContent = t.total + '일';
+  const usedEl = document.getElementById('r_used');
+  usedEl.textContent = used.toFixed(1)+'일';
+  usedEl.className = 'mv' + (used>t.total?' red':used>=state.target*0.9?' green':' amber');
+  const diffEl = document.getElementById('r_diff');
+  diffEl.textContent = (diff>=0?'+':'')+diff.toFixed(1)+'일';
+  diffEl.className = 'mv' + (diff>=0?' green':' amber');
+
+  const sorted = Object.entries(state.sel).sort((a,b)=>a[0]>b[0]?1:-1);
+  document.getElementById('r_cnt').textContent = `총 ${sorted.length}건`;
+  const body = document.getElementById('r_body'); body.innerHTML='';
+  sorted.forEach(([k,v])=>{
+    const d = parseDate(k);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="td-date">${fmtDateKr(d)}</td>
+      <td>${DAYS_KR[d.getDay()]}요일</td>
+      <td><span class="${v==='full'?'td-full':'td-half'}">${v==='full'?'종일':'반차'}</span></td>
+      <td>${v==='full'?'1.0':'0.5'}일</td>`;
+    body.appendChild(tr);
+  });
+}
+
+// ──────────────────────────────────────────
+// Firebase 제출
+// ──────────────────────────────────────────
+async function submitPlan() {
+  const t = state.teacher;
+  if (!t) return;
+  const used = getTotal();
+  const sorted = Object.entries(state.sel).sort((a,b)=>a[0]>b[0]?1:-1);
+
+  const payload = {
+    기관: state.inst,
+    이름: t.name,
+    소속: t.dept,
+    직위: t.role,
+    연차시작일: t.start,
+    부여연차: t.total,
+    권장사용일수: state.target,
+    계획사용일수: used,
+    제출일시: new Date().toISOString(),
+    날짜목록: sorted.map(([k,v])=>({ 날짜:k, 종류:v==='full'?'종일':'반차', 일수:v==='full'?1:0.5 }))
+  };
+
+  const showComplete = () => {
+    document.getElementById('savedBadge').style.display = 'inline-block';
+    document.getElementById('done_title').textContent = `${t.name} 선생님, 제출 완료!`;
+    document.getElementById('done_sub').innerHTML =
+      `<b>${state.inst}</b> · ${t.dept}<br>` +
+      `계획 사용 <b>${used.toFixed(1)}일</b> (부여 ${t.total}일 중)<br><br>` +
+      `연차 사용 계획이 성공적으로 저장되었습니다.`;
+    goTo(4);
+    [1,2,3].forEach(i => { document.getElementById('sd'+i).className='step-dot done'; });
+  };
+
+  if (!db) {
+    console.log('저장 데이터(Firebase 미설정):', JSON.stringify(payload, null, 2));
+    showComplete();
+    return;
+  }
+
+  try {
+    const key = `${state.inst}_${t.name}`;
+    await db.ref(`연차계획/${key}`).set(payload);
+    showComplete();
+  } catch(e) {
+    console.error(e);
+    toast('저장 중 오류가 발생했습니다. Firebase 설정을 확인해주세요.');
+  }
+}
+
+function resetAll() {
+  state = { inst:'', teacher:null, sel:{}, cy:2025, cm:0, mode:'full', monthly:0, target:0 };
+  document.getElementById('selInst').value='';
+  document.getElementById('selTeacher').innerHTML='<option value="">먼저 기관을 선택하세요</option>';
+  document.getElementById('selTeacher').disabled=true;
+  document.getElementById('infoBox').style.display='none';
+  document.getElementById('savedBadge').style.display='none';
+  goTo(1);
+}
+
+// ──────────────────────────────────────────
+// 유틸
+// ──────────────────────────────────────────
+function parseDate(s) {
+  const [y,m,d] = s.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+function fmtDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function fmtDateKr(d) {
+  return `${d.getMonth()+1}월 ${d.getDate()}일`;
+}
+function monthsDiff(from, to) {
+  const m = (to.getFullYear()-from.getFullYear())*12 + (to.getMonth()-from.getMonth()) + (to.getDate()-from.getDate())/30;
+  return Math.max(0, m);
+}
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 2500);
+}
+
+// 초기 달력 렌더
+renderCal();
+</script>
+</body>
+</html>
