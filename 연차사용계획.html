@@ -384,76 +384,77 @@ try {
 // ──────────────────────────────────────────
 const ROSTER = {
   "무지개어린이집": [
-    { name:"강수민", role:"치료사",   dept:"치료팀",       start:"2026-03-17", total:15   },
-    { name:"마미선", role:"보조교사", dept:"종일보육팀",   start:"2026-03-01", total:11   },
-    { name:"박정민", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:15   },
-    { name:"서명화", role:"담임교사", dept:"종일보육팀",   start:"2025-05-01", total:25   },
-    { name:"서홍련", role:"치료사",   dept:"치료팀",       start:"2025-06-01", total:28   },
-    { name:"양정임", role:"운전원",   dept:"운영지원팀",   start:"2026-03-01", total:16   },
-    { name:"우지선", role:"담임교사", dept:"종일보육팀",   start:"2026-03-01", total:14   },
-    { name:"이승원", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:16   },
-    { name:"이왕성", role:"담임교사", dept:"종일보육팀",   start:"2025-08-16", total:16.5 },
-    { name:"임민주", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:16   },
-    { name:"전채민", role:"조리사",   dept:"운영지원팀",   start:"2025-07-01", total:14   },
-    { name:"정선윤", role:"담임교사", dept:"종일보육팀",   start:"2026-03-01", total:16   },
-    { name:"정소윤", role:"치료사",   dept:"치료팀",       start:"2025-05-01", total:20   },
-    { name:"정아영", role:"보조교사", dept:"종일보육팀",   start:"2026-03-01", total:16   },
-    { name:"채준범", role:"담임교사", dept:"종일보육팀",   start:"2026-03-01", total:22   },
-    { name:"최하나", role:"원장",     dept:"경영진",       start:"2025-09-01", total:26   },
-    { name:"황경하", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:15   },
+    { name:"강수민", role:"치료사", dept:"치료팀", start:"2026-03-17", total:15, used:0.0, remain:15.0 },
+    { name:"마미선", role:"보조교사", dept:"종일보육팀", start:"2026-03-01", total:11, used:0.0, remain:11.0 },
+    { name:"박정민", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:15, used:0.0, remain:15.0 },
+    { name:"서명화", role:"담임교사", dept:"종일보육팀", start:"2025-05-01", total:25, used:21.0, remain:4.0 },
+    { name:"서홍련", role:"치료사", dept:"치료팀", start:"2025-06-01", total:28, used:28.0, remain:0.0 },
+    { name:"양정임", role:"운전원", dept:"운영지원팀", start:"2026-03-01", total:16, used:0.0, remain:16.0 },
+    { name:"우지선", role:"담임교사", dept:"종일보육팀", start:"2026-03-01", total:14, used:0.0, remain:14.0 },
+    { name:"이승원", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:16, used:0.0, remain:16.0 },
+    { name:"이왕성", role:"담임교사", dept:"종일보육팀", start:"2025-08-16", total:16.5, used:12.5, remain:4.0 },
+    { name:"임민주", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:16, used:0.0, remain:16.0 },
+    { name:"전채민", role:"조리사", dept:"운영지원팀", start:"2025-07-01", total:14, used:13.0, remain:1.0 },
+    { name:"정선윤", role:"담임교사", dept:"종일보육팀", start:"2026-03-01", total:16, used:1.0, remain:15.0 },
+    { name:"정소윤", role:"치료사", dept:"치료팀", start:"2025-05-01", total:20, used:18.5, remain:1.5 },
+    { name:"정아영", role:"보조교사", dept:"종일보육팀", start:"2026-03-01", total:16, used:0.0, remain:16.0 },
+    { name:"채준범", role:"담임교사", dept:"종일보육팀", start:"2026-03-01", total:22, used:0.0, remain:22.0 },
+    { name:"최하나", role:"원장", dept:"경영진", start:"2025-09-01", total:26, used:15.0, remain:11.0 },
+    { name:"황경하", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:15, used:1.0, remain:14.0 },
   ],
   "우리무지개어린이집": [
-    { name:"강수지", role:"담임교사", dept:"종일보육팀",   start:"2026-02-01", total:17   },
-    { name:"권다애", role:"치료사",   dept:"치료팀",       start:"2026-03-05", total:17   },
-    { name:"김보라", role:"담임교사", dept:"종일보육팀",   start:"2026-03-01", total:15   },
-    { name:"김용석", role:"대표",     dept:"경영진",       start:"2025-09-01", total:21   },
-    { name:"김태은", role:"조리사",   dept:"운영지원팀",   start:"2026-03-25", total:15   },
-    { name:"김하민", role:"담임교사", dept:"종일보육팀",   start:"2026-03-01", total:13   },
-    { name:"마호진", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:16.5 },
-    { name:"모정아", role:"담임교사", dept:"종일보육팀",   start:"2026-03-01", total:14.5 },
-    { name:"박규리", role:"치료사",   dept:"치료팀",       start:"2025-08-01", total:15   },
-    { name:"박기애", role:"보조교사", dept:"종일보육팀",   start:"2026-03-01", total:22   },
-    { name:"박서정", role:"담임교사", dept:"종일보육팀",   start:"2026-03-01", total:18   },
-    { name:"박정숙", role:"원장",     dept:"경영진",       start:"2025-09-01", total:16   },
-    { name:"박초롱", role:"담임교사", dept:"종일보육팀",   start:"2026-03-01", total:16   },
-    { name:"백장미", role:"담임교사", dept:"종일보육팀",   start:"2026-03-01", total:17   },
-    { name:"변아진", role:"담임교사", dept:"방과후보육팀", start:"2025-08-01", total:22.5 },
-    { name:"송태헌", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:19   },
-    { name:"유주환", role:"담임교사", dept:"종일보육팀",   start:"2026-03-01", total:12.5 },
-    { name:"윤아름", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:13   },
-    { name:"윤창식", role:"운전원",   dept:"운영지원팀",   start:"2025-05-01", total:16   },
-    { name:"윤혜정", role:"보조교사", dept:"종일보육팀",   start:"2025-09-01", total:14   },
-    { name:"이미화", role:"치료사",   dept:"치료팀",       start:"2026-03-01", total:25   },
-    { name:"이숙현", role:"보조교사", dept:"종일보육팀",   start:"2025-11-05", total:14   },
-    { name:"이슬아", role:"담임교사", dept:"종일보육팀",   start:"2026-03-01", total:19   },
-    { name:"이효선", role:"담임교사", dept:"종일보육팀",   start:"2025-12-01", total:16.5 },
-    { name:"임정연", role:"담임교사", dept:"종일보육팀",   start:"2026-03-01", total:23   },
-    { name:"임주현", role:"치료사",   dept:"치료팀",       start:"2025-09-01", total:12   },
-    { name:"전나인", role:"치료사",   dept:"치료팀",       start:"2026-03-01", total:18   },
-    { name:"정다송", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:13   },
-    { name:"정인애", role:"담임교사", dept:"방과후보육팀", start:"2025-05-15", total:21.5 },
-    { name:"조명원", role:"보조교사", dept:"종일보육팀",   start:"2026-03-20", total:16   },
-    { name:"조현아", role:"담임교사", dept:"종일보육팀",   start:"2026-03-01", total:16   },
-    { name:"주은아", role:"보조교사", dept:"종일보육팀",   start:"2026-03-11", total:15   },
-    { name:"천은주", role:"담임교사", dept:"종일보육팀",   start:"2026-03-01", total:13.5 },
-    { name:"표영민", role:"치료사",   dept:"치료팀",       start:"2026-03-01", total:19   },
-    { name:"황선하", role:"담임교사", dept:"종일보육팀",   start:"2026-03-01", total:21   },
+    { name:"강수지", role:"담임교사", dept:"종일보육팀", start:"2026-02-01", total:17, used:0.5, remain:16.5 },
+    { name:"권다애", role:"치료사", dept:"치료팀", start:"2026-03-05", total:17, used:1.0, remain:16.0 },
+    { name:"김보라", role:"담임교사", dept:"종일보육팀", start:"2026-03-01", total:15, used:0.0, remain:15.0 },
+    { name:"김용석", role:"대표", dept:"경영진", start:"2025-09-01", total:21, used:1.0, remain:20.0 },
+    { name:"김태은", role:"조리사", dept:"운영지원팀", start:"2026-03-25", total:15, used:1.0, remain:14.0 },
+    { name:"김하민", role:"담임교사", dept:"종일보육팀", start:"2026-03-01", total:13, used:0.0, remain:13.0 },
+    { name:"마호진", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:16.5, used:0.0, remain:16.5 },
+    { name:"모정아", role:"담임교사", dept:"종일보육팀", start:"2026-03-01", total:14.5, used:1.0, remain:13.5 },
+    { name:"박규리", role:"치료사", dept:"치료팀", start:"2025-08-01", total:15, used:7.0, remain:8.0 },
+    { name:"박기애", role:"보조교사", dept:"종일보육팀", start:"2026-03-01", total:22, used:1.0, remain:21.0 },
+    { name:"박서정", role:"담임교사", dept:"종일보육팀", start:"2026-03-01", total:18, used:0.5, remain:17.5 },
+    { name:"박정숙", role:"원장", dept:"경영진", start:"2025-09-01", total:16, used:1.0, remain:15.0 },
+    { name:"박초롱", role:"담임교사", dept:"종일보육팀", start:"2026-03-01", total:16, used:0.5, remain:15.5 },
+    { name:"백장미", role:"담임교사", dept:"종일보육팀", start:"2026-03-01", total:17, used:4.0, remain:13.0 },
+    { name:"변아진", role:"담임교사", dept:"방과후보육팀", start:"2025-08-01", total:22.5, used:13.5, remain:9.0 },
+    { name:"송태헌", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:19, used:0.0, remain:19.0 },
+    { name:"유주환", role:"담임교사", dept:"종일보육팀", start:"2026-03-01", total:12.5, used:0.0, remain:12.5 },
+    { name:"윤아름", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:13, used:0.0, remain:13.0 },
+    { name:"윤창식", role:"운전원", dept:"운영지원팀", start:"2025-05-01", total:16, used:15.0, remain:1.0 },
+    { name:"윤혜정", role:"보조교사", dept:"종일보육팀", start:"2025-09-01", total:14, used:7.0, remain:7.0 },
+    { name:"이미화", role:"치료사", dept:"치료팀", start:"2026-03-01", total:25, used:0.5, remain:24.5 },
+    { name:"이숙현", role:"보조교사", dept:"종일보육팀", start:"2025-11-05", total:14, used:4.0, remain:10.0 },
+    { name:"이슬아", role:"담임교사", dept:"종일보육팀", start:"2026-03-01", total:19, used:1.0, remain:18.0 },
+    { name:"이효선", role:"담임교사", dept:"종일보육팀", start:"2025-12-01", total:16.5, used:6.5, remain:10.0 },
+    { name:"임정연", role:"담임교사", dept:"종일보육팀", start:"2026-03-01", total:23, used:0.0, remain:23.0 },
+    { name:"임주현", role:"치료사", dept:"치료팀", start:"2025-09-01", total:12, used:9.0, remain:3.0 },
+    { name:"전나인", role:"치료사", dept:"치료팀", start:"2026-03-01", total:18, used:1.0, remain:17.0 },
+    { name:"정다송", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:13, used:0.0, remain:13.0 },
+    { name:"정인애", role:"담임교사", dept:"방과후보육팀", start:"2025-05-15", total:21.5, used:20.0, remain:1.5 },
+    { name:"조명원", role:"보조교사", dept:"종일보육팀", start:"2026-03-20", total:16, used:0.0, remain:16.0 },
+    { name:"조현아", role:"담임교사", dept:"종일보육팀", start:"2026-03-01", total:16, used:0.0, remain:16.0 },
+    { name:"주은아", role:"보조교사", dept:"종일보육팀", start:"2026-03-11", total:15, used:1.0, remain:14.0 },
+    { name:"천은주", role:"담임교사", dept:"종일보육팀", start:"2026-03-01", total:13.5, used:0.5, remain:13.0 },
+    { name:"표영민", role:"치료사", dept:"치료팀", start:"2026-03-01", total:19, used:1.0, remain:18.0 },
+    { name:"황선하", role:"담임교사", dept:"종일보육팀", start:"2026-03-01", total:21, used:0.0, remain:21.0 },
   ]
 };
 
 // ──────────────────────────────────────────
 // 앱 상태
 // ──────────────────────────────────────────
-const SURVEY_END = new Date(2025, 7, 31); // 8월 31일
+const SURVEY_START = new Date(2026, 4, 1);  // 2026-05-01
+const SURVEY_END   = new Date(2026, 7, 31); // 2026-08-31
 const DAYS_KR = ['일','월','화','수','목','금','토'];
 const MONTHS_KR = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
 
 let state = {
   inst: '', teacher: null,
   sel: {},       // { 'YYYY-MM-DD': 'full'|'half' }
-  cy: 2025, cm: 0,
+  cy: 2026, cm: 3,
   mode: 'full',
-  monthly: 0, target: 0
+  monthly: 0, target: 0, maxSel: 0
 };
 
 // ──────────────────────────────────────────
@@ -504,28 +505,31 @@ function onTeacherChange() {
   if (!t) return;
   state.teacher = t;
 
-  // 계산
+  // 계산: 월평균 × 조사기간(5월1일~8월31일 = 4개월) 고정
   const startD = parseDate(t.start);
   const monthly = t.total / 12;
-  const months = monthsDiff(startD, SURVEY_END);
-  const target = Math.round(monthly * months * 2) / 2;
+  const surveyMonths = monthsDiff(SURVEY_START, SURVEY_END); // 약 4개월
+  const target = Math.round(monthly * surveyMonths * 2) / 2;
+  // 잔여연차가 권장보다 적으면 잔여연차를 권장으로 표시
+  const effectiveTarget = Math.min(target, t.remain);
   state.monthly = monthly;
-  state.target = target;
-  state.cy = startD.getFullYear();
-  state.cm = startD.getMonth();
+  state.target = effectiveTarget;
+  state.maxSel = t.remain; // 선택 가능 최대 = 잔여연차
+  // 달력은 항상 2026년 4월부터 시작
+  state.cy = 2026;
+  state.cm = 3;
 
   document.getElementById('iDept').textContent = `${t.dept} · ${t.role}`;
   document.getElementById('iStart').textContent = fmtDateKr(startD);
-  document.getElementById('iTotal').textContent = t.total + '일';
+  document.getElementById('iTotal').textContent = `${t.total}일 (잔여 ${t.remain}일)`;
   document.getElementById('iMonthly').textContent = monthly.toFixed(2) + '일/월';
-  document.getElementById('iPeriod').textContent =
-    `${fmtDateKr(startD)} ~ ${fmtDateKr(SURVEY_END)}`;
-  document.getElementById('iTarget').textContent = target + '일';
+  document.getElementById('iPeriod').textContent = '5월 1일 ~ 8월 31일';
+  document.getElementById('iTarget').textContent = effectiveTarget + '일';
   document.getElementById('infoBox').style.display = 'block';
   document.getElementById('calHint').textContent =
-    `${t.name} 선생님 | 권장 ${target}일 | 최대 ${t.total}일`;
-  document.getElementById('progTarget').textContent = `권장: ${target}일`;
-  document.getElementById('progMax').textContent = `부여: ${t.total}일`;
+    `${t.name} 선생님 | 권장 ${effectiveTarget}일 | 선택가능 ${t.remain}일`;
+  document.getElementById('progTarget').textContent = `권장: ${effectiveTarget}일`;
+  document.getElementById('progMax').textContent = `잔여: ${t.remain}일`;
 }
 
 // ──────────────────────────────────────────
@@ -563,7 +567,7 @@ function renderCal() {
   const startDow = first.getDay();
   const dim = new Date(y, m+1, 0).getDate();
   const today = new Date(); today.setHours(0,0,0,0);
-  const rangeStart = t ? parseDate(t.start) : today;
+  // 선택 가능 범위: 2026-05-01 ~ 2026-08-31 고정
 
   for (let i=0; i<startDow; i++) {
     const el = document.createElement('div'); el.className='cal-cell empty'; g.appendChild(el);
@@ -574,7 +578,7 @@ function renderCal() {
     const key = fmtDate(date);
     const dow = date.getDay();
     const isWk = dow===0||dow===6;
-    const isDisabled = date < rangeStart || date > SURVEY_END;
+    const isDisabled = date.getTime() < SURVEY_START.getTime() || date.getTime() > SURVEY_END.getTime();
     const sel = state.sel[key];
 
     const el = document.createElement('div');
@@ -594,8 +598,19 @@ function renderCal() {
 
 function toggleDay(key) {
   const cur = state.sel[key];
-  if (cur === state.mode) delete state.sel[key];
-  else state.sel[key] = state.mode;
+  if (cur === state.mode) {
+    delete state.sel[key];
+  } else {
+    // 잔여연차 초과 방지
+    const adding = state.mode === 'full' ? 1 : 0.5;
+    const currentUsed = cur ? (cur === 'full' ? 1 : 0.5) : 0;
+    const afterTotal = getTotal() - currentUsed + adding;
+    if (afterTotal > state.maxSel + 0.01) {
+      toast(`잔여 연차(${state.maxSel}일)를 초과할 수 없습니다.`);
+      return;
+    }
+    state.sel[key] = state.mode;
+  }
   renderCal();
 }
 
@@ -605,7 +620,7 @@ function getTotal() {
 
 function updateProg() {
   const used = getTotal();
-  const max = state.teacher ? state.teacher.total : 15;
+  const max = state.maxSel || (state.teacher ? state.teacher.total : 15);
   const target = state.target;
   const pct = Math.min(used/max*100, 100);
   const fill = document.getElementById('progFill');
