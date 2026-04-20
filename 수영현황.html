@@ -35,6 +35,8 @@
   header p { color: #90e0ef; font-size: 0.82rem; margin-top: 4px; }
   .refresh-btn { padding: 8px 16px; border: 1.5px solid rgba(255,255,255,0.3); border-radius: 10px; background: transparent; font-family: inherit; font-size: 0.82rem; font-weight: 700; color: #fff; cursor: pointer; transition: all 0.15s; }
   .refresh-btn:hover { background: rgba(255,255,255,0.15); }
+  .excel-btn { padding: 8px 16px; border: 1.5px solid rgba(52,211,153,0.6); border-radius: 10px; background: transparent; font-family: inherit; font-size: 0.82rem; font-weight: 700; color: #34d399; cursor: pointer; transition: all 0.15s; }
+  .excel-btn:hover { background: rgba(52,211,153,0.15); }
 
   main { max-width: 900px; margin: 0 auto; padding: 0 16px 60px; }
 
@@ -122,7 +124,8 @@
     </div>
     <div style="display:flex;gap:8px;">
       <button class="refresh-btn" onclick="loadData()">🔄 새로고침</button>
-      <button class="refresh-btn" style="border-color:rgba(239,68,68,0.5);color:#fca5a5;" onclick="confirmReset()">🗑 데이터 초기화</button>
+      <button class="excel-btn" onclick="exportExcel()">📥 엑셀 다운로드</button>
+      <button class="refresh-btn" style="border-color:rgba(239,68,68,0.5);color:#fca5a5;" onclick="confirmReset()">🗑 초기화</button>
     </div>
   </div>
 </header>
@@ -187,13 +190,20 @@ const ROSTER = {
 };
 
 const ALL_TEACHERS = [
+  "정선윤",
   "채준범","이왕성","서명화","임민주",
   "강수지","김보라","김하민",
   "박서정","천은주","모정아",
   "박초롱","이효선",
   "조현아","황선하",
   "임정연","조명원",
-  "백장미","이슬아","유주환"
+  "백장미","이슬아","유주환",
+  "황경하","이승원","박정민",
+  "송태헌","마호진",
+  "정인애","변아진","윤아름","정다송",
+  "주은아","윤혜정",
+  "서홍련","정소윤","강수민",
+  "이미화","권다애","표영민","전나인","박규리","임주현"
 ];
 
 const EVENT_DATE = "2026-04-24";
@@ -355,6 +365,72 @@ window.confirmReset = confirmReset;
 window.closeReset = closeReset;
 window.doReset = doReset;
 window.loadData = loadData;
+
+// ── 엑셀 다운로드 ─────────────────────────────────────────
+async function exportExcel() {
+  if (typeof XLSX === 'undefined') {
+    showToast('⏳ 엑셀 라이브러리 로딩 중... 잠시 후 다시 눌러주세요');
+    return;
+  }
+  try {
+    const snap = await get(ref(db, 'swimming_survey'));
+    const data = snap.val() || {};
+    const tSnap = await get(ref(db, 'swimming_survey/teachers_' + EVENT_DATE));
+    const tData = tSnap.val();
+    const wb = XLSX.utils.book_new();
+
+    // 시트1: 반별 아동 현황
+    const rows1 = [['반', '아동', '참여 여부']];
+    Object.entries(ROSTER).forEach(([cls, children]) => {
+      const key = EVENT_DATE + '_' + cls;
+      const entry = data[key];
+      children.forEach(name => {
+        const s = entry && entry.children && entry.children[name];
+        const label = s === 'swim' ? '수영장' : s === 'indoor' ? '원내보육' : s === 'absent' ? '결석' : '미제출';
+        rows1.push([cls + '반', name, label]);
+      });
+    });
+    const ws1 = XLSX.utils.aoa_to_sheet(rows1);
+    ws1['!cols'] = [{wch:14},{wch:10},{wch:12}];
+    XLSX.utils.book_append_sheet(wb, ws1, '반별 아동 현황');
+
+    // 시트2: 교사 참석 현황
+    const rows2 = [['교사', '참석 여부']];
+    ALL_TEACHERS.forEach(name => {
+      const s = tData && tData.teachers && tData.teachers[name];
+      const label = s === 'available' ? '수영장 가능' : s === 'unavailable' ? '불가능' : '미입력';
+      rows2.push([name, label]);
+    });
+    const ws2 = XLSX.utils.aoa_to_sheet(rows2);
+    ws2['!cols'] = [{wch:12},{wch:14}];
+    XLSX.utils.book_append_sheet(wb, ws2, '교사 참석 현황');
+
+    // 시트3: 요약
+    const swimT = rows1.slice(1).filter(r=>r[2]==='수영장').length;
+    const indoorT = rows1.slice(1).filter(r=>r[2]==='원내보육').length;
+    const absentT = rows1.slice(1).filter(r=>r[2]==='결석').length;
+    const tAvail = rows2.slice(1).filter(r=>r[1]==='수영장 가능').length;
+    const tUnavail = rows2.slice(1).filter(r=>r[1]==='불가능').length;
+    const ws3 = XLSX.utils.aoa_to_sheet([
+      ['구분','항목','인원'],
+      ['아동','수영장 참여', swimT],
+      ['아동','원내보육', indoorT],
+      ['아동','결석', absentT],
+      ['교사','수영장 가능', tAvail],
+      ['교사','불가능', tUnavail],
+    ]);
+    ws3['!cols'] = [{wch:10},{wch:14},{wch:8}];
+    XLSX.utils.book_append_sheet(wb, ws3, '요약');
+
+    XLSX.writeFile(wb, '수영장참여현황_' + EVENT_DATE + '.xlsx');
+    showToast('📥 엑셀 파일이 다운로드됐어요!');
+  } catch(e) {
+    showToast('❌ 다운로드 실패: ' + e.message);
+  }
+}
+window.exportExcel = exportExcel;
 </script>
+<!-- SheetJS -->
+<script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </body>
 </html>
