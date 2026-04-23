@@ -127,13 +127,9 @@
   .toast.show { transform: translateX(-50%) translateY(0); }
 
   #step2card, #doneCard { display: none; }
-
-  /* 교사 */
-  .teacher-group-lbl { font-size:0.7rem; font-weight:700; color:var(--muted); letter-spacing:0.8px; margin:14px 0 6px; }
-  .teacher-row { display:flex; align-items:center; gap:10px; padding:10px 14px; background:#f8fbff; border-radius:10px; border:1.5px solid var(--border); margin-bottom:6px; }
-  .teacher-name { font-weight:700; font-size:0.88rem; min-width:60px; color:var(--text); }
   .status-btn.available.sel { background:#0077b6; border-color:#0077b6; color:#fff; }
   .status-btn.unavailable.sel { background:#dc2626; border-color:#dc2626; color:#fff; }
+  .sum-absent { background:#f3f4f6; color:#6b7280; }
 </style>
 </head>
 <body>
@@ -233,7 +229,7 @@ const db = getDatabase(app);
 
 const ROSTER = {
   "무지개": {
-    "은빛물결": ["이재헌","박수현","김성원","정하준","송유담","박승빈","김정후","주현수","신승혁","김수호","정연우","최보민","한다윤"],
+    "은빛물결": ["이재헌","박수현","김성원","정하준","송유담","박승빈","김정후","주현우","신승혁","김수호","정연우","최보민","한다윤"],
     "초롱이슬": ["전유주","박유준","양선우","박하엘","박유하","정이안","정이준"]
   },
   "우리무지개": {
@@ -248,20 +244,8 @@ const ROSTER = {
 
 const EVENT_DATE = "2026-04-24";
 let selectedClass = null;
+// { 아동명: 'swim'|'indoor'|'absent'|null }
 let childStatus = {};
-let teacherStatus = {};
-
-// 전체 교사 그룹
-const TEACHER_GROUPS = {
-  "무지개 영아반": ["정선윤"],
-  "무지개 유아반": ["채준범","이왕성","서명화","임민주"],
-  "우리무지개 유아반": ["강수지","김보라","김하민","박서정","천은주","모정아","박초롱","이효선","조현아","황선하","임정연","조명원","백장미","이슬아","유주환"],
-  "방과후반": ["황경하","이승원","박정민","송태헌","마호진","정인애","변아진","윤아름","정다송"],
-  "연장반": ["주은아","윤혜정"],
-  "치료사 (무지개)": ["서홍련","정소윤","강수민"],
-  "치료사 (우리무지개)": ["이미화","권다애","표영민","전나인","박규리","임주현"]
-};
-const ALL_TEACHERS = Object.values(TEACHER_GROUPS).flat();
 
 // ── 반 버튼 생성 ──────────────────────────────────────────
 Object.entries(ROSTER).forEach(([inst, classes]) => {
@@ -355,8 +339,8 @@ function updateSummary() {
   document.getElementById('cnt-indoor').textContent = vals.filter(v => v === 'indoor').length;
   document.getElementById('cnt-absent').textContent = vals.filter(v => v === 'absent').length;
   // 전원 선택됐으면 제출 가능
-  const anySelected = vals.some(v => v !== null);
-  document.getElementById('submitBtn').disabled = !anySelected;
+  const allSelected = vals.length > 0 && vals.every(v => v !== null);
+  document.getElementById('submitBtn').disabled = !allSelected;
 }
 
 async function submit() {
@@ -389,6 +373,16 @@ async function submit() {
     document.getElementById('step2card').style.display = 'none';
     document.getElementById('doneCard').style.display = 'block';
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // 텔레그램 알림
+    await sendTelegram(
+      '🏊 <b>수영장 참여 조사 제출</b>\n' +
+      '📅 ' + EVENT_DATE + '\n' +
+      '🏫 ' + selectedClass + '반\n' +
+      '🏊 수영장: ' + swimList.length + '명' + (swimList.length ? ' (' + swimList.join(', ') + ')' : '') + '\n' +
+      '🏠 원내보육: ' + indoorList.length + '명' + (indoorList.length ? ' (' + indoorList.join(', ') + ')' : '') + '\n' +
+      '❌ 결석: ' + absentList.length + '명' + (absentList.length ? ' (' + absentList.join(', ') + ')' : '')
+    );
 
   } catch(e) {
     showToast('❌ 저장 실패: ' + e.message);
@@ -426,22 +420,49 @@ window.setAll = setAll;
 window.submit = submit;
 window.resetForm = resetForm;
 
-// ── 교사 목록 렌더링 ──────────────────────────────────────
+// ── 텔레그램 알림 ─────────────────────────────────────────
+const TG_TOKEN = '8705840306:AAFawx4brSyIxE7q94BIsHubqGB7x1FXyTw';
+const TG_CHAT  = '8226355915';
+
+async function sendTelegram(msg) {
+  try {
+    await fetch('https://api.telegram.org/bot' + TG_TOKEN + '/sendMessage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: TG_CHAT, text: msg, parse_mode: 'HTML' })
+    });
+  } catch(e) { console.warn('텔레그램 알림 실패:', e); }
+}
+
+// ── 교사 참석 조사 ────────────────────────────────────────
+const TEACHER_GROUPS = {
+  "무지개 영아반": ["정선윤"],
+  "무지개 유아반": ["채준범","이왕성","서명화","임민주"],
+  "우리무지개 유아반": ["강수지","김보라","김하민","박서정","천은주","모정아","박초롱","이효선","조현아","황선하","임정연","조명원","백장미","이슬아","유주환"],
+  "방과후반": ["황경하","이승원","박정민","송태헌","마호진","정인애","변아진","윤아름","정다송"],
+  "연장반": ["주은아","윤혜정"],
+  "치료사 (무지개)": ["서홍련","정소윤","강수민"],
+  "치료사 (우리무지개)": ["이미화","권다애","표영민","전나인","박규리","임주현"]
+};
+const ALL_TEACHERS = Object.values(TEACHER_GROUPS).flat();
+let teacherStatus = {};
+
 function renderTeacherList() {
   const wrap = document.getElementById('teacherListWrap');
+  if (!wrap) return;
   wrap.innerHTML = '';
   Object.entries(TEACHER_GROUPS).forEach(([group, teachers]) => {
     const lbl = document.createElement('div');
-    lbl.className = 'teacher-group-lbl';
+    lbl.style.cssText = 'font-size:0.7rem;font-weight:700;color:var(--muted);letter-spacing:0.8px;margin:14px 0 6px;';
     lbl.textContent = group;
     wrap.appendChild(lbl);
     teachers.forEach(name => {
       const s = teacherStatus[name] || '';
       const row = document.createElement('div');
-      row.className = 'teacher-row';
+      row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f8fbff;border-radius:10px;border:1.5px solid var(--border);margin-bottom:6px;';
       row.id = 'trow-' + name;
       row.innerHTML =
-        '<span class="teacher-name">' + name + '</span>' +
+        '<span style="font-weight:700;font-size:0.88rem;min-width:60px;color:var(--text);">' + name + '</span>' +
         '<div class="status-btns">' +
           '<button class="status-btn available ' + (s==='available'?'sel':'') + '" onclick="setTeacher(\'' + name + '\',\'available\')">✅ 수영장 가능</button>' +
           '<button class="status-btn unavailable ' + (s==='unavailable'?'sel':'') + '" onclick="setTeacher(\'' + name + '\',\'unavailable\')">❌ 불가능</button>' +
@@ -461,13 +482,11 @@ function setTeacher(name, status) {
 }
 
 function updateTeacherSummary() {
-  const vals = ALL_TEACHERS.map(n => teacherStatus[n] || null);
+  const vals = Object.values(teacherStatus);
   document.getElementById('cnt-t-avail').textContent = vals.filter(v => v==='available').length;
   document.getElementById('cnt-t-unavail').textContent = vals.filter(v => v==='unavailable').length;
-  document.getElementById('cnt-t-none').textContent = vals.filter(v => !v).length;
-  // 1명 이상 선택되면 제출 가능
-  const anySelected = ALL_TEACHERS.some(n => teacherStatus[n]);
-  document.getElementById('teacherSubmitBtn').disabled = !anySelected;
+  document.getElementById('cnt-t-none').textContent = ALL_TEACHERS.filter(n => !teacherStatus[n]).length;
+  document.getElementById('teacherSubmitBtn').disabled = !vals.some(v => v);
 }
 
 async function submitTeacher() {
@@ -481,6 +500,15 @@ async function submitTeacher() {
       counts: { available: availList.length, unavailable: unavailList.length },
       savedAt: new Date().toISOString()
     });
+
+    // 텔레그램 알림
+    await sendTelegram(
+      '👩‍🏫 <b>교사 수영장 참석 조사 제출</b>\n' +
+      '📅 ' + EVENT_DATE + '\n' +
+      '✅ 가능: ' + availList.length + '명' + (availList.length ? '\n   ' + availList.join(', ') : '') + '\n' +
+      '❌ 불가: ' + unavailList.length + '명' + (unavailList.length ? '\n   ' + unavailList.join(', ') : '')
+    );
+
     showToast('✅ 교사 현황이 저장됐어요!');
     btn.textContent = '✅ 교사 현황 제출 완료';
     btn.disabled = false;
@@ -493,7 +521,7 @@ async function submitTeacher() {
 window.setTeacher = setTeacher;
 window.submitTeacher = submitTeacher;
 
-// ── 페이지 로드 시 교사 기존 데이터 불러오기 ──────────────
+// 페이지 로드 시 교사 기존 데이터 불러오기
 (async function() {
   ALL_TEACHERS.forEach(n => { teacherStatus[n] = null; });
   try {
@@ -501,7 +529,8 @@ window.submitTeacher = submitTeacher;
     const existing = snap.val();
     if (existing && existing.teachers) {
       Object.assign(teacherStatus, existing.teachers);
-      document.getElementById('teacherAlready').style.display = 'block';
+      const alreadyEl = document.getElementById('teacherAlready');
+      if (alreadyEl) alreadyEl.style.display = 'block';
     }
   } catch(e) {}
   renderTeacherList();
