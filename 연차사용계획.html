@@ -4,207 +4,152 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>연차 사용 계획 | 무지개어린이집</title>
-
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
 <style>
-:root {
-  --bg: #f5f4f0;
-  --surface: #ffffff;
-  --surface2: #f0efe9;
-  --border: rgba(0,0,0,0.1);
-  --border2: rgba(0,0,0,0.18);
-  --text: #1a1a18;
-  --text2: #6b6b66;
-  --text3: #a0a09a;
-  --blue: #185FA5;
-  --blue-bg: #e6f1fb;
-  --green: #3B6D11;
-  --green-bg: #eaf3de;
-  --amber: #854F0B;
-  --amber-bg: #faeeda;
-  --red: #A32D2D;
-  --red-bg: #fcebeb;
-  --teal: #0F6E56;
-  --teal-bg: #e1f5ee;
-  --radius: 10px;
-  --radius-sm: 6px;
+:root{
+  --bg:#f5f4f0;--surface:#fff;--surface2:#f0efe9;
+  --border:rgba(0,0,0,0.09);--border2:rgba(0,0,0,0.16);
+  --text:#1a1a18;--text2:#6b6b66;--text3:#a0a09a;
+  --blue:#185FA5;--blue-bg:#e6f1fb;--blue-dk:#0C447C;
+  --green:#3B6D11;--green-bg:#eaf3de;
+  --amber:#854F0B;--amber-bg:#faeeda;
+  --red:#A32D2D;--red-bg:#fcebeb;
+  --purple:#5B3FA5;--purple-bg:#ede8fb;
+  --r:10px;--rs:6px;
 }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-
-/* ── Header ── */
-.header { background: var(--surface); border-bottom: 0.5px solid var(--border); padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
-.header-title { font-size: 15px; font-weight: 600; color: var(--text); }
-.header-sub { font-size: 12px; color: var(--text2); margin-top: 1px; }
-.saved-badge { font-size: 11px; color: var(--green); background: var(--green-bg); padding: 3px 10px; border-radius: 20px; display: none; }
-
-/* ── Layout ── */
-.page { max-width: 680px; margin: 0 auto; padding: 24px 16px 60px; }
-
-/* ── Step indicator ── */
-.steps { display: flex; align-items: center; gap: 0; margin-bottom: 28px; }
-.step-item { display: flex; align-items: center; gap: 8px; flex: 1; }
-.step-item:last-child { flex: 0; }
-.step-dot { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--border2); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: var(--text3); flex-shrink: 0; transition: all .2s; }
-.step-dot.active { background: var(--blue); color: #fff; border-color: var(--blue); }
-.step-dot.done { background: var(--teal-bg); color: var(--teal); border-color: var(--teal); }
-.step-label { font-size: 12px; color: var(--text3); white-space: nowrap; }
-.step-label.active { color: var(--blue); font-weight: 500; }
-.step-line { flex: 1; height: 1px; background: var(--border); margin: 0 8px; }
-
-/* ── Card ── */
-.card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 12px; }
-.card-title { font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 16px; }
-
-/* ── Form ── */
-.form-group { margin-bottom: 14px; }
-.form-group label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 6px; }
-.form-group select, .form-group input { width: 100%; height: 40px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); padding: 0 12px; font-size: 14px; color: var(--text); background: var(--surface); appearance: none; -webkit-appearance: none; }
-.form-group select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236b6b66' d='M6 8L0 0h12z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
-.form-group select:focus, .form-group input:focus { outline: none; border-color: var(--blue); }
-
-/* ── Info box ── */
-.info-box { background: var(--blue-bg); border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 14px; display: none; }
-.info-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
-.info-item .il { font-size: 11px; color: var(--blue); margin-bottom: 3px; }
-.info-item .iv { font-size: 17px; font-weight: 600; color: var(--blue); }
-.info-item .iv.sm { font-size: 13px; font-weight: 500; }
-
-/* ── Calendar ── */
-.cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-.cal-month-title { font-size: 15px; font-weight: 600; }
-.cal-nav-btn { width: 32px; height: 32px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: transparent; cursor: pointer; font-size: 14px; color: var(--text2); display: flex; align-items: center; justify-content: center; }
-.cal-nav-btn:hover { background: var(--surface2); }
-
-.cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; }
-.cal-dow { text-align: center; font-size: 10px; font-weight: 600; color: var(--text3); padding: 6px 0; }
-.cal-dow.sun { color: var(--red); }
-.cal-dow.sat { color: var(--blue); }
-.cal-cell { aspect-ratio: 1; border-radius: var(--radius-sm); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; cursor: pointer; border: 0.5px solid transparent; user-select: none; transition: background .12s; position: relative; }
-.cal-cell:hover:not(.empty):not(.disabled) { background: var(--surface2); }
-.cal-cell.empty { pointer-events: none; }
-.cal-cell.disabled { color: var(--text3); pointer-events: none; }
-.cal-cell.sun-col { color: var(--red); }
-.cal-cell.sat-col { color: var(--blue); }
-.cal-cell.today-ring { border-color: var(--border2); }
-.cal-cell.sel-full { background: var(--blue); color: #fff !important; border-color: var(--blue); }
-.cal-cell.sel-half { background: #9FE1CB; color: #085041 !important; border-color: #5DCAA5; }
-.cal-cell .day-n { font-size: 12px; line-height: 1; }
-.cal-cell .day-b { font-size: 8px; margin-top: 2px; opacity: .9; }
-
-/* ── Mode toggle ── */
-.mode-toggle { display: flex; gap: 6px; margin-bottom: 12px; }
-.mode-btn { flex: 1; height: 36px; border-radius: var(--radius-sm); border: 0.5px solid var(--border2); background: transparent; font-size: 13px; cursor: pointer; color: var(--text2); transition: all .15s; }
-.mode-btn.on-full { background: var(--blue); color: #fff; border-color: var(--blue); }
-.mode-btn.on-half { background: #5DCAA5; color: #085041; border-color: #5DCAA5; }
-
-/* ── Legend ── */
-.legend { display: flex; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
-.leg-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); }
-.leg-dot { width: 12px; height: 12px; border-radius: 3px; }
-.ld-full { background: var(--blue); }
-.ld-half { background: #9FE1CB; border: 0.5px solid #5DCAA5; }
-.ld-none { background: var(--surface2); border: 0.5px solid var(--border); }
-
-/* ── Progress ── */
-.progress-wrap { margin: 12px 0 6px; }
-.progress-bar { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
-.progress-fill { height: 100%; border-radius: 3px; background: var(--blue); transition: width .3s; }
-.progress-fill.over { background: var(--red); }
-.progress-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text3); margin-top: 4px; }
-.sel-count { font-size: 20px; font-weight: 600; color: var(--text); }
-.sel-count.under { color: var(--amber); }
-.sel-count.ok { color: var(--green); }
-.sel-count.over { color: var(--red); }
-
-/* ── Result table ── */
-.result-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.result-table th { font-size: 11px; font-weight: 600; color: var(--text2); text-align: left; padding: 6px 10px; border-bottom: 0.5px solid var(--border); background: var(--surface2); }
-.result-table td { padding: 7px 10px; border-bottom: 0.5px solid var(--border); color: var(--text); }
-.result-table tr:last-child td { border-bottom: none; }
-.td-date { color: var(--blue); font-weight: 500; }
-.td-full { background: var(--blue-bg); color: var(--blue); font-size: 11px; padding: 2px 7px; border-radius: 20px; }
-.td-half { background: var(--teal-bg); color: var(--teal); font-size: 11px; padding: 2px 7px; border-radius: 20px; }
-
-/* ── Buttons ── */
-.btn-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
-.btn { height: 38px; padding: 0 20px; border-radius: var(--radius-sm); border: 0.5px solid var(--border2); background: transparent; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--text); transition: all .15s; }
-.btn:hover { background: var(--surface2); }
-.btn.primary { background: var(--blue); color: #fff; border-color: var(--blue); }
-.btn.primary:hover { background: #0C447C; }
-.btn.success { background: var(--green); color: #fff; border-color: var(--green); }
-.btn.success:hover { background: #27500A; }
-
-/* ── Toast ── */
-.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--text); color: #fff; font-size: 13px; padding: 10px 20px; border-radius: 20px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 999; white-space: nowrap; }
-.toast.show { opacity: 1; }
-
-/* ── Complete screen ── */
-.complete-box { text-align: center; padding: 32px 16px; }
-.complete-icon { font-size: 48px; margin-bottom: 12px; }
-.complete-title { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
-.complete-sub { font-size: 13px; color: var(--text2); line-height: 1.6; }
-
-/* ── Step visibility ── */
-.step-view { display: none; }
-.step-view.active { display: block; }
-
-/* ── Summary metrics ── */
-.metric-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 16px; }
-.metric { background: var(--surface2); border-radius: var(--radius-sm); padding: 12px; text-align: center; }
-.metric .ml { font-size: 11px; color: var(--text2); margin-bottom: 4px; }
-.metric .mv { font-size: 18px; font-weight: 600; color: var(--text); }
-.metric .mv.blue { color: var(--blue); }
-.metric .mv.green { color: var(--green); }
-.metric .mv.amber { color: var(--amber); }
-.metric .mv.red { color: var(--red); }
-
-@media (max-width: 480px) {
-  .page { padding: 16px 12px 60px; }
-  .info-grid, .metric-row { grid-template-columns: 1fr 1fr; }
-  .header { padding: 0 16px; }
-}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.hdr{background:var(--surface);border-bottom:.5px solid var(--border2);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.hdr-title{font-size:15px;font-weight:600}
+.hdr-sub{font-size:11px;color:var(--text2);margin-top:1px}
+.saved-dot{font-size:11px;color:var(--green);background:var(--green-bg);padding:3px 10px;border-radius:20px;display:none}
+.page{max-width:700px;margin:0 auto;padding:24px 16px 80px}
+.steps{display:flex;align-items:center;margin-bottom:28px}
+.si{display:flex;align-items:center;gap:7px;flex:1}.si:last-child{flex:0}
+.sd{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--text3);flex-shrink:0;transition:all .2s}
+.sd.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.sd.done{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.sl{font-size:12px;color:var(--text3);white-space:nowrap}.sl.active{color:var(--blue);font-weight:500}
+.sline{flex:1;height:1px;background:var(--border);margin:0 8px}
+.sv{display:none}.sv.active{display:block}
+.card{background:var(--surface);border:.5px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:12px}
+.ctitle{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px}
+/* Season */
+.season-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.season-btn{border:.5px solid var(--border2);border-radius:var(--rs);padding:14px;cursor:pointer;background:transparent;text-align:left;transition:all .15s}
+.season-btn:hover{background:var(--surface2)}
+.season-btn.active{border-color:var(--blue);background:var(--blue-bg)}
+.season-btn .sb-label{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px}
+.season-btn .sb-sub{font-size:11px;color:var(--text2)}
+.season-btn.active .sb-label{color:var(--blue)}
+/* Form */
+.fg{margin-bottom:12px}
+.fg label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px}
+.fg select{width:100%;height:40px;border:.5px solid var(--border2);border-radius:var(--rs);padding:0 12px;font-size:14px;color:var(--text);background:var(--surface);appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7'%3E%3Cpath fill='%236b6b66' d='M5 7L0 0h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:30px}
+.fg select:focus{outline:none;border-color:var(--blue)}
+/* Info */
+.info-box{background:var(--blue-bg);border-radius:var(--rs);padding:14px 16px;margin-bottom:14px;display:none}
+.ig3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.ig2{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px;padding-top:10px;border-top:.5px solid rgba(24,95,165,.2)}
+.im .il{font-size:10px;color:var(--blue);margin-bottom:2px}
+.im .iv{font-size:15px;font-weight:600;color:var(--blue)}
+.im .iv.sm{font-size:12px;font-weight:500}
+/* Calendar */
+.cal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.cal-title{font-size:14px;font-weight:600}
+.cal-nav{width:32px;height:32px;border:.5px solid var(--border2);border-radius:var(--rs);background:transparent;cursor:pointer;font-size:16px;color:var(--text2);display:flex;align-items:center;justify-content:center}
+.cal-nav:hover{background:var(--surface2)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cdow{text-align:center;font-size:10px;font-weight:600;color:var(--text3);padding:5px 0}
+.cdow.sun{color:var(--red)}.cdow.sat{color:var(--blue)}
+/* Cells */
+.cc{aspect-ratio:1;border-radius:var(--rs);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;border:.5px solid transparent;user-select:none;overflow:hidden;position:relative;transition:background .1s}
+.cc:hover:not(.empty):not(.dis){background:var(--surface2)}
+.cc.empty{pointer-events:none}.cc.dis{color:var(--text3);pointer-events:none;opacity:.4}
+.cc.sun-c{color:var(--red)}.cc.sat-c{color:var(--blue)}
+.cc.today-r{border-color:var(--border2)}
+.cc.sel-full{background:var(--blue);color:#fff !important;border-color:var(--blue)}
+.cc.sel-am{background:linear-gradient(to bottom,var(--blue) 50%,transparent 50%)}
+.cc.sel-pm{background:linear-gradient(to bottom,transparent 50%,var(--purple) 50%)}
+.cc.sel-am.sel-pm{background:linear-gradient(to bottom,var(--blue) 50%,var(--purple) 50%);color:#fff !important}
+.cc.sel-am .day-n,.cc.sel-am .day-b,.cc.sel-pm .day-n,.cc.sel-pm .day-b,.cc.sel-full .day-n,.cc.sel-full .day-b{color:#fff;position:relative;z-index:1}
+.cc .day-n{font-size:12px;line-height:1}
+.cc .day-b{font-size:7px;margin-top:2px;opacity:.9}
+/* Mode */
+.mode-row{display:flex;gap:6px;margin-bottom:10px}
+.mb{flex:1;height:36px;border-radius:20px;border:.5px solid var(--border2);background:transparent;font-size:12px;font-weight:500;cursor:pointer;color:var(--text2);transition:all .15s}
+.mb:hover{background:var(--surface2)}
+.mb.on-full{background:var(--blue);color:#fff;border-color:var(--blue)}
+.mb.on-am{background:var(--blue);color:#fff;border-color:var(--blue)}
+.mb.on-pm{background:var(--purple);color:#fff;border-color:var(--purple)}
+/* Legend */
+.legend{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.li{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)}
+.ld{width:14px;height:14px;border-radius:3px}
+.ld-full{background:var(--blue)}
+.ld-am{background:linear-gradient(to bottom,var(--blue) 50%,var(--surface2) 50%);border:.5px solid var(--border)}
+.ld-pm{background:linear-gradient(to bottom,var(--surface2) 50%,var(--purple) 50%);border:.5px solid var(--border)}
+.ld-both{background:linear-gradient(to bottom,var(--blue) 50%,var(--purple) 50%)}
+/* Progress */
+.prog-wrap{margin:10px 0 6px}
+.prog{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.prog-f{height:100%;border-radius:3px;background:var(--blue);transition:width .3s}
+.prog-f.over{background:var(--red)}
+.prog-lbls{display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-top:4px}
+.sel-total{font-size:20px;font-weight:600}
+.sel-total.under{color:var(--amber)}.sel-total.ok{color:var(--green)}.sel-total.over{color:var(--red)}
+/* Result */
+.mrow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.mc{background:var(--surface2);border-radius:var(--rs);padding:12px;text-align:center}
+.mc .ml{font-size:11px;color:var(--text2);margin-bottom:3px}
+.mc .mv{font-size:18px;font-weight:600}
+.mv.blue{color:var(--blue)}.mv.green{color:var(--green)}.mv.amber{color:var(--amber)}.mv.red{color:var(--red)}
+.rtable{width:100%;border-collapse:collapse;font-size:13px}
+.rtable th{font-size:11px;font-weight:600;color:var(--text2);text-align:left;padding:6px 10px;border-bottom:.5px solid var(--border2);background:var(--surface2)}
+.rtable td{padding:6px 10px;border-bottom:.5px solid var(--border)}
+.rtable tr:last-child td{border-bottom:none}
+.td-date{color:var(--blue);font-weight:500}
+.badge{font-size:11px;padding:2px 7px;border-radius:20px}
+.bg-full{background:var(--blue-bg);color:var(--blue)}
+.bg-am{background:var(--blue-bg);color:var(--blue)}
+.bg-pm{background:var(--purple-bg);color:var(--purple)}
+/* Buttons */
+.btn-row{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.btn{height:38px;padding:0 20px;border-radius:var(--rs);border:.5px solid var(--border2);background:transparent;font-size:13px;font-weight:500;cursor:pointer;color:var(--text)}
+.btn:hover{background:var(--surface2)}
+.btn.pri{background:var(--blue);color:#fff;border-color:var(--blue)}.btn.pri:hover{background:var(--blue-dk)}
+.btn.suc{background:var(--green);color:#fff;border-color:var(--green)}.btn.suc:hover{background:#27500A}
+/* Complete */
+.complete{text-align:center;padding:32px 16px}
+.complete .ci{font-size:48px;margin-bottom:12px}
+.complete .ct{font-size:18px;font-weight:600;margin-bottom:8px}
+.complete .cs{font-size:13px;color:var(--text2);line-height:1.7}
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;font-size:13px;padding:10px 20px;border-radius:20px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast.show{opacity:1}
+@media(max-width:480px){.ig3,.ig2,.mrow{grid-template-columns:1fr 1fr}.season-row{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-
-<div class="header">
-  <div>
-    <div class="header-title">🌈 연차 사용 계획</div>
-    <div class="header-sub">무지개어린이집 · 우리무지개어린이집</div>
-  </div>
-  <div class="saved-badge" id="savedBadge">✓ 저장됨</div>
+<div class="hdr">
+  <div><div class="hdr-title">🌈 연차 사용 계획</div><div class="hdr-sub">무지개어린이집 · 우리무지개어린이집</div></div>
+  <div class="saved-dot" id="savedDot">✓ 저장됨</div>
 </div>
-
 <div class="page">
-
-  <!-- Step indicator -->
   <div class="steps">
-    <div class="step-item">
-      <div class="step-dot active" id="sd1">1</div>
-      <div class="step-label active" id="sl1">교사 선택</div>
-    </div>
-    <div class="step-line"></div>
-    <div class="step-item">
-      <div class="step-dot" id="sd2">2</div>
-      <div class="step-label" id="sl2">날짜 선택</div>
-    </div>
-    <div class="step-line"></div>
-    <div class="step-item">
-      <div class="step-dot" id="sd3">3</div>
-      <div class="step-label" id="sl3">확인 · 제출</div>
-    </div>
+    <div class="si"><div class="sd active" id="sd1">1</div><div class="sl active" id="sl1">교사 선택</div></div>
+    <div class="sline"></div>
+    <div class="si"><div class="sd" id="sd2">2</div><div class="sl" id="sl2">날짜 선택</div></div>
+    <div class="sline"></div>
+    <div class="si"><div class="sd" id="sd3">3</div><div class="sl" id="sl3">확인 · 제출</div></div>
   </div>
 
-  <!-- ────────── STEP 1 ────────── -->
-  <div class="step-view active" id="view1">
-    <div class="card">
-      <div class="card-title">기관 및 교사 선택</div>
-
-      <div class="form-group">
+  <!-- STEP 1 -->
+  <div class="sv active" id="v1">
+<div class="card">
+      <div class="ctitle">기관 및 교사 선택</div>
+      <div class="fg">
         <label>기관</label>
         <select id="selInst" onchange="onInstChange()">
           <option value="">기관을 선택하세요</option>
@@ -212,540 +157,395 @@ body { font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-se
           <option value="우리무지개어린이집">우리무지개어린이집</option>
         </select>
       </div>
-
-      <div class="form-group">
+      <div class="fg">
         <label>교사</label>
         <select id="selTeacher" onchange="onTeacherChange()" disabled>
           <option value="">먼저 기관을 선택하세요</option>
         </select>
       </div>
-
       <div class="info-box" id="infoBox">
-        <div class="info-grid">
-          <div class="info-item">
-            <div class="il">소속 / 직위</div>
-            <div class="iv sm" id="iDept">-</div>
-          </div>
-          <div class="info-item">
-            <div class="il">연차 시작일</div>
-            <div class="iv sm" id="iStart">-</div>
-          </div>
-          <div class="info-item">
-            <div class="il">부여 연차</div>
-            <div class="iv" id="iTotal">-</div>
-          </div>
+        <div class="ig3">
+          <div class="im"><div class="il">소속 / 직위</div><div class="iv sm" id="iDept">-</div></div>
+          <div class="im"><div class="il">연차 시작일</div><div class="iv sm" id="iStart">-</div></div>
+          <div class="im"><div class="il">부여 / 잔여</div><div class="iv sm" id="iTotal">-</div></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:0.5px solid rgba(24,95,165,.2)">
-          <div class="info-grid">
-            <div class="info-item">
-              <div class="il">월 평균 사용</div>
-              <div class="iv sm" id="iMonthly">-</div>
-            </div>
-            <div class="info-item">
-              <div class="il">8월 31일까지</div>
-              <div class="iv sm" id="iPeriod">-</div>
-            </div>
-            <div class="info-item">
-              <div class="il">권장 사용일수</div>
-              <div class="iv" id="iTarget">-</div>
-            </div>
-          </div>
+        <div class="ig2">
+          <div class="im"><div class="il">월 평균</div><div class="iv sm" id="iMonthly">-</div></div>
+          <div class="im"><div class="il">조사 기간</div><div class="iv sm" id="iPeriod">-</div></div>
+          <div class="im"><div class="il">이번 회차 권장</div><div class="iv" id="iTarget">-</div></div>
         </div>
       </div>
-
-      <div class="btn-row">
-        <button class="btn primary" onclick="goTo(2)">날짜 선택하기 →</button>
-      </div>
+      <div class="btn-row"><button class="btn pri" onclick="goTo(2)">날짜 선택 →</button></div>
     </div>
   </div>
 
-  <!-- ────────── STEP 2 ────────── -->
-  <div class="step-view" id="view2">
+  <!-- STEP 2 -->
+  <div class="sv" id="v2">
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
         <div>
-          <div class="card-title" style="margin-bottom:2px">희망 연차 날짜 선택</div>
+          <div class="ctitle" style="margin-bottom:2px">희망 연차 날짜 선택</div>
           <div style="font-size:12px;color:var(--text2)" id="calHint"></div>
         </div>
         <div style="text-align:right">
           <div style="font-size:10px;color:var(--text3);margin-bottom:2px">선택 합계</div>
-          <div class="sel-count" id="selCount">0.0일</div>
+          <div class="sel-total" id="selTotal">0.0일</div>
         </div>
       </div>
-
-      <div class="mode-toggle">
-        <button class="mode-btn on-full" id="btnFull" onclick="setMode('full')">종일 (1.0일)</button>
-        <button class="mode-btn" id="btnHalf" onclick="setMode('half')">반차 (0.5일)</button>
+      <div class="mode-row">
+        <button class="mb on-full" id="mbFull" onclick="setMode('full')">● 종일 (1.0)</button>
+        <button class="mb" id="mbAm" onclick="setMode('am')">◑ 오전반차</button>
+        <button class="mb" id="mbPm" onclick="setMode('pm')">◐ 오후반차</button>
       </div>
-
       <div class="legend">
-        <div class="leg-item"><div class="leg-dot ld-full"></div>종일</div>
-        <div class="leg-item"><div class="leg-dot ld-half"></div>반차</div>
-        <div class="leg-item"><div class="leg-dot ld-none"></div>미선택</div>
+        <div class="li"><div class="ld ld-full"></div>종일</div>
+        <div class="li"><div class="ld ld-am"></div>오전반차</div>
+        <div class="li"><div class="ld ld-pm"></div>오후반차</div>
+        <div class="li"><div class="ld ld-both"></div>오전+오후</div>
       </div>
-
-      <div class="cal-header">
-        <button class="cal-nav-btn" onclick="chMonth(-1)">‹</button>
-        <div class="cal-month-title" id="calTitle"></div>
-        <button class="cal-nav-btn" onclick="chMonth(1)">›</button>
+      <div class="cal-hdr">
+        <button class="cal-nav" onclick="chMonth(-1)">‹</button>
+        <div class="cal-title" id="calTitle"></div>
+        <button class="cal-nav" onclick="chMonth(1)">›</button>
       </div>
       <div class="cal-grid" id="calGrid"></div>
-
-      <div class="progress-wrap">
-        <div class="progress-bar"><div class="progress-fill" id="progFill" style="width:0%"></div></div>
-        <div class="progress-labels">
-          <span>0일</span>
-          <span id="progTarget">권장: -</span>
-          <span id="progMax">부여: -</span>
-        </div>
+      <div class="prog-wrap">
+        <div class="prog"><div class="prog-f" id="progF" style="width:0%"></div></div>
+        <div class="prog-lbls"><span>0일</span><span id="pTarget">권장: -</span><span id="pMax">잔여: -</span></div>
       </div>
-
       <div class="btn-row">
         <button class="btn" onclick="goTo(1)">← 돌아가기</button>
-        <button class="btn primary" onclick="goTo(3)">완료 →</button>
+        <button class="btn pri" onclick="goTo(3)">완료 →</button>
       </div>
     </div>
   </div>
 
-  <!-- ────────── STEP 3 ────────── -->
-  <div class="step-view" id="view3">
+  <!-- STEP 3 -->
+  <div class="sv" id="v3">
     <div class="card">
-      <div class="card-title" id="r_title">연차 사용 계획 확인</div>
-
-      <div class="metric-row">
-        <div class="metric"><div class="ml">부여 연차</div><div class="mv blue" id="r_total">-</div></div>
-        <div class="metric"><div class="ml">계획 사용</div><div class="mv" id="r_used">-</div></div>
-        <div class="metric"><div class="ml">권장 대비</div><div class="mv" id="r_diff">-</div></div>
+      <div class="ctitle" id="rTitle">연차 사용 계획 확인</div>
+      <div class="mrow">
+        <div class="mc"><div class="ml">부여연차</div><div class="mv blue" id="rTotal">-</div></div>
+        <div class="mc"><div class="ml">계획 사용</div><div class="mv" id="rUsed">-</div></div>
+        <div class="mc"><div class="ml">권장 대비</div><div class="mv" id="rDiff">-</div></div>
       </div>
-
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <div style="font-size:13px;font-weight:600">선택 날짜 목록</div>
-        <div style="font-size:11px;color:var(--text2)" id="r_cnt"></div>
+        <div style="font-size:11px;color:var(--text2)" id="rCnt"></div>
       </div>
       <div style="overflow-x:auto">
-        <table class="result-table">
-          <thead>
-            <tr><th>날짜</th><th>요일</th><th>종류</th><th>연차</th></tr>
-          </thead>
-          <tbody id="r_body"></tbody>
+        <table class="rtable">
+          <thead><tr><th>날짜</th><th>요일</th><th>종류</th><th>일수</th></tr></thead>
+          <tbody id="rBody"></tbody>
         </table>
       </div>
-
       <div class="btn-row">
         <button class="btn" onclick="goTo(2)">← 수정</button>
-        <button class="btn success" onclick="submitPlan()">✓ 제출하기</button>
+        <button class="btn suc" onclick="submitPlan()">✓ 제출하기</button>
       </div>
     </div>
   </div>
 
-  <!-- ────────── STEP 4 (완료) ────────── -->
-  <div class="step-view" id="view4">
+  <!-- STEP 4 -->
+  <div class="sv" id="v4">
     <div class="card">
-      <div class="complete-box">
-        <div class="complete-icon">🎉</div>
-        <div class="complete-title" id="done_title">제출 완료!</div>
-        <div class="complete-sub" id="done_sub"></div>
-        <div style="margin-top:24px">
-          <button class="btn primary" onclick="resetAll()">다른 교사 입력하기</button>
-        </div>
+      <div class="complete">
+        <div class="ci">🎉</div>
+        <div class="ct" id="doneTitle">제출 완료!</div>
+        <div class="cs" id="doneSub"></div>
+        <div style="margin-top:24px"><button class="btn pri" onclick="resetAll()">다른 교사 입력하기</button></div>
       </div>
     </div>
   </div>
-
 </div>
-
 <div class="toast" id="toast"></div>
 
 <script>
-// ──────────────────────────────────────────
-// Firebase 설정 — 아래 값을 본인 Firebase 설정값으로 교체하세요
-// ──────────────────────────────────────────
-const firebaseConfig = {
-  apiKey: "AIzaSyDojXJ_9pOnla8uG240APwo3Ik9gBddMw4",
-  authDomain: "mujigae-swimming.firebaseapp.com",
-  databaseURL: "https://mujigae-swimming-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "mujigae-swimming",
-  storageBucket: "mujigae-swimming.firebasestorage.app",
-  messagingSenderId: "279953220805",
-  appId: "1:279953220805:web:b24cbe70f8556416c0bcac"
-};
+// Firebase
+const firebaseConfig={apiKey:"AIzaSyDojXJ_9pOnla8uG240APwo3Ik9gBddMw4",authDomain:"mujigae-swimming.firebaseapp.com",databaseURL:"https://mujigae-swimming-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"mujigae-swimming",storageBucket:"mujigae-swimming.firebasestorage.app",messagingSenderId:"279953220805",appId:"1:279953220805:web:b24cbe70f8556416c0bcac"};
+let db=null;
+try{firebase.initializeApp(firebaseConfig);db=firebase.database();}catch(e){console.warn('Firebase:',e.message);}
 
-let db = null;
-try {
-  firebase.initializeApp(firebaseConfig);
-  db = firebase.database();
-} catch(e) {
-  console.warn('Firebase 미설정 — 로컬 모드로 동작합니다:', e.message);
-}
-
-// ──────────────────────────────────────────
-// 교직원 명단 (휴가관리대장에서 추출)
-// 형식: { 이름, 직위, 반, 연차시작일, 부여연차 }
-// ──────────────────────────────────────────
-const ROSTER = {
+// 교직원 데이터 (effMar: 3월조사 권장, effSep: 9월조사 권장)
+const ROSTER={
   "무지개어린이집": [
-    { name:"강수민", role:"치료사", dept:"치료팀", start:"2026-03-17", total:15, used:0.0, remain:15.0 },
-    { name:"마미선", role:"보조교사", dept:"종일보육팀", start:"2026-03-01", total:11, used:0.0, remain:11.0 },
-    { name:"박정민", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:15, used:0.0, remain:15.0 },
-    { name:"서명화", role:"담임교사", dept:"종일보육팀", start:"2025-05-01", total:25, used:21.0, remain:12.5 },
-    { name:"서홍련", role:"치료사", dept:"치료팀", start:"2025-06-01", total:28, used:28.0, remain:9.5 },
-    { name:"양정임", role:"운전원", dept:"운영지원팀", start:"2026-03-01", total:16, used:0.0, remain:16.0 },
-    { name:"우지선", role:"담임교사", dept:"종일보육팀", start:"2026-03-01", total:14, used:0.0, remain:14.0 },
-    { name:"이승원", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:16, used:0.0, remain:16.0 },
-    { name:"이왕성", role:"담임교사", dept:"종일보육팀", start:"2025-08-16", total:16.5, used:12.5, remain:9.5 },
-    { name:"임민주", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:16, used:0.0, remain:16.0 },
-    { name:"전채민", role:"조리사", dept:"운영지원팀", start:"2025-07-01", total:14, used:13.0, remain:5.5 },
-    { name:"정선윤", role:"담임교사", dept:"종일보육팀", start:"2026-03-01", total:16, used:1.0, remain:15.0 },
-    { name:"정소윤", role:"치료사", dept:"치료팀", start:"2025-05-01", total:20, used:18.5, remain:8.0 },
-    { name:"정아영", role:"보조교사", dept:"종일보육팀", start:"2026-03-01", total:16, used:0.0, remain:16.0 },
-    { name:"채준범", role:"담임교사", dept:"종일보육팀", start:"2026-03-01", total:22, used:0.0, remain:22.0 },
-    { name:"최하나", role:"원장", dept:"경영진", start:"2025-09-01", total:26, used:15.0, remain:19.5 },
-    { name:"황경하", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:15, used:1.0, remain:14.0 },
+    {name:"강수민",dept:"치료팀",role:"치료사",hire:"2025-03-17",total:15,remain:15.0,effMar:7.5},
+    {name:"마미선",dept:"종일보육팀",role:"보조교사",hire:"2026-03-01",total:11,remain:11.0,effMar:5.5},
+    {name:"박정민",dept:"방과후보육팀",role:"담임교사",hire:"2025-03-01",total:15,remain:14.0,effMar:6.5},
+    {name:"서명화",dept:"종일보육팀",role:"담임교사",hire:"2008-05-01",total:25,remain:4.0,effMar:11.5},
+    {name:"서홍련",dept:"치료팀",role:"치료사",hire:"2009-06-01",total:28,remain:0.0,effMar:5.5},
+    {name:"양정임",dept:"운영지원팀",role:"운전원",hire:"2022-03-01",total:16,remain:16.0,effMar:8.0},
+    {name:"우지선",dept:"종일보육팀",role:"담임교사",hire:"2026-03-01",total:14,remain:14.0,effMar:7.0},
+    {name:"이승원",dept:"방과후보육팀",role:"담임교사",hire:"2024-03-01",total:16,remain:16.0,effMar:8.0},
+    {name:"이왕성",dept:"종일보육팀",role:"담임교사",hire:"2023-08-16",total:16.5,remain:2.5,effMar:3.5},
+    {name:"임민주",dept:"방과후보육팀",role:"담임교사",hire:"2022-03-01",total:16,remain:15.0,effMar:7.0},
+    {name:"전채민",dept:"운영지원팀",role:"조리사",hire:"2024-07-01",total:14,remain:1.0,effMar:3.5},
+    {name:"정선윤",dept:"종일보육팀",role:"담임교사",hire:"2026-03-01",total:16,remain:15.0,effMar:7.0},
+    {name:"정소윤",dept:"치료팀",role:"치료사",hire:"2018-05-01",total:20,remain:0.0,effMar:6.0},
+    {name:"정아영",dept:"종일보육팀",role:"보조교사",hire:"2026-03-01",total:16,remain:16.0,effMar:8.0},
+    {name:"채준범",dept:"종일보육팀",role:"담임교사",hire:"2011-03-01",total:22,remain:22.0,effMar:11.0},
+    {name:"황경하",dept:"방과후보육팀",role:"담임교사",hire:"2025-03-01",total:15,remain:13.5,effMar:6.0},
   ],
   "우리무지개어린이집": [
-    { name:"강수지", role:"담임교사", dept:"종일보육팀", start:"2026-02-01", total:17, used:0.5, remain:17.0 },
-    { name:"권다애", role:"치료사", dept:"치료팀", start:"2026-03-05", total:17, used:1.0, remain:16.0 },
-    { name:"김보라", role:"담임교사", dept:"종일보육팀", start:"2026-03-01", total:15, used:0.0, remain:15.0 },
-    { name:"김용석", role:"대표", dept:"경영진", start:"2025-09-01", total:21, used:1.0, remain:21.0 },
-    { name:"김태은", role:"조리사", dept:"운영지원팀", start:"2026-03-25", total:15, used:1.0, remain:14.0 },
-    { name:"김하민", role:"담임교사", dept:"종일보육팀", start:"2026-03-01", total:13, used:0.0, remain:13.0 },
-    { name:"마호진", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:16.5, used:0.0, remain:16.5 },
-    { name:"모정아", role:"담임교사", dept:"종일보육팀", start:"2026-03-01", total:14.5, used:1.0, remain:13.5 },
-    { name:"박규리", role:"치료사", dept:"치료팀", start:"2025-08-01", total:15, used:7.0, remain:13.0 },
-    { name:"박기애", role:"보조교사", dept:"종일보육팀", start:"2026-03-01", total:22, used:1.0, remain:21.0 },
-    { name:"박서정", role:"담임교사", dept:"종일보육팀", start:"2026-03-01", total:18, used:0.5, remain:17.5 },
-    { name:"박정숙", role:"원장", dept:"경영진", start:"2025-09-01", total:16, used:1.0, remain:16.0 },
-    { name:"박초롱", role:"담임교사", dept:"종일보육팀", start:"2026-03-01", total:16, used:0.5, remain:15.5 },
-    { name:"백장미", role:"담임교사", dept:"종일보육팀", start:"2026-03-01", total:17, used:4.0, remain:13.0 },
-    { name:"변아진", role:"담임교사", dept:"방과후보육팀", start:"2025-08-01", total:22.5, used:13.5, remain:16.5 },
-    { name:"송태헌", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:19, used:0.0, remain:19.0 },
-    { name:"유주환", role:"담임교사", dept:"종일보육팀", start:"2026-03-01", total:12.5, used:0.0, remain:12.5 },
-    { name:"윤아름", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:13, used:0.0, remain:13.0 },
-    { name:"윤창식", role:"운전원", dept:"운영지원팀", start:"2025-05-01", total:16, used:15.0, remain:6.5 },
-    { name:"윤혜정", role:"보조교사", dept:"종일보육팀", start:"2025-09-01", total:14, used:7.0, remain:11.5 },
-    { name:"이미화", role:"치료사", dept:"치료팀", start:"2026-03-01", total:25, used:0.5, remain:24.5 },
-    { name:"이숙현", role:"보조교사", dept:"종일보육팀", start:"2025-11-05", total:14, used:4.0, remain:14.0 },
-    { name:"이슬아", role:"담임교사", dept:"종일보육팀", start:"2026-03-01", total:19, used:1.0, remain:18.0 },
-    { name:"이효선", role:"담임교사", dept:"종일보육팀", start:"2025-12-01", total:16.5, used:6.5, remain:15.5 },
-    { name:"임정연", role:"담임교사", dept:"종일보육팀", start:"2026-03-01", total:23, used:0.0, remain:23.0 },
-    { name:"임주현", role:"치료사", dept:"치료팀", start:"2025-09-01", total:12, used:9.0, remain:7.0 },
-    { name:"전나인", role:"치료사", dept:"치료팀", start:"2026-03-01", total:18, used:1.0, remain:17.0 },
-    { name:"정다송", role:"담임교사", dept:"방과후보육팀", start:"2026-03-01", total:13, used:0.0, remain:13.0 },
-    { name:"정인애", role:"담임교사", dept:"방과후보육팀", start:"2025-05-15", total:21.5, used:20.0, remain:8.5 },
-    { name:"조명원", role:"보조교사", dept:"종일보육팀", start:"2026-03-20", total:16, used:0.0, remain:16.0 },
-    { name:"조현아", role:"담임교사", dept:"종일보육팀", start:"2026-03-01", total:16, used:0.0, remain:16.0 },
-    { name:"주은아", role:"보조교사", dept:"종일보육팀", start:"2026-03-11", total:15, used:1.0, remain:14.0 },
-    { name:"천은주", role:"담임교사", dept:"종일보육팀", start:"2026-03-01", total:13.5, used:0.5, remain:13.0 },
-    { name:"표영민", role:"치료사", dept:"치료팀", start:"2026-03-01", total:19, used:1.0, remain:18.0 },
-    { name:"황선하", role:"담임교사", dept:"종일보육팀", start:"2026-03-01", total:21, used:0.0, remain:21.0 },
+    {name:"강수지",dept:"종일보육팀",role:"담임교사",hire:"2021-02-01",total:17,remain:15.5,effMar:8.5},
+    {name:"권다애",dept:"치료팀",role:"치료사",hire:"2020-03-05",total:17,remain:15.5,effMar:7.0},
+    {name:"김보라",dept:"종일보육팀",role:"담임교사",hire:"2025-03-01",total:15,remain:15.0,effMar:7.5},
+    {name:"김용석",dept:"경영진",role:"대표",hire:"2020-09-01",total:21,remain:0.0,effMar:0.0},
+    {name:"김태은",dept:"운영지원팀",role:"조리사",hire:"2025-03-25",total:15,remain:14.0,effMar:6.5},
+    {name:"김하민",dept:"종일보육팀",role:"담임교사",hire:"2026-03-01",total:13,remain:13.0,effMar:6.5},
+    {name:"마호진",dept:"방과후보육팀",role:"담임교사",hire:"2020-03-01",total:16.5,remain:16.5,effMar:8.5},
+    {name:"모정아",dept:"종일보육팀",role:"담임교사",hire:"2023-03-01",total:14.5,remain:12.5,effMar:5.5},
+    {name:"박규리",dept:"치료팀",role:"치료사",hire:"2024-08-01",total:15,remain:8.0,effMar:9.0},
+    {name:"박기애",dept:"종일보육팀",role:"보조교사",hire:"2018-03-01",total:22,remain:21.0,effMar:10.0},
+    {name:"박서정",dept:"종일보육팀",role:"담임교사",hire:"2018-03-01",total:18,remain:16.0,effMar:7.0},
+    {name:"박정숙",dept:"경영진",role:"원장",hire:"2022-09-01",total:16,remain:0.0,effMar:0.0},
+    {name:"박초롱",dept:"종일보육팀",role:"담임교사",hire:"2022-03-01",total:16,remain:14.0,effMar:6.0},
+    {name:"백장미",dept:"종일보육팀",role:"담임교사",hire:"2021-03-01",total:17,remain:12.5,effMar:4.0},
+    {name:"변아진",dept:"방과후보육팀",role:"담임교사",hire:"2012-08-01",total:22.5,remain:8.5,effMar:10.5},
+    {name:"송태헌",dept:"방과후보육팀",role:"담임교사",hire:"2016-03-01",total:19,remain:18.0,effMar:8.5},
+    {name:"유주환",dept:"종일보육팀",role:"담임교사",hire:"2026-03-01",total:12.5,remain:12.0,effMar:6.0},
+    {name:"윤아름",dept:"방과후보육팀",role:"담임교사",hire:"2026-03-01",total:13,remain:13.0,effMar:6.5},
+    {name:"윤창식",dept:"운영지원팀",role:"운전원",hire:"2021-05-01",total:16,remain:0.0,effMar:5.5},
+    {name:"윤혜정",dept:"종일보육팀",role:"보조교사",hire:"2023-09-01",total:14,remain:5.0,effMar:5.0},
+    {name:"이미화",dept:"치료팀",role:"치료사",hire:"2007-03-01",total:25,remain:23.5,effMar:11.0},
+    {name:"이숙현",dept:"종일보육팀",role:"보조교사",hire:"2025-11-05",total:14,remain:9.0,effMar:6.5},
+    {name:"이슬아",dept:"종일보육팀",role:"담임교사",hire:"2016-03-01",total:19,remain:18.0,effMar:8.5},
+    {name:"이효선",dept:"종일보육팀",role:"담임교사",hire:"2024-12-01",total:16.5,remain:9.5,effMar:5.5},
+    {name:"임정연",dept:"종일보육팀",role:"담임교사",hire:"2008-03-01",total:23,remain:22.0,effMar:10.5},
+    {name:"임주현",dept:"치료팀",role:"치료사",hire:"2025-09-01",total:12,remain:3.0,effMar:3.0},
+    {name:"전나인",dept:"치료팀",role:"치료사",hire:"2019-03-01",total:18,remain:17.0,effMar:8.0},
+    {name:"정다송",dept:"방과후보육팀",role:"담임교사",hire:"2026-03-01",total:13,remain:13.0,effMar:6.5},
+    {name:"정인애",dept:"방과후보육팀",role:"담임교사",hire:"2014-05-15",total:21.5,remain:1.5,effMar:8.0},
+    {name:"조명원",dept:"종일보육팀",role:"보조교사",hire:"2023-03-20",total:16,remain:16.0,effMar:8.0},
+    {name:"조현아",dept:"종일보육팀",role:"담임교사",hire:"2023-03-01",total:16,remain:16.0,effMar:8.0},
+    {name:"주은아",dept:"종일보육팀",role:"보조교사",hire:"2024-03-11",total:15,remain:14.0,effMar:6.5},
+    {name:"천은주",dept:"종일보육팀",role:"담임교사",hire:"2025-03-01",total:13.5,remain:13.0,effMar:6.0},
+    {name:"표영민",dept:"치료팀",role:"치료사",hire:"2017-03-01",total:19,remain:18.0,effMar:8.5},
+    {name:"황선하",dept:"종일보육팀",role:"담임교사",hire:"2011-03-01",total:21,remain:20.0,effMar:9.5},
   ]
 };
 
-// ──────────────────────────────────────────
-// 앱 상태
-// ──────────────────────────────────────────
-const SURVEY_START = new Date(2026, 4, 1);  // 2026-05-01
-const SURVEY_END   = new Date(2026, 7, 31); // 2026-08-31
-const DAYS_KR = ['일','월','화','수','목','금','토'];
-const MONTHS_KR = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+// 조사 기간 (month: 0-indexed)
+const SEASON_CFG={start:new Date(2026,2,1),end:new Date(2026,7,31),calY:2026,calM:2,label:'3월 조사(3~8월)'};
+const DAYS_KR=['일','월','화','수','목','금','토'];
+const MON_KR=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
 
-let state = {
-  inst: '', teacher: null,
-  sel: {},       // { 'YYYY-MM-DD': 'full'|'half' }
-  cy: 2026, cm: 3,
-  mode: 'full',
-  monthly: 0, target: 0, maxSel: 999
-};
+const SEASON='mar';
+let S={inst:'',teacher:null,sel:{},cy:2026,cm:2,mode:'full'};
 
-// ──────────────────────────────────────────
-// Step 관리
-// ──────────────────────────────────────────
-function goTo(n) {
-  if (n === 2) {
-    if (!state.teacher) { toast('교사를 선택해주세요.'); return; }
-  }
-  if (n === 3) buildResult();
 
-  [1,2,3,4].forEach(i => {
-    document.getElementById('view'+i).classList.toggle('active', i===n);
+function goTo(n){
+  if(n===2&&!S.teacher){toast('교사를 선택해주세요.');return;}
+  if(n===3)buildResult();
+  [1,2,3,4].forEach(i=>document.getElementById('v'+i).classList.toggle('active',i===n));
+  [1,2,3].forEach(i=>{
+    document.getElementById('sd'+i).className='sd'+(i===n?' active':i<n?' done':'');
+    document.getElementById('sl'+i).className='sl'+(i===n?' active':'');
   });
-  [1,2,3].forEach(i => {
-    const dot = document.getElementById('sd'+i);
-    const lbl = document.getElementById('sl'+i);
-    dot.className = 'step-dot' + (i===n ? ' active' : i<n ? ' done' : '');
-    lbl.className = 'step-label' + (i===n ? ' active' : '');
-  });
+  if(n===2){const cfg=SEASON_CFG;S.cy=cfg.calY;S.cm=cfg.calM;renderCal();}
   window.scrollTo(0,0);
 }
 
-// ──────────────────────────────────────────
-// Step 1 – 교사 선택
-// ──────────────────────────────────────────
-function onInstChange() {
-  const inst = document.getElementById('selInst').value;
-  state.inst = inst;
-  state.teacher = null;
-  const sel = document.getElementById('selTeacher');
-  sel.innerHTML = '<option value="">교사를 선택하세요</option>';
-  document.getElementById('infoBox').style.display = 'none';
-  if (!inst) { sel.disabled = true; return; }
-  sel.disabled = false;
-  (ROSTER[inst] || []).forEach(t => {
-    const opt = document.createElement('option');
-    opt.value = t.name;
-    opt.textContent = `${t.name} (${t.role})`;
-    sel.appendChild(opt);
+function onInstChange(){
+  S.inst=document.getElementById('selInst').value;
+  S.teacher=null;
+  const sel=document.getElementById('selTeacher');
+  sel.innerHTML='<option value="">교사를 선택하세요</option>';
+  document.getElementById('infoBox').style.display='none';
+  if(!S.inst){sel.disabled=true;return;}
+  sel.disabled=false;
+  (ROSTER[S.inst]||[]).forEach(t=>{
+    const o=document.createElement('option');
+    o.value=t.name;o.textContent=`${t.name} (${t.role})`;sel.appendChild(o);
   });
 }
 
-function onTeacherChange() {
-  const name = document.getElementById('selTeacher').value;
-  if (!name) { document.getElementById('infoBox').style.display='none'; return; }
-  const t = (ROSTER[state.inst]||[]).find(x=>x.name===name);
-  if (!t) return;
-  state.teacher = t;
-
-  // 계산: 월평균 × 조사기간(5월1일~8월31일 = 4개월) 고정
-  const startD = parseDate(t.start);
-  const monthly = t.total / 12;
-  const surveyMonths = monthsDiff(SURVEY_START, SURVEY_END); // 약 4개월
-  const target = Math.round(monthly * surveyMonths * 2) / 2;
-  // 잔여연차가 권장보다 적으면 잔여연차를 권장으로 표시
-  const effectiveTarget = Math.min(target, t.remain);
-  state.monthly = monthly;
-  state.target = effectiveTarget;
-  state.maxSel = t.remain; // 선택 가능 최대 = 잔여연차
-  // 달력은 항상 2026년 4월부터 시작
-  state.cy = 2026;
-  state.cm = 3;
-
-  document.getElementById('iDept').textContent = `${t.dept} · ${t.role}`;
-  document.getElementById('iStart').textContent = fmtDateKr(startD);
-  document.getElementById('iTotal').textContent = `${t.total}일 (잔여 ${t.remain}일)`;
-  document.getElementById('iMonthly').textContent = monthly.toFixed(2) + '일/월';
-  document.getElementById('iPeriod').textContent = '5월 1일 ~ 8월 31일';
-  document.getElementById('iTarget').textContent = effectiveTarget + '일';
-  document.getElementById('infoBox').style.display = 'block';
-  document.getElementById('calHint').textContent =
-    `${t.name} 선생님 | 권장 ${effectiveTarget}일 | 선택가능 ${t.remain}일`;
-  document.getElementById('progTarget').textContent = `권장: ${effectiveTarget}일`;
-  document.getElementById('progMax').textContent = `선택가능: ${t.remain}일`;
+function onTeacherChange(){
+  const name=document.getElementById('selTeacher').value;
+  if(!name){document.getElementById('infoBox').style.display='none';return;}
+  const t=(ROSTER[S.inst]||[]).find(x=>x.name===name);
+  if(!t)return;
+  S.teacher=t;
+  const eff=t.effMar;
+  const periodStr=true?'3월 ~ 8월':'9월 ~ 다음해 2월';
+  document.getElementById('iDept').textContent=`${t.dept} · ${t.role}`;
+  document.getElementById('iStart').textContent=fmtDateKr(parseDate(t.cycleStart));
+  document.getElementById('iTotal').textContent=`${t.total}일 / 잔여 ${t.remain}일`;
+  document.getElementById('iMonthly').textContent=(t.total/12).toFixed(2)+'일/월';
+  document.getElementById('iPeriod').textContent=periodStr;
+  document.getElementById('iTarget').textContent=eff+'일';
+  document.getElementById('infoBox').style.display='block';
+  document.getElementById('calHint').textContent=`${t.name} 선생님 | 권장 ${eff}일 | 잔여 ${t.remain}일`;
+  document.getElementById('pTarget').textContent=`권장: ${eff}일`;
+  document.getElementById('pMax').textContent=`잔여: ${t.remain}일`;
 }
 
-// ──────────────────────────────────────────
-// Step 2 – 달력
-// ──────────────────────────────────────────
-function setMode(m) {
-  state.mode = m;
-  document.getElementById('btnFull').className = 'mode-btn' + (m==='full' ? ' on-full' : '');
-  document.getElementById('btnHalf').className = 'mode-btn' + (m==='half' ? ' on-half' : '');
+function setMode(m){
+  S.mode=m;
+  document.getElementById('mbFull').className='mb'+(m==='full'?' on-full':'');
+  document.getElementById('mbAm').className='mb'+(m==='am'?' on-am':'');
+  document.getElementById('mbPm').className='mb'+(m==='pm'?' on-pm':'');
 }
 
-function chMonth(d) {
-  state.cm += d;
-  if (state.cm > 11) { state.cm = 0; state.cy++; }
-  if (state.cm < 0)  { state.cm = 11; state.cy--; }
+function chMonth(d){
+  S.cm+=d;
+  if(S.cm>11){S.cm=0;S.cy++;}
+  if(S.cm<0){S.cm=11;S.cy--;}
   renderCal();
 }
 
-function renderCal() {
-  const { cy:y, cm:m, teacher:t } = state;
-  document.getElementById('calTitle').textContent = `${y}년 ${MONTHS_KR[m]}`;
-  const g = document.getElementById('calGrid');
-  g.innerHTML = '';
-
-  // 요일 헤더
-  const hdrs = ['일','월','화','수','목','금','토'];
-  hdrs.forEach((d,i) => {
-    const el = document.createElement('div');
-    el.className = 'cal-dow' + (i===0?' sun':i===6?' sat':'');
-    el.textContent = d;
-    g.appendChild(el);
+function renderCal(){
+  const{cy:y,cm:m}=S;
+  const cfg=SEASON_CFG;
+  document.getElementById('calTitle').textContent=`${y}년 ${MON_KR[m]}`;
+  const g=document.getElementById('calGrid');g.innerHTML='';
+  ['일','월','화','수','목','금','토'].forEach((d,i)=>{
+    const el=document.createElement('div');
+    el.className='cdow'+(i===0?' sun':i===6?' sat':'');
+    el.textContent=d;g.appendChild(el);
   });
-
-  const first = new Date(y, m, 1);
-  const startDow = first.getDay();
-  const dim = new Date(y, m+1, 0).getDate();
-  const today = new Date(); today.setHours(0,0,0,0);
-  // 선택 가능 범위: 2026-05-01 ~ 2026-08-31 고정
-
-  for (let i=0; i<startDow; i++) {
-    const el = document.createElement('div'); el.className='cal-cell empty'; g.appendChild(el);
-  }
-
-  for (let d=1; d<=dim; d++) {
-    const date = new Date(y,m,d);
-    const key = fmtDate(date);
-    const dow = date.getDay();
-    const isWk = dow===0||dow===6;
-    const isDisabled = date.getTime() < SURVEY_START.getTime() || date.getTime() > SURVEY_END.getTime();
-    const sel = state.sel[key];
-
-    const el = document.createElement('div');
-    let cls = 'cal-cell';
-    if (isDisabled) cls += ' disabled';
-    else if (isWk) cls += (dow===0?' sun-col':' sat-col');
-    if (date.toDateString()===today.toDateString()) cls += ' today-ring';
-    if (sel==='full') cls += ' sel-full';
-    else if (sel==='half') cls += ' sel-half';
-    el.className = cls;
-    el.innerHTML = `<span class="day-n">${d}</span>${sel?`<span class="day-b">${sel==='full'?'종':'반'}</span>`:''}`;
-    if (!isDisabled && !isWk) el.onclick = () => toggleDay(key);
+  const first=new Date(y,m,1),dow=first.getDay(),dim=new Date(y,m+1,0).getDate();
+  const today=new Date();today.setHours(0,0,0,0);
+  for(let i=0;i<dow;i++){const e=document.createElement('div');e.className='cc empty';g.appendChild(e);}
+  for(let d=1;d<=dim;d++){
+    const date=new Date(y,m,d);
+    const key=fmtDate(date);
+    const dw=date.getDay();
+    const isWk=dw===0||dw===6;
+    const isDis=date.getTime()<cfg.start.getTime()||date.getTime()>cfg.end.getTime();
+    const sv=S.sel[key]||{};
+    const el=document.createElement('div');
+    let cls='cc';
+    if(isDis)cls+=' dis';
+    else if(isWk)cls+=dw===0?' sun-c':' sat-c';
+    if(date.toDateString()===today.toDateString())cls+=' today-r';
+    if(sv.full)cls+=' sel-full';
+    else{if(sv.am)cls+=' sel-am';if(sv.pm)cls+=' sel-pm';}
+    el.className=cls;
+    let badge='';
+    if(sv.full)badge='종일';
+    else if(sv.am&&sv.pm)badge='전+후';
+    else if(sv.am)badge='오전';
+    else if(sv.pm)badge='오후';
+    el.innerHTML=`<span class="day-n">${d}</span>${badge?`<span class="day-b">${badge}</span>`:''}`;
+    if(!isDis&&!isWk)el.onclick=()=>toggleDay(key);
     g.appendChild(el);
   }
   updateProg();
 }
 
-function toggleDay(key) {
-  const cur = state.sel[key];
-  if (cur === state.mode) {
-    delete state.sel[key];
-  } else {
-    // 잔여연차 초과 방지
-    const adding = state.mode === 'full' ? 1 : 0.5;
-    const currentUsed = cur ? (cur === 'full' ? 1 : 0.5) : 0;
-    const afterTotal = getTotal() - currentUsed + adding;
-    const maxSel = state.teacher ? state.teacher.remain : 999;
-    if (maxSel > 0 && afterTotal > maxSel + 0.01) {
-      toast(`잔여 연차(${maxSel}일)를 초과할 수 없습니다.`);
-      return;
+function dayVal(sv){if(!sv)return 0;if(sv.full)return 1.0;return(sv.am?0.5:0)+(sv.pm?0.5:0);}
+function getTotal(){return Object.values(S.sel).reduce((s,v)=>s+dayVal(v),0);}
+
+function toggleDay(key){
+  const sv=S.sel[key]||{};
+  const maxSel=S.teacher?S.teacher.remain:999;
+  if(S.mode==='full'){
+    if(sv.full){delete S.sel[key];}
+    else{
+      const prev=dayVal(sv),next=1.0;
+      if(getTotal()-prev+next>maxSel+0.01){toast(`잔여 연차(${maxSel}일)를 초과할 수 없습니다.`);return;}
+      S.sel[key]={full:true};
     }
-    state.sel[key] = state.mode;
+  } else {
+    const f=S.mode;
+    if(sv.full){
+      // 종일 → 해당 반차만 남기기
+      S.sel[key]=f==='am'?{am:true}:{pm:true};
+    } else if(sv[f]){
+      // 이미 있으면 해제
+      const nv={...sv};delete nv[f];
+      if(!nv.am&&!nv.pm)delete S.sel[key];
+      else S.sel[key]=nv;
+    } else {
+      const prev=dayVal(sv),next=prev+0.5;
+      if(next>1.0){toast('하루 최대 1일(오전+오후)입니다.');return;}
+      if(getTotal()-prev+next>maxSel+0.01){toast(`잔여 연차(${maxSel}일)를 초과할 수 없습니다.`);return;}
+      S.sel[key]={...sv,[f]:true};
+    }
   }
   renderCal();
 }
 
-function getTotal() {
-  return Object.values(state.sel).reduce((s,v)=>s+(v==='full'?1:.5), 0);
+function updateProg(){
+  const used=getTotal();
+  const t=S.teacher;
+  const max=t?t.remain:15;
+  const eff=t?(t.effMar):0;
+  const pct=Math.min(used/Math.max(max,0.1)*100,100);
+  const fill=document.getElementById('progF');
+  fill.style.width=pct+'%';fill.className='prog-f'+(used>max?' over':'');
+  const sc=document.getElementById('selTotal');
+  sc.textContent=used.toFixed(1)+'일';
+  sc.className='sel-total'+(used>max?' over':used>=eff*0.9?' ok':' under');
 }
 
-function updateProg() {
-  const used = getTotal();
-  const max = state.teacher ? state.teacher.remain : 15;
-  const target = state.target;
-  const pct = Math.min(used/max*100, 100);
-  const fill = document.getElementById('progFill');
-  fill.style.width = pct+'%';
-  fill.className = 'progress-fill' + (used>max?' over':'');
-  const sc = document.getElementById('selCount');
-  sc.textContent = used.toFixed(1)+'일';
-  sc.className = 'sel-count' + (used>max?' over':used>=target*0.9?' ok':' under');
-}
-
-// ──────────────────────────────────────────
-// Step 3 – 결과 확인
-// ──────────────────────────────────────────
-function buildResult() {
-  const t = state.teacher;
-  const used = getTotal();
-  const diff = used - state.target;
-  document.getElementById('r_title').textContent =
-    `${t.name} 선생님 (${t.dept}) 연차 사용 계획`;
-  document.getElementById('r_total').textContent = t.total + '일';
-  const usedEl = document.getElementById('r_used');
-  usedEl.textContent = used.toFixed(1)+'일';
-  usedEl.className = 'mv' + (used>t.total?' red':used>=state.target*0.9?' green':' amber');
-  const diffEl = document.getElementById('r_diff');
-  diffEl.textContent = (diff>=0?'+':'')+diff.toFixed(1)+'일';
-  diffEl.className = 'mv' + (diff>=0?' green':' amber');
-
-  const sorted = Object.entries(state.sel).sort((a,b)=>a[0]>b[0]?1:-1);
-  document.getElementById('r_cnt').textContent = `총 ${sorted.length}건`;
-  const body = document.getElementById('r_body'); body.innerHTML='';
-  sorted.forEach(([k,v])=>{
-    const d = parseDate(k);
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td class="td-date">${fmtDateKr(d)}</td>
-      <td>${DAYS_KR[d.getDay()]}요일</td>
-      <td><span class="${v==='full'?'td-full':'td-half'}">${v==='full'?'종일':'반차'}</span></td>
-      <td>${v==='full'?'1.0':'0.5'}일</td>`;
-    body.appendChild(tr);
+function buildResult(){
+  const t=S.teacher;
+  const used=getTotal();
+  const eff=t.effMar;
+  const diff=used-eff;
+  document.getElementById('rTitle').textContent=`${t.name} 선생님 연차 사용 계획 (3월 조사)`;
+  document.getElementById('rTotal').textContent=t.total+'일';
+  const ue=document.getElementById('rUsed');
+  ue.textContent=used.toFixed(1)+'일';
+  ue.className='mv'+(used>t.remain?' red':used>=eff*0.9?' green':' amber');
+  const de=document.getElementById('rDiff');
+  de.textContent=(diff>=0?'+':'')+diff.toFixed(1)+'일';
+  de.className='mv'+(diff>=0?' green':' amber');
+  const sorted=Object.entries(S.sel).filter(([,v])=>v.full||v.am||v.pm).sort((a,b)=>a[0]>b[0]?1:-1);
+  document.getElementById('rCnt').textContent=`총 ${sorted.length}건`;
+  const body=document.getElementById('rBody');body.innerHTML='';
+  sorted.forEach(([k,sv])=>{
+    const d=parseDate(k);
+    const items=[];
+    if(sv.full)items.push({label:'종일',val:1.0,cls:'bg-full'});
+    else{if(sv.am)items.push({label:'오전반차',val:0.5,cls:'bg-am'});if(sv.pm)items.push({label:'오후반차',val:0.5,cls:'bg-pm'});}
+    items.forEach(it=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td class="td-date">${fmtDateKr(d)}</td><td>${DAYS_KR[d.getDay()]}요일</td><td><span class="badge ${it.cls}">${it.label}</span></td><td>${it.val}일</td>`;
+      body.appendChild(tr);
+    });
   });
 }
 
-// ──────────────────────────────────────────
-// Firebase 제출
-// ──────────────────────────────────────────
-async function submitPlan() {
-  const t = state.teacher;
-  if (!t) return;
-  const used = getTotal();
-  const sorted = Object.entries(state.sel).sort((a,b)=>a[0]>b[0]?1:-1);
-
-  const payload = {
-    기관: state.inst,
-    이름: t.name,
-    소속: t.dept,
-    직위: t.role,
-    연차시작일: t.start,
-    부여연차: t.total,
-    권장사용일수: state.target,
-    계획사용일수: used,
-    제출일시: new Date().toISOString(),
-    날짜목록: sorted.map(([k,v])=>({ 날짜:k, 종류:v==='full'?'종일':'반차', 일수:v==='full'?1:0.5 }))
+async function submitPlan(){
+  const t=S.teacher;
+  const used=getTotal();
+  const eff=t.effMar;
+  const sorted=Object.entries(S.sel).filter(([,v])=>v.full||v.am||v.pm).sort((a,b)=>a[0]>b[0]?1:-1);
+  const items=[];
+  sorted.forEach(([k,sv])=>{
+    if(sv.full)items.push({날짜:k,종류:'종일',일수:1.0});
+    else{if(sv.am)items.push({날짜:k,종류:'오전반차',일수:0.5});if(sv.pm)items.push({날짜:k,종류:'오후반차',일수:0.5});}
+  });
+  const payload={기관:S.inst,이름:t.name,소속:t.dept,직위:t.role,조사회차:'3월 조사(3~8월)',부여연차:t.total,잔여연차:t.remain,권장사용일수:eff,계획사용일수:used,제출일시:new Date().toISOString(),날짜목록:items};
+  const showDone=()=>{
+    document.getElementById('savedDot').style.display='inline-block';
+    document.getElementById('doneTitle').textContent=`${t.name} 선생님, 제출 완료!`;
+    document.getElementById('doneSub').innerHTML=`<b>${S.inst}</b> · 3월 조사(3~8월)<br>계획 사용 <b>${used.toFixed(1)}일</b> (잔여 ${t.remain}일 중)<br><br>연차 사용 계획이 성공적으로 저장되었습니다.`;
+    goTo(4);[1,2,3].forEach(i=>document.getElementById('sd'+i).className='sd done');
   };
-
-  const showComplete = () => {
-    document.getElementById('savedBadge').style.display = 'inline-block';
-    document.getElementById('done_title').textContent = `${t.name} 선생님, 제출 완료!`;
-    document.getElementById('done_sub').innerHTML =
-      `<b>${state.inst}</b> · ${t.dept}<br>` +
-      `계획 사용 <b>${used.toFixed(1)}일</b> (부여 ${t.total}일 중)<br><br>` +
-      `연차 사용 계획이 성공적으로 저장되었습니다.`;
-    goTo(4);
-    [1,2,3].forEach(i => { document.getElementById('sd'+i).className='step-dot done'; });
-  };
-
-  if (!db) {
-    console.log('저장 데이터(Firebase 미설정):', JSON.stringify(payload, null, 2));
-    showComplete();
-    return;
-  }
-
-  try {
-    const key = `${state.inst}_${t.name}`;
-    await db.ref(`연차계획/${key}`).set(payload);
-    showComplete();
-  } catch(e) {
-    console.error(e);
-    toast('저장 중 오류가 발생했습니다. Firebase 설정을 확인해주세요.');
-  }
+  if(!db){console.log('저장(미설정):',payload);showDone();return;}
+  try{const key=`${S.inst}_${t.name}_${SEASON}`;await db.ref(`연차계획_mar/${key}`).set(payload);showDone();}
+  catch(e){console.error(e);toast('저장 오류: '+e.message);}
 }
 
-function resetAll() {
-  state = { inst:'', teacher:null, sel:{}, cy:2025, cm:0, mode:'full', monthly:0, target:0 };
+function resetAll(){
+  S={inst:'',teacher:null,sel:{},cy:2026,cm:2,mode:'full'};
   document.getElementById('selInst').value='';
   document.getElementById('selTeacher').innerHTML='<option value="">먼저 기관을 선택하세요</option>';
   document.getElementById('selTeacher').disabled=true;
   document.getElementById('infoBox').style.display='none';
-  document.getElementById('savedBadge').style.display='none';
-  goTo(1);
+  document.getElementById('savedDot').style.display='none';
+  setMode('full');goTo(1);
 }
 
-// ──────────────────────────────────────────
-// 유틸
-// ──────────────────────────────────────────
-function parseDate(s) {
-  const [y,m,d] = s.split('-').map(Number);
-  return new Date(y, m-1, d);
-}
-function fmtDate(d) {
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
-function fmtDateKr(d) {
-  return `${d.getMonth()+1}월 ${d.getDate()}일`;
-}
-function monthsDiff(from, to) {
-  const m = (to.getFullYear()-from.getFullYear())*12 + (to.getMonth()-from.getMonth()) + (to.getDate()-from.getDate())/30;
-  return Math.max(0, m);
-}
-function toast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg; el.classList.add('show');
-  setTimeout(()=>el.classList.remove('show'), 2500);
-}
+function parseDate(s){const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);}
+function fmtDate(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function fmtDateKr(d){return`${d.getMonth()+1}월 ${d.getDate()}일`;}
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2500);}
 
-// 초기 달력 렌더
 renderCal();
 </script>
 </body>
