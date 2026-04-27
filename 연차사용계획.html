@@ -367,9 +367,9 @@ function onTeacherChange(){
   if(!t)return;
   S.teacher=t;
   const eff=t.effMar;
-  const periodStr=true?'3월 ~ 8월':'9월 ~ 다음해 2월';
+  const periodStr='3월 ~ 8월';
   document.getElementById('iDept').textContent=`${t.dept} · ${t.role}`;
-  document.getElementById('iStart').textContent=fmtDateKr(parseDate(t.cycleStart));
+  document.getElementById('iStart').textContent=t.hire||'-';
   document.getElementById('iTotal').textContent=`${t.total}일 / 잔여 ${t.remain}일`;
   document.getElementById('iMonthly').textContent=(t.total/12).toFixed(2)+'일/월';
   document.getElementById('iPeriod').textContent=periodStr;
