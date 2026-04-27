@@ -96,9 +96,11 @@ body{font-family:'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif;ba
 .prog{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
 .prog-f{height:100%;border-radius:3px;background:var(--blue);transition:width .3s}
 .prog-f.over{background:var(--red)}
+.prog-f.warn{background:var(--amber)}
 .prog-lbls{display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-top:4px}
 .sel-total{font-size:20px;font-weight:600}
-.sel-total.under{color:var(--amber)}.sel-total.ok{color:var(--green)}.sel-total.over{color:var(--red)}
+.sel-total.under{color:var(--amber)}.sel-total.ok{color:var(--green)}.sel-total.warn{color:var(--amber)}
+.sel-total.over{color:var(--red)}
 /* Result */
 .mrow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
 .mc{background:var(--surface2);border-radius:var(--rs);padding:12px;text-align:center}
@@ -213,6 +215,7 @@ body{font-family:'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif;ba
         <div class="prog"><div class="prog-f" id="progF" style="width:0%"></div></div>
         <div class="prog-lbls"><span>0일</span><span id="pTarget">권장: -</span><span id="pMax">잔여: -</span></div>
       </div>
+      <div id="overMsg" style="display:none;align-items:center;gap:8px;background:var(--amber-bg);border:.5px solid #e8b96a;border-radius:var(--rs);padding:8px 12px;font-size:12px;color:var(--amber);margin-bottom:4px"></div>
       <div class="btn-row">
         <button class="btn" onclick="goTo(1)">← 돌아가기</button>
         <button class="btn pri" onclick="goTo(3)">완료 →</button>
@@ -377,7 +380,7 @@ function onTeacherChange(){
   document.getElementById('infoBox').style.display='block';
   document.getElementById('calHint').textContent=`${t.name} 선생님 | 권장 ${eff}일 | 잔여 ${t.remain}일`;
   document.getElementById('pTarget').textContent=`권장: ${eff}일`;
-  document.getElementById('pMax').textContent=`잔여: ${t.remain}일`;
+  document.getElementById('pMax').textContent=`선택가능: ${Math.max(t.remain,t.effMar+2)}일`;
 }
 
 function setMode(m){
@@ -439,12 +442,14 @@ function getTotal(){return Object.values(S.sel).reduce((s,v)=>s+dayVal(v),0);}
 
 function toggleDay(key){
   const sv=S.sel[key]||{};
-  const maxSel=S.teacher?S.teacher.remain:999;
+  // 선택 한도 = max(remain, effMar+2)
+  const t_=S.teacher;
+  const maxSel=t_?Math.max(t_.remain, t_.effMar+2):999;
   if(S.mode==='full'){
     if(sv.full){delete S.sel[key];}
     else{
       const prev=dayVal(sv),next=1.0;
-      if(getTotal()-prev+next>maxSel+0.01){toast(`잔여 연차(${maxSel}일)를 초과할 수 없습니다.`);return;}
+      if(getTotal()-prev+next>maxSel+0.01){toast(`최대 선택 가능일(${maxSel}일)을 초과합니다.`);return;}
       S.sel[key]={full:true};
     }
   } else {
@@ -460,7 +465,7 @@ function toggleDay(key){
     } else {
       const prev=dayVal(sv),next=prev+0.5;
       if(next>1.0){toast('하루 최대 1일(오전+오후)입니다.');return;}
-      if(getTotal()-prev+next>maxSel+0.01){toast(`잔여 연차(${maxSel}일)를 초과할 수 없습니다.`);return;}
+      if(getTotal()-prev+next>maxSel+0.01){toast(`최대 선택 가능일(${maxSel}일)을 초과합니다.`);return;}
       S.sel[key]={...sv,[f]:true};
     }
   }
@@ -470,14 +475,28 @@ function toggleDay(key){
 function updateProg(){
   const used=getTotal();
   const t=S.teacher;
-  const max=t?t.remain:15;
-  const eff=t?(t.effMar):0;
-  const pct=Math.min(used/Math.max(max,0.1)*100,100);
+  const remain=t?t.remain:0;
+  const eff=t?t.effMar:0;
+  const maxSel=t?Math.max(remain,eff+2):15;
+  // 진행바: 권장일 기준
+  const pct=Math.min(used/Math.max(eff||remain,0.1)*100,100);
   const fill=document.getElementById('progF');
-  fill.style.width=pct+'%';fill.className='prog-f'+(used>max?' over':'');
+  fill.style.width=Math.min(pct,100)+'%';
+  fill.className='prog-f'+(used>maxSel?' over':used>eff?' warn':'');
   const sc=document.getElementById('selTotal');
   sc.textContent=used.toFixed(1)+'일';
-  sc.className='sel-total'+(used>max?' over':used>=eff*0.9?' ok':' under');
+  sc.className='sel-total'+(used>maxSel?' over':used>eff?' warn':used>=eff*0.9?' ok':' under');
+  // 권장 초과 안내
+  const msg=document.getElementById('overMsg');
+  if(used>eff&&used<=maxSel){
+    msg.style.display='flex';
+    msg.innerHTML=`<span>⚠ 권장 사용일(${eff}일) 초과 — 현재 <b>${used.toFixed(1)}일</b> 선택 중 (잔여 ${remain}일)</span>`;
+  } else if(used>maxSel){
+    msg.style.display='flex';
+    msg.innerHTML=`<span style="color:var(--red)">🚫 최대 선택 가능일(${maxSel}일) 초과</span>`;
+  } else {
+    msg.style.display='none';
+  }
 }
 
 function buildResult(){
