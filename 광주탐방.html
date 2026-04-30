@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>광주탐방 일정 조사 | 무지개어린이집</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+:root {
+  --bg: #f2f0eb;
+  --surface: #faf9f6;
+  --surface2: #eceae3;
+  --border: rgba(0,0,0,0.08);
+  --border2: rgba(0,0,0,0.15);
+  --text: #1c1c1a;
+  --text2: #6a6a64;
+  --text3: #aaa99f;
+  --green: #2D6A4F;
+  --green-bg: #d8f3dc;
+  --green-lt: #e8f5e9;
+  --blue: #1565C0;
+  --blue-bg: #e3f0fd;
+  --amber: #7B4F12;
+  --amber-bg: #fef3e2;
+  --red: #9B2335;
+  --red-bg: #fce8eb;
+  --forest: #1B4332;
+  --sky: #0277BD;
+  --r: 12px; --rs: 8px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Apple SD Gothic Neo','Noto Sans KR',sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ── Header ── */
+.hdr { background: var(--forest); color: #fff; padding: 0 24px; height: 58px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+.hdr-title { font-size: 15px; font-weight: 700; letter-spacing: -.01em; }
+.hdr-sub { font-size: 11px; opacity: .65; margin-top: 2px; }
+.hdr-badge { font-size: 11px; background: rgba(255,255,255,.15); padding: 4px 12px; border-radius: 20px; }
+
+/* ── Layout ── */
+.wrap { max-width: 760px; margin: 0 auto; padding: 20px 16px 80px; }
+
+/* ── 상단 달력 ── */
+.top-cal-card { background: var(--surface); border: .5px solid var(--border2); border-radius: var(--r); padding: 18px; margin-bottom: 16px; }
+.top-cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.top-cal-title { font-size: 15px; font-weight: 700; }
+.cal-nav-btn { width: 32px; height: 32px; border: .5px solid var(--border2); border-radius: var(--rs); background: transparent; cursor: pointer; font-size: 16px; color: var(--text2); display: flex; align-items: center; justify-content: center; }
+.cal-nav-btn:hover { background: var(--surface2); }
+.top-cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; }
+.top-dow { text-align: center; font-size: 10px; font-weight: 700; color: var(--text3); padding: 4px 0; }
+.top-dow.sun { color: var(--red); } .top-dow.sat { color: var(--blue); }
+.top-cell { border-radius: var(--rs); padding: 4px 2px 6px; text-align: center; cursor: default; min-height: 52px; position: relative; }
+.top-cell.other-month .dn { color: var(--text3); }
+.top-cell.sun-c .dn { color: var(--red); } .top-cell.sat-c .dn { color: var(--blue); }
+.top-cell.today-r { background: var(--green-lt); }
+.top-cell.today-r .dn { color: var(--green); font-weight: 700; }
+.dn { font-size: 12px; font-weight: 500; margin-bottom: 3px; }
+.class-dots { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; min-height: 16px; }
+.cnt-badge { font-size: 9px; background: var(--green); color: #fff; border-radius: 20px; padding: 1px 5px; font-weight: 600; }
+.cnt-badge.forest { background: var(--sky); }
+
+/* ── 입력 폼 ── */
+.form-card { background: var(--surface); border: .5px solid var(--border2); border-radius: var(--r); padding: 20px; margin-bottom: 12px; }
+.section-label { font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 14px; }
+
+/* 기관/반 선택 */
+.inst-tab { display: flex; gap: 6px; margin-bottom: 12px; }
+.itab { flex: 1; height: 40px; border-radius: var(--rs); border: .5px solid var(--border2); background: transparent; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--text2); transition: all .15s; }
+.itab:hover { background: var(--surface2); }
+.itab.active { background: var(--forest); color: #fff; border-color: var(--forest); }
+
+.class-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px,1fr)); gap: 6px; margin-bottom: 16px; }
+.class-btn { padding: 8px 6px; border: .5px solid var(--border2); border-radius: var(--rs); font-size: 12px; font-weight: 500; cursor: pointer; background: var(--surface); color: var(--text); text-align: center; transition: all .15s; }
+.class-btn:hover { background: var(--surface2); }
+.class-btn.sel { background: var(--forest); color: #fff; border-color: var(--forest); }
+.class-btn .ct { font-size: 10px; opacity: .7; margin-top: 2px; }
+
+/* 유형 선택 */
+.type-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.type-btn { padding: 14px; border: .5px solid var(--border2); border-radius: var(--rs); cursor: pointer; background: transparent; text-align: left; transition: all .15s; }
+.type-btn:hover { background: var(--surface2); }
+.type-btn.sel-trip { border-color: var(--blue); background: var(--blue-bg); }
+.type-btn.sel-forest { border-color: var(--green); background: var(--green-bg); }
+.type-btn .tb-icon { font-size: 22px; margin-bottom: 6px; }
+.type-btn .tb-label { font-size: 13px; font-weight: 700; }
+.type-btn .tb-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.type-btn.sel-trip .tb-label { color: var(--blue); }
+.type-btn.sel-forest .tb-label { color: var(--green); }
+
+/* 폼 요소 */
+.fg { margin-bottom: 14px; }
+.fg label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 5px; font-weight: 500; }
+.fg input, .fg select, .fg textarea {
+  width: 100%; border: .5px solid var(--border2); border-radius: var(--rs);
+  padding: 0 12px; font-size: 14px; color: var(--text); background: var(--surface);
+  font-family: inherit;
+}
+.fg input, .fg select { height: 40px; }
+.fg textarea { padding: 10px 12px; resize: vertical; min-height: 64px; line-height: 1.5; }
+.fg input:focus, .fg select:focus, .fg textarea:focus { outline: none; border-color: var(--green); }
+.fg select { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7'%3E%3Cpath fill='%236a6a64' d='M5 7L0 0h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.time-row { display: flex; align-items: center; gap: 6px; }
+.time-row select { flex: 1; }
+.time-sep { font-size: 13px; color: var(--text2); white-space: nowrap; }
+
+/* 달력 날짜 선택 (소형) */
+.date-cal-wrap { margin-bottom: 14px; }
+.date-cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.date-cal-title { font-size: 13px; font-weight: 600; }
+.date-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; }
+.date-dow { text-align: center; font-size: 10px; color: var(--text3); padding: 3px 0; font-weight: 600; }
+.date-dow.sun { color: var(--red); } .date-dow.sat { color: var(--blue); }
+.date-cell { aspect-ratio: 1; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; cursor: pointer; border: .5px solid transparent; transition: all .1s; }
+.date-cell:hover:not(.empty):not(.other) { background: var(--surface2); }
+.date-cell.empty, .date-cell.other { pointer-events: none; color: var(--text3); }
+.date-cell.sun-c { color: var(--red); } .date-cell.sat-c { color: var(--blue); }
+.date-cell.sel-date { background: var(--forest); color: #fff !important; border-color: var(--forest); font-weight: 700; }
+.date-cell.today-mark { border-color: var(--border2); }
+.selected-date-display { font-size: 13px; color: var(--forest); font-weight: 600; padding: 8px 12px; background: var(--green-lt); border-radius: var(--rs); margin-bottom: 14px; display: none; }
+
+/* 차량 여부 */
+.radio-row { display: flex; gap: 10px; }
+.radio-btn { flex: 1; height: 38px; border-radius: var(--rs); border: .5px solid var(--border2); background: transparent; font-size: 13px; cursor: pointer; color: var(--text2); transition: all .15s; }
+.radio-btn:hover { background: var(--surface2); }
+.radio-btn.on { background: var(--forest); color: #fff; border-color: var(--forest); }
+
+/* 제출 버튼 */
+.submit-btn { width: 100%; height: 48px; background: var(--forest); color: #fff; border: none; border-radius: var(--rs); font-size: 15px; font-weight: 700; cursor: pointer; transition: background .15s; margin-top: 4px; }
+.submit-btn:hover { background: #0d2b1f; }
+
+/* 완료 화면 */
+.done-card { background: var(--surface); border: .5px solid var(--border2); border-radius: var(--r); padding: 40px 24px; text-align: center; }
+.done-icon { font-size: 48px; margin-bottom: 14px; }
+.done-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+.done-sub { font-size: 13px; color: var(--text2); line-height: 1.7; }
+
+/* Toast */
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--text); color: #fff; font-size: 13px; padding: 10px 20px; border-radius: 20px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 999; white-space: nowrap; }
+.toast.show { opacity: 1; }
+
+@media (max-width: 480px) {
+  .row2, .row3 { grid-template-columns: 1fr; }
+  .class-grid { grid-template-columns: repeat(3,1fr); }
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div>
+    <div class="hdr-title">🗺 광주탐방 일정 조사</div>
+    <div class="hdr-sub">무지개어린이집 · 우리무지개어린이집</div>
+  </div>
+  <div class="hdr-badge" id="hdrBadge">불러오는 중...</div>
+</div>
+
+<div class="wrap">
+
+  <!-- ── 상단 달력 ── -->
+  <div class="top-cal-card">
+    <div class="top-cal-nav">
+      <button class="cal-nav-btn" onclick="topCalMove(-1)">‹</button>
+      <div class="top-cal-title" id="topCalTitle"></div>
+      <button class="cal-nav-btn" onclick="topCalMove(1)">›</button>
+    </div>
+    <div class="top-cal-grid" id="topCalGrid"></div>
+    <div style="display:flex;gap:14px;margin-top:10px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)">
+        <span style="width:10px;height:10px;border-radius:3px;background:var(--green);display:inline-block"></span>광주탐방
+      </div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)">
+        <span style="width:10px;height:10px;border-radius:3px;background:var(--sky);display:inline-block"></span>숲놀이
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 입력 폼 ── -->
+  <div id="formArea">
+    <div class="form-card">
+      <div class="section-label">기관 선택</div>
+      <div class="inst-tab">
+        <button class="itab active" id="tab_mj" onclick="selectInst('무지개')">무지개어린이집</button>
+        <button class="itab" id="tab_ur" onclick="selectInst('우리무지개')">우리무지개어린이집</button>
+      </div>
+
+      <div class="section-label">반 선택</div>
+      <div class="class-grid" id="classGrid"></div>
+    </div>
+
+    <!-- 유형 선택 (반 선택 후 표시) -->
+    <div class="form-card" id="typeCard" style="display:none">
+      <div class="section-label">활동 유형</div>
+      <div class="type-row">
+        <button class="type-btn" id="btnTrip" onclick="selectType('trip')">
+          <div class="tb-icon">🗺</div>
+          <div class="tb-label">광주탐방</div>
+          <div class="tb-sub">장소·주제·미션 입력</div>
+        </button>
+        <button class="type-btn" id="btnForest" onclick="selectType('forest')">
+          <div class="tb-icon">🌲</div>
+          <div class="tb-label">숲놀이</div>
+          <div class="tb-sub">장소·주제 입력</div>
+        </button>
+      </div>
+    </div>
+
+    <!-- 날짜 + 상세 입력 -->
+    <div class="form-card" id="detailCard" style="display:none">
+      <div class="section-label" id="detailTitle">날짜 및 상세 정보</div>
+
+      <!-- 날짜 선택 달력 -->
+      <div class="date-cal-wrap">
+        <div class="date-cal-nav">
+          <button class="cal-nav-btn" onclick="dateCalmove(-1)">‹</button>
+          <div class="date-cal-title" id="dateCalTitle"></div>
+          <button class="cal-nav-btn" onclick="dateCalmove(1)">›</button>
+        </div>
+        <div class="date-grid" id="dateCalGrid"></div>
+      </div>
+      <div class="selected-date-display" id="selDateDisplay"></div>
+
+      <!-- 시간 -->
+      <div class="row2">
+        <div class="fg">
+          <label>출발 시간</label>
+          <div class="time-row">
+            <select id="depH"></select>
+            <span class="time-sep">시</span>
+            <select id="depM"></select>
+            <span class="time-sep">분</span>
+          </div>
+        </div>
+        <div class="fg">
+          <label>도착 시간 (복귀)</label>
+          <div class="time-row">
+            <select id="arrH"></select>
+            <span class="time-sep">시</span>
+            <select id="arrM"></select>
+            <span class="time-sep">분</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 장소 -->
+      <div class="fg">
+        <label>장소</label>
+        <input type="text" id="fPlace" placeholder="예) 국립광주박물관">
+      </div>
+
+      <!-- 주제 -->
+      <div class="fg">
+        <label>주제</label>
+        <input type="text" id="fTheme" placeholder="예) 우리 고장의 역사 탐방">
+      </div>
+
+      <!-- 광주탐방 전용 -->
+      <div id="tripOnly">
+        <div class="fg">
+          <label>미션</label>
+          <textarea id="fMission" placeholder="예) 전시물 중 마음에 드는 것 찾아 그리기"></textarea>
+        </div>
+        <div class="row2">
+          <div class="fg">
+            <label>사전 활동</label>
+            <textarea id="fPre" placeholder="예) 광주 지역 문화유산 알아보기" style="min-height:56px"></textarea>
+          </div>
+          <div class="fg">
+            <label>사후 활동</label>
+            <textarea id="fPost" placeholder="예) 탐방 소감 발표하기" style="min-height:56px"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- 인원 / 지원교사 -->
+      <div class="row2">
+        <div class="fg">
+          <label>인원 (명)</label>
+          <input type="number" id="fPeople" placeholder="0" min="1" max="50">
+        </div>
+        <div class="fg">
+          <label>지원교사 (명)</label>
+          <input type="number" id="fSupport" placeholder="0" min="0" max="20">
+        </div>
+      </div>
+
+      <!-- 차량 이용 -->
+      <div class="fg">
+        <label>차량 이용</label>
+        <div class="radio-row">
+          <button class="radio-btn" id="busY" onclick="setBus(true)">✓ 이용</button>
+          <button class="radio-btn" id="busN" onclick="setBus(false)">✗ 미이용</button>
+        </div>
+      </div>
+
+      <button class="submit-btn" onclick="submitForm()">📋 일정 제출하기</button>
+    </div>
+  </div>
+
+  <!-- 완료 화면 -->
+  <div id="doneArea" style="display:none">
+    <div class="done-card">
+      <div class="done-icon">✅</div>
+      <div class="done-title" id="doneTitle">제출 완료!</div>
+      <div class="done-sub" id="doneSub"></div>
+      <div style="margin-top:24px;display:flex;gap:10px;justify-content:center">
+        <button class="submit-btn" style="width:auto;padding:0 28px;font-size:13px" onclick="resetForm()">새 일정 입력하기</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Firebase ──
+const firebaseConfig = {
+  apiKey: "AIzaSyDojXJ_9pOnla8uG240APwo3Ik9gBddMw4",
+  authDomain: "mujigae-swimming.firebaseapp.com",
+  databaseURL: "https://mujigae-swimming-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "mujigae-swimming",
+  storageBucket: "mujigae-swimming.firebasestorage.app",
+  messagingSenderId: "279953220805",
+  appId: "1:279953220805:web:b24cbe70f8556416c0bcac"
+};
+let db = null;
+try { firebase.initializeApp(firebaseConfig); db = firebase.database(); } catch(e) { console.warn(e); }
+
+// ── 반 목록 ──
+const CLASSES = {
+  '무지개': [
+    { name:'아기참새', type:'영아' },
+    { name:'초롱이슬', type:'영아' },
+    { name:'은빛물결', type:'유아' },
+    { name:'드림반',   type:'방과후' },
+  ],
+  '우리무지개': [
+    { name:'들꽃향기', type:'유아' },
+    { name:'푸른하늘', type:'유아' },
+    { name:'푸른바다', type:'유아' },
+    { name:'아침햇살', type:'유아' },
+    { name:'고운햇살', type:'유아' },
+    { name:'파도소리', type:'유아' },
+    { name:'다짐반',   type:'방과후' },
+    { name:'모둠반',   type:'방과후' },
+  ]
+};
+
+const DAYS = ['일','월','화','수','목','금','토'];
+const MONS = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+
+// ── 앱 상태 ──
+let state = {
+  inst: '무지개',
+  cls: '',
+  type: '',   // 'trip' | 'forest'
+  date: '',   // 'YYYY-MM-DD'
+  bus: null,
+  // 상단 달력
+  topCy: 0, topCm: 0,
+  // 날짜 선택 달력
+  dateCy: 0, dateCm: 0,
+};
+let allSchedules = {};  // Firebase 데이터
+
+// ── 초기화 ──
+const now = new Date();
+state.topCy = now.getFullYear();
+state.topCm = now.getMonth();
+state.dateCy = now.getFullYear();
+state.dateCm = now.getMonth();
+
+// 시간 select 채우기
+function fillTimeSelects() {
+  ['depH','arrH'].forEach(id => {
+    const el = document.getElementById(id);
+    for (let h = 7; h <= 20; h++) {
+      const o = document.createElement('option');
+      o.value = h; o.textContent = h+'시';
+      el.appendChild(o);
+    }
+    el.value = 9;
+  });
+  document.getElementById('arrH').value = 13;
+  ['depM','arrM'].forEach(id => {
+    const el = document.getElementById(id);
+    [0,10,20,30,40,50].forEach(m => {
+      const o = document.createElement('option');
+      o.value = m; o.textContent = String(m).padStart(2,'0')+'분';
+      el.appendChild(o);
+    });
+  });
+}
+fillTimeSelects();
+
+// Firebase 로드
+async function loadSchedules() {
+  if (!db) { document.getElementById('hdrBadge').textContent = 'Firebase 미설정'; renderTopCal(); return; }
+  try {
+    const snap = await db.ref('광주탐방일정').get();
+    allSchedules = snap.exists() ? snap.val() : {};
+    const cnt = Object.keys(allSchedules).length;
+    document.getElementById('hdrBadge').textContent = `총 ${cnt}건 등록됨`;
+  } catch(e) { console.error(e); }
+  renderTopCal();
+}
+loadSchedules();
+
+// ── 상단 달력 ──
+function topCalMove(d) { state.topCm += d; if(state.topCm>11){state.topCm=0;state.topCy++;} if(state.topCm<0){state.topCm=11;state.topCy--;} renderTopCal(); }
+
+function renderTopCal() {
+  const y = state.topCy, m = state.topCm;
+  document.getElementById('topCalTitle').textContent = `${y}년 ${MONS[m]}`;
+  const g = document.getElementById('topCalGrid'); g.innerHTML = '';
+
+  DAYS.forEach((d,i) => {
+    const el = document.createElement('div');
+    el.className = 'top-dow'+(i===0?' sun':i===6?' sat':'');
+    el.textContent = d; g.appendChild(el);
+  });
+
+  // 날짜별 일정 집계
+  const dayCounts = {}; // 'YYYY-MM-DD' → { trip:n, forest:n }
+  Object.values(allSchedules).forEach(s => {
+    const key = s.날짜;
+    if (!key) return;
+    if (!dayCounts[key]) dayCounts[key] = { trip:0, forest:0 };
+    if (s.유형 === '광주탐방') dayCounts[key].trip++;
+    else dayCounts[key].forest++;
+  });
+
+  const first = new Date(y,m,1), dow = first.getDay(), dim = new Date(y,m+1,0).getDate();
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  for(let i=0;i<dow;i++){const e=document.createElement('div');e.className='top-cell';g.appendChild(e);}
+  for(let d=1;d<=dim;d++){
+    const date = new Date(y,m,d);
+    const key = fmtDate(date);
+    const dw = date.getDay();
+    const cnt = dayCounts[key];
+    const el = document.createElement('div');
+    let cls = 'top-cell';
+    if (dw===0) cls+=' sun-c'; else if(dw===6) cls+=' sat-c';
+    if (date.toDateString()===today.toDateString()) cls+=' today-r';
+    el.className = cls;
+
+    let html = `<div class="dn">${d}</div><div class="class-dots">`;
+    if (cnt) {
+      if (cnt.trip > 0) html += `<span class="cnt-badge">${cnt.trip}탐방</span>`;
+      if (cnt.forest > 0) html += `<span class="cnt-badge forest">${cnt.forest}숲</span>`;
+    }
+    html += '</div>';
+    el.innerHTML = html;
+    g.appendChild(el);
+  }
+}
+
+// ── 기관 선택 ──
+function selectInst(inst) {
+  state.inst = inst; state.cls = ''; state.type = ''; state.date = '';
+  document.getElementById('tab_mj').classList.toggle('active', inst==='무지개');
+  document.getElementById('tab_ur').classList.toggle('active', inst==='우리무지개');
+  document.getElementById('typeCard').style.display = 'none';
+  document.getElementById('detailCard').style.display = 'none';
+  renderClassGrid();
+}
+
+function renderClassGrid() {
+  const g = document.getElementById('classGrid'); g.innerHTML = '';
+  (CLASSES[state.inst]||[]).forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'class-btn' + (state.cls===c.name?' sel':'');
+    btn.innerHTML = `<div>${c.name}</div><div class="ct">${c.type}반</div>`;
+    btn.onclick = () => selectClass(c.name);
+    g.appendChild(btn);
+  });
+}
+renderClassGrid();
+
+function selectClass(name) {
+  state.cls = name; state.type = ''; state.date = '';
+  renderClassGrid();
+  document.getElementById('typeCard').style.display = 'block';
+  document.getElementById('detailCard').style.display = 'none';
+  document.getElementById('btnTrip').className = 'type-btn';
+  document.getElementById('btnForest').className = 'type-btn';
+  window.scrollTo({top: document.getElementById('typeCard').offsetTop - 70, behavior:'smooth'});
+}
+
+// ── 유형 선택 ──
+function selectType(t) {
+  state.type = t;
+  document.getElementById('btnTrip').className = 'type-btn'+(t==='trip'?' sel-trip':'');
+  document.getElementById('btnForest').className = 'type-btn'+(t==='forest'?' sel-forest':'');
+  document.getElementById('tripOnly').style.display = t==='trip' ? 'block' : 'none';
+  document.getElementById('detailTitle').textContent = t==='trip' ? '🗺 광주탐방 상세 정보' : '🌲 숲놀이 상세 정보';
+  document.getElementById('detailCard').style.display = 'block';
+  // 날짜 달력: 전달~다음달 범위, 현재월로 초기화
+  state.dateCy = now.getFullYear(); state.dateCm = now.getMonth();
+  state.date = '';
+  document.getElementById('selDateDisplay').style.display = 'none';
+  setBus(null);
+  renderDateCal();
+  window.scrollTo({top: document.getElementById('detailCard').offsetTop - 70, behavior:'smooth'});
+}
+
+// ── 날짜 선택 달력 ──
+function dateCalmove(d) {
+  const prev = state.dateCm - 1 < 0 ? 11 : state.dateCm - 1;
+  const next = state.dateCm + 1 > 11 ? 0 : state.dateCm + 1;
+  const prevY = state.dateCm === 0 ? state.dateCy - 1 : state.dateCy;
+  const nextY = state.dateCm === 11 ? state.dateCy + 1 : state.dateCy;
+  // 전달~다음달 범위만 이동 가능
+  const minM = now.getMonth() - 1; const minY = minM < 0 ? now.getFullYear()-1 : now.getFullYear();
+  const maxM = now.getMonth() + 1; const maxY = maxM > 11 ? now.getFullYear()+1 : now.getFullYear();
+  const newM = state.dateCm + d;
+  const newY = newM < 0 ? state.dateCy - 1 : newM > 11 ? state.dateCy + 1 : state.dateCy;
+  const nm = ((newM % 12) + 12) % 12;
+  // 범위 체크
+  if (newY < minY || (newY===minY && nm < ((minM+12)%12))) return;
+  if (newY > maxY || (newY===maxY && nm > ((maxM+12)%12))) return;
+  state.dateCy = newY; state.dateCm = nm;
+  renderDateCal();
+}
+
+function renderDateCal() {
+  const y = state.dateCy, m = state.dateCm;
+  document.getElementById('dateCalTitle').textContent = `${y}년 ${MONS[m]}`;
+  const g = document.getElementById('dateCalGrid'); g.innerHTML = '';
+
+  DAYS.forEach((d,i) => {
+    const el = document.createElement('div');
+    el.className = 'date-dow'+(i===0?' sun':i===6?' sat':'');
+    el.textContent = d; g.appendChild(el);
+  });
+
+  const first = new Date(y,m,1), dow = first.getDay(), dim = new Date(y,m+1,0).getDate();
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  for(let i=0;i<dow;i++){const e=document.createElement('div');e.className='date-cell empty';g.appendChild(e);}
+  for(let d=1;d<=dim;d++){
+    const date = new Date(y,m,d);
+    const key = fmtDate(date);
+    const dw = date.getDay();
+    const el = document.createElement('div');
+    let cls = 'date-cell';
+    if(dw===0) cls+=' sun-c'; else if(dw===6) cls+=' sat-c';
+    if(date.toDateString()===today.toDateString()) cls+=' today-mark';
+    if(state.date===key) cls+=' sel-date';
+    el.className = cls;
+    el.textContent = d;
+    el.onclick = () => {
+      state.date = key;
+      const disp = document.getElementById('selDateDisplay');
+      disp.style.display = 'block';
+      disp.textContent = `📅 선택된 날짜: ${y}년 ${m+1}월 ${d}일 (${DAYS[dw]}요일)`;
+      renderDateCal();
+    };
+    g.appendChild(el);
+  }
+}
+
+// ── 차량 ──
+function setBus(v) {
+  state.bus = v;
+  document.getElementById('busY').className = 'radio-btn'+(v===true?' on':'');
+  document.getElementById('busN').className = 'radio-btn'+(v===false?' on':'');
+}
+
+// ── 제출 ──
+async function submitForm() {
+  if (!state.cls) { toast('반을 선택해주세요.'); return; }
+  if (!state.type) { toast('활동 유형을 선택해주세요.'); return; }
+  if (!state.date) { toast('날짜를 선택해주세요.'); return; }
+  if (state.bus === null) { toast('차량 이용 여부를 선택해주세요.'); return; }
+
+  const place = document.getElementById('fPlace').value.trim();
+  const theme = document.getElementById('fTheme').value.trim();
+  const people = document.getElementById('fPeople').value;
+  const support = document.getElementById('fSupport').value;
+  if (!place) { toast('장소를 입력해주세요.'); return; }
+  if (!people) { toast('인원을 입력해주세요.'); return; }
+  if (!support && support !== '0') { toast('지원교사 수를 입력해주세요.'); return; }
+
+  const depH = document.getElementById('depH').value;
+  const depM = document.getElementById('depM').value;
+  const arrH = document.getElementById('arrH').value;
+  const arrM = document.getElementById('arrM').value;
+
+  const payload = {
+    기관: state.inst==='무지개' ? '무지개어린이집' : '우리무지개어린이집',
+    반: state.cls,
+    유형: state.type==='trip' ? '광주탐방' : '숲놀이',
+    날짜: state.date,
+    출발시간: `${depH}시 ${String(depM).padStart(2,'0')}분`,
+    도착시간: `${arrH}시 ${String(arrM).padStart(2,'0')}분`,
+    장소: place,
+    주제: theme || '',
+    인원: parseInt(people),
+    지원교사: parseInt(support),
+    차량이용: state.bus ? '이용' : '미이용',
+    제출일시: new Date().toISOString(),
+  };
+
+  if (state.type === 'trip') {
+    payload.미션 = document.getElementById('fMission').value.trim();
+    payload.사전활동 = document.getElementById('fPre').value.trim();
+    payload.사후활동 = document.getElementById('fPost').value.trim();
+  }
+
+  const key = `${state.inst}_${state.cls}_${state.date}`;
+
+  if (db) {
+    try {
+      await db.ref(`광주탐방일정/${key}`).set(payload);
+    } catch(e) { toast('저장 오류: '+e.message); return; }
+  } else {
+    console.log('저장(미설정):', payload);
+  }
+
+  // 로컬 데이터 갱신
+  allSchedules[key] = payload;
+  renderTopCal();
+
+  // 완료 화면
+  document.getElementById('formArea').style.display = 'none';
+  document.getElementById('doneArea').style.display = 'block';
+  document.getElementById('doneTitle').textContent = `${state.cls} 일정 제출 완료!`;
+  const d = parseDate(state.date);
+  document.getElementById('doneSub').innerHTML =
+    `<b>${payload.기관}</b> · ${state.cls}<br>` +
+    `${payload.유형} · ${d.getMonth()+1}월 ${d.getDate()}일 (${DAYS[d.getDay()]}요일)<br>` +
+    `${payload.출발시간} 출발 → ${payload.도착시간} 도착<br>` +
+    `📍 ${place} · 인원 ${people}명 · 지원교사 ${support}명 · 차량 ${payload.차량이용}`;
+  window.scrollTo(0,0);
+}
+
+// ── 리셋 ──
+function resetForm() {
+  state.cls = ''; state.type = ''; state.date = ''; state.bus = null;
+  document.getElementById('typeCard').style.display = 'none';
+  document.getElementById('detailCard').style.display = 'none';
+  document.getElementById('selDateDisplay').style.display = 'none';
+  document.getElementById('fPlace').value = '';
+  document.getElementById('fTheme').value = '';
+  document.getElementById('fMission').value = '';
+  document.getElementById('fPre').value = '';
+  document.getElementById('fPost').value = '';
+  document.getElementById('fPeople').value = '';
+  document.getElementById('fSupport').value = '';
+  document.getElementById('depH').value = 9;
+  document.getElementById('arrH').value = 13;
+  document.getElementById('depM').value = 0;
+  document.getElementById('arrM').value = 0;
+  renderClassGrid();
+  document.getElementById('formArea').style.display = 'block';
+  document.getElementById('doneArea').style.display = 'none';
+  window.scrollTo(0,0);
+}
+
+// ── 유틸 ──
+function fmtDate(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function parseDate(s){const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);}
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2500);}
+</script>
+</body>
+</html>
