@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>광주탐방 일정 관리 | 무지개어린이집</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<style>
+:root {
+  --bg:#f2f0eb;--surface:#faf9f6;--surface2:#eceae3;
+  --border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.15);
+  --text:#1c1c1a;--text2:#6a6a64;--text3:#aaa99f;
+  --green:#2D6A4F;--green-bg:#d8f3dc;--green-lt:#e8f5e9;
+  --blue:#1565C0;--blue-bg:#e3f0fd;
+  --sky:#0277BD;--sky-bg:#e1f5fe;
+  --amber:#7B4F12;--amber-bg:#fef3e2;
+  --red:#9B2335;--red-bg:#fce8eb;
+  --forest:#1B4332;--forest2:#2D6A4F;
+  --r:12px;--rs:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* Login */
+.login-overlay{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999}
+.login-card{background:var(--surface);border:.5px solid var(--border2);border-radius:var(--r);padding:36px 32px;width:340px;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.login-icon{font-size:40px;margin-bottom:14px}
+.login-title{font-size:18px;font-weight:700;margin-bottom:6px}
+.login-sub{font-size:13px;color:var(--text2);margin-bottom:24px;line-height:1.6}
+.login-input{width:100%;height:44px;border:.5px solid var(--border2);border-radius:var(--rs);padding:0 14px;font-size:16px;text-align:center;letter-spacing:.25em;color:var(--text);background:var(--surface);margin-bottom:12px}
+.login-input:focus{outline:none;border-color:var(--forest)}
+.login-btn{width:100%;height:44px;background:var(--forest);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer}
+.login-btn:hover{background:#0d2b1f}
+.login-error{font-size:12px;color:var(--red);margin-top:8px;display:none}
+
+/* Header */
+.hdr{background:var(--forest);color:#fff;padding:0 24px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.hdr-title{font-size:15px;font-weight:700}
+.hdr-sub{font-size:11px;opacity:.65;margin-top:2px}
+.hdr-right{display:flex;gap:8px}
+.hdr-btn{height:32px;padding:0 14px;border-radius:20px;border:.5px solid rgba(255,255,255,.3);background:transparent;color:#fff;font-size:12px;font-weight:500;cursor:pointer}
+.hdr-btn:hover{background:rgba(255,255,255,.15)}
+.hdr-btn.danger{border-color:rgba(255,100,100,.5);color:#ffaaaa}
+.hdr-btn.danger:hover{background:rgba(255,100,100,.15)}
+.hdr-btn.excel{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.3)}
+
+/* Page */
+.page{max-width:1100px;margin:0 auto;padding:20px 16px 80px}
+
+/* Stats */
+.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
+.sc{background:var(--surface);border:.5px solid var(--border2);border-radius:var(--r);padding:14px 16px}
+.sc .sl{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.sc .sv{font-size:24px;font-weight:700}
+.sc .ss{font-size:11px;color:var(--text3);margin-top:2px}
+.sv.forest{color:var(--forest)}.sv.sky{color:var(--sky)}.sv.green{color:var(--green)}
+
+/* Top calendar */
+.top-cal-card{background:var(--surface);border:.5px solid var(--border2);border-radius:var(--r);padding:18px;margin-bottom:16px}
+.cal-nav-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.cal-nav-title{font-size:15px;font-weight:700}
+.cal-nav-btn{width:32px;height:32px;border:.5px solid var(--border2);border-radius:var(--rs);background:transparent;cursor:pointer;font-size:16px;color:var(--text2);display:flex;align-items:center;justify-content:center}
+.cal-nav-btn:hover{background:var(--surface2)}
+.top-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.top-dow{text-align:center;font-size:10px;font-weight:700;color:var(--text3);padding:4px 0}
+.top-dow.sun{color:var(--red)}.top-dow.sat{color:var(--sky)}
+.top-cell{border-radius:var(--rs);padding:4px 2px 6px;text-align:center;min-height:60px;cursor:pointer;transition:background .1s;border:.5px solid transparent}
+.top-cell:hover:not(.empty){background:var(--surface2)}
+.top-cell.empty{pointer-events:none}
+.top-cell.selected{background:var(--green-lt);border-color:var(--green)}
+.top-cell.today-r{border-color:var(--border2)}
+.top-cell .dn{font-size:12px;font-weight:500;margin-bottom:3px}
+.top-cell.sun-c .dn{color:var(--red)}.top-cell.sat-c .dn{color:var(--sky)}
+.top-cell.other-m .dn{color:var(--text3)}
+.class-badges{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;min-height:16px}
+.cb{font-size:8px;padding:1px 4px;border-radius:3px;font-weight:600;white-space:nowrap}
+.cb-trip{background:var(--forest);color:#fff}
+.cb-forest{background:var(--sky);color:#fff}
+
+/* Toolbar */
+.toolbar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.tl-left{display:flex;gap:8px;flex:1;flex-wrap:wrap}
+.fsel{height:34px;border:.5px solid var(--border2);border-radius:var(--rs);padding:0 10px;font-size:12px;color:var(--text);background:var(--surface);min-width:100px}
+.fsel:focus{outline:none;border-color:var(--forest)}
+.fsearch{height:34px;border:.5px solid var(--border2);border-radius:var(--rs);padding:0 12px;font-size:12px;color:var(--text);background:var(--surface);width:130px}
+.fsearch:focus{outline:none;border-color:var(--forest)}
+.fcnt{font-size:12px;color:var(--text2)}
+.btn{height:34px;padding:0 14px;border-radius:var(--rs);border:.5px solid var(--border2);background:transparent;font-size:12px;cursor:pointer;color:var(--text)}
+.btn:hover{background:var(--surface2)}
+.btn.danger{color:var(--red);border-color:rgba(155,35,53,.3)}
+.btn.danger:hover{background:var(--red-bg)}
+
+/* Table */
+.twrap{background:var(--surface);border:.5px solid var(--border2);border-radius:var(--r);overflow:hidden;margin-bottom:16px}
+.mtable{width:100%;border-collapse:collapse;font-size:12px}
+.mtable th{font-size:10px;font-weight:700;color:var(--text2);text-align:left;padding:9px 12px;border-bottom:.5px solid var(--border2);background:var(--surface2);white-space:nowrap;cursor:pointer;user-select:none}
+.mtable th:hover{color:var(--text)}
+.mtable th.sorted{color:var(--forest)}
+.mtable td{padding:9px 12px;border-bottom:.5px solid var(--border);vertical-align:middle}
+.mtable tr:last-child td{border-bottom:none}
+.mtable tr:hover td{background:rgba(0,0,0,.015)}
+.mtable tr.detail-tr td{background:var(--green-lt);padding:0}
+
+/* Badges */
+.bdg{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.bdg-trip{background:var(--forest);color:#fff}
+.bdg-forest{background:var(--sky);color:#fff}
+.bdg-green{background:var(--green-bg);color:var(--forest)}
+.bdg-gray{background:var(--surface2);color:var(--text2)}
+.sa{display:inline-block;margin-left:3px;font-size:9px;opacity:.4}
+.sa.on{opacity:1;color:var(--forest)}
+
+/* Detail panel */
+.detail-inner{padding:16px}
+.detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:12px}
+.dg-item{background:var(--surface);border-radius:var(--rs);padding:10px 12px}
+.dg-label{font-size:10px;color:var(--text3);margin-bottom:3px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.dg-val{font-size:13px;font-weight:500;color:var(--text);line-height:1.4}
+.dg-val.green{color:var(--forest)}.dg-val.sky{color:var(--sky)}
+.trip-extra{background:var(--surface);border-radius:var(--rs);padding:12px;margin-top:8px}
+.trip-extra-title{font-size:10px;font-weight:700;color:var(--forest);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em}
+.trip-extra-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.te-item .te-label{font-size:10px;color:var(--text3);margin-bottom:3px}
+.te-item .te-val{font-size:12px;color:var(--text);line-height:1.4}
+
+/* Day modal */
+.day-modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:200}
+.day-modal.open{display:flex}
+.day-modal-box{background:var(--surface);border-radius:var(--r);padding:24px;width:480px;max-width:95vw;max-height:85vh;overflow-y:auto}
+.day-modal-title{font-size:16px;font-weight:700;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.day-modal-close{cursor:pointer;color:var(--text2);font-size:20px;line-height:1}
+.day-schedule-item{background:var(--surface2);border-radius:var(--rs);padding:12px 14px;margin-bottom:8px;border-left:3px solid var(--green)}
+.day-schedule-item.forest-type{border-left-color:var(--sky)}
+.dsi-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.dsi-class{font-size:13px;font-weight:700}
+.dsi-rows{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.dsi-row{font-size:11px;color:var(--text2)}
+.dsi-row b{color:var(--text)}
+
+/* Reset modal */
+.reset-modal{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:300}
+.reset-modal.open{display:flex}
+.reset-box{background:var(--surface);border-radius:var(--r);padding:28px;width:360px;text-align:center}
+.reset-icon{font-size:32px;margin-bottom:12px}
+.reset-title{font-size:16px;font-weight:700;margin-bottom:8px}
+.reset-sub{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:20px}
+.reset-input{width:100%;height:40px;border:.5px solid var(--border2);border-radius:var(--rs);padding:0 12px;font-size:14px;text-align:center;margin-bottom:12px;color:var(--text);background:var(--surface)}
+.reset-input:focus{outline:none;border-color:var(--red)}
+.reset-btns{display:flex;gap:8px}
+.rbtn{flex:1;height:40px;border-radius:var(--rs);border:.5px solid var(--border2);background:transparent;font-size:13px;font-weight:600;cursor:pointer;color:var(--text)}
+.rbtn:hover{background:var(--surface2)}
+.rbtn.confirm{background:var(--surface2);color:var(--text3);border-color:var(--border2);cursor:not-allowed}
+.rbtn.confirm.active{background:var(--red);color:#fff;border-color:var(--red);cursor:pointer}
+
+/* Empty / loading */
+.empty{text-align:center;padding:48px 0;color:var(--text3)}
+.loading{text-align:center;padding:40px 0;color:var(--text2);font-size:13px}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;font-size:13px;padding:10px 20px;border-radius:20px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast.show{opacity:1}
+
+@media(max-width:768px){
+  .stats-row{grid-template-columns:1fr 1fr}
+  .page{padding:14px 12px 60px}
+  .hdr{padding:0 14px}
+  .trip-extra-grid{grid-template-columns:1fr}
+  .detail-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <div class="login-icon">🗺</div>
+    <div class="login-title">관리자 로그인</div>
+    <div class="login-sub">광주탐방 일정 조회 페이지입니다.<br>관리자 비밀번호를 입력해주세요.</div>
+    <input class="login-input" type="password" id="pwInput" placeholder="비밀번호"
+      onkeydown="if(event.key==='Enter')checkPw()">
+    <button class="login-btn" onclick="checkPw()">로그인</button>
+    <div class="login-error" id="pwError">비밀번호가 올바르지 않습니다.</div>
+  </div>
+</div>
+
+<!-- Header -->
+<div class="hdr">
+  <div>
+    <div class="hdr-title">🗺 광주탐방 일정 관리</div>
+    <div class="hdr-sub">무지개어린이집 · 우리무지개어린이집</div>
+  </div>
+  <div class="hdr-right">
+    <button class="hdr-btn" onclick="loadData()">↻ 새로고침</button>
+    <button class="hdr-btn excel" onclick="exportExcel()">엑셀 내보내기</button>
+    <button class="hdr-btn danger" onclick="openResetModal()">🗑 초기화</button>
+  </div>
+</div>
+
+<div class="page" id="mainPage" style="display:none">
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="sc"><div class="sl">전체 일정</div><div class="sv forest" id="sTot">-</div><div class="ss">건</div></div>
+    <div class="sc"><div class="sl">광주탐방</div><div class="sv forest" id="sTrip">-</div><div class="ss">건</div></div>
+    <div class="sc"><div class="sl">숲놀이</div><div class="sv sky" id="sForest">-</div><div class="ss">건</div></div>
+    <div class="sc"><div class="sl">차량 이용</div><div class="sv green" id="sBus">-</div><div class="ss">건</div></div>
+    <div class="sc"><div class="sl">이번달 일정</div><div class="sv forest" id="sThisMonth">-</div><div class="ss">건</div></div>
+  </div>
+
+  <!-- 상단 달력 -->
+  <div class="top-cal-card">
+    <div class="cal-nav-row">
+      <button class="cal-nav-btn" onclick="topMove(-1)">‹</button>
+      <div class="cal-nav-title" id="topCalTitle"></div>
+      <button class="cal-nav-btn" onclick="topMove(1)">›</button>
+    </div>
+    <div class="top-cal-grid" id="topCalGrid"></div>
+    <div style="display:flex;gap:14px;margin-top:10px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)">
+        <span style="width:10px;height:10px;border-radius:2px;background:var(--forest);display:inline-block"></span>광주탐방
+      </div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)">
+        <span style="width:10px;height:10px;border-radius:2px;background:var(--sky);display:inline-block"></span>숲놀이
+      </div>
+      <div style="font-size:11px;color:var(--text3)">날짜 클릭 시 해당 일정 상세 보기</div>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="tl-left">
+      <select class="fsel" id="fInst" onchange="applyFilter()">
+        <option value="">전체 기관</option>
+        <option value="무지개어린이집">무지개어린이집</option>
+        <option value="우리무지개어린이집">우리무지개어린이집</option>
+      </select>
+      <select class="fsel" id="fType" onchange="applyFilter()">
+        <option value="">전체 유형</option>
+        <option value="광주탐방">광주탐방</option>
+        <option value="숲놀이">숲놀이</option>
+      </select>
+      <select class="fsel" id="fBus" onchange="applyFilter()">
+        <option value="">차량 전체</option>
+        <option value="이용">이용</option>
+        <option value="미이용">미이용</option>
+      </select>
+      <select class="fsel" id="fMonth" onchange="applyFilter()">
+        <option value="">전체 월</option>
+      </select>
+      <input class="fsearch" id="fSearch" placeholder="반·장소 검색..." oninput="applyFilter()">
+    </div>
+    <div class="fcnt" id="fcnt"></div>
+  </div>
+
+  <!-- Table -->
+  <div class="twrap">
+    <div class="loading" id="loadingMsg">데이터 불러오는 중...</div>
+    <table class="mtable" id="mainTable" style="display:none">
+      <thead>
+        <tr>
+          <th onclick="sortBy('날짜')">날짜 <span class="sa on" id="sa_날짜">↑</span></th>
+          <th onclick="sortBy('기관')">기관 <span class="sa" id="sa_기관">↕</span></th>
+          <th onclick="sortBy('반')">반 <span class="sa" id="sa_반">↕</span></th>
+          <th onclick="sortBy('유형')">유형 <span class="sa" id="sa_유형">↕</span></th>
+          <th>시간</th>
+          <th onclick="sortBy('장소')">장소 <span class="sa" id="sa_장소">↕</span></th>
+          <th onclick="sortBy('인원')">인원 <span class="sa" id="sa_인원">↕</span></th>
+          <th onclick="sortBy('지원교사')">지원 <span class="sa" id="sa_지원교사">↕</span></th>
+          <th>차량</th>
+          <th>상세</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+    <div class="empty" id="emptyMsg" style="display:none">
+      <div style="font-size:28px;margin-bottom:8px">📭</div>조건에 맞는 일정이 없습니다
+    </div>
+  </div>
+</div>
+
+<!-- 날짜 클릭 모달 -->
+<div class="day-modal" id="dayModal" onclick="if(event.target===this)closeDayModal()">
+  <div class="day-modal-box">
+    <div class="day-modal-title">
+      <span id="dayModalTitle">일정</span>
+      <span class="day-modal-close" onclick="closeDayModal()">✕</span>
+    </div>
+    <div id="dayModalBody"></div>
+  </div>
+</div>
+
+<!-- 초기화 모달 -->
+<div class="reset-modal" id="resetModal">
+  <div class="reset-box">
+    <div class="reset-icon">⚠️</div>
+    <div class="reset-title">데이터 초기화</div>
+    <div class="reset-sub">Firebase에 저장된 <b>모든 광주탐방 일정</b>이 삭제됩니다.<br>이 작업은 <b style="color:var(--red)">되돌릴 수 없습니다.</b><br><br>확인을 위해 아래에 <b>삭제</b>를 입력해주세요.</div>
+    <input class="reset-input" type="text" id="resetInput" placeholder="삭제" oninput="checkResetInput()">
+    <div class="reset-btns">
+      <button class="rbtn" onclick="closeResetModal()">취소</button>
+      <button class="rbtn confirm" id="resetConfirmBtn" onclick="executeReset()">초기화</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// Firebase
+const firebaseConfig={apiKey:"AIzaSyDojXJ_9pOnla8uG240APwo3Ik9gBddMw4",authDomain:"mujigae-swimming.firebaseapp.com",databaseURL:"https://mujigae-swimming-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"mujigae-swimming",storageBucket:"mujigae-swimming.firebasestorage.app",messagingSenderId:"279953220805",appId:"1:279953220805:web:b24cbe70f8556416c0bcac"};
+let db=null;
+try{firebase.initializeApp(firebaseConfig);db=firebase.database();}catch(e){console.warn(e);}
+
+const ADMIN_PW='7117';
+const DAYS=['일','월','화','수','목','금','토'];
+const MONS=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+
+let allData=[];
+let currentRows=[];
+let sortKey='날짜';let sortAsc=true;
+const now=new Date();
+let topCy=now.getFullYear();let topCm=now.getMonth();
+
+// ── 로그인 ──
+function checkPw(){
+  if(document.getElementById('pwInput').value===ADMIN_PW){
+    document.getElementById('loginOverlay').style.display='none';
+    document.getElementById('mainPage').style.display='block';
+    loadData();
+  } else {
+    document.getElementById('pwError').style.display='block';
+    document.getElementById('pwInput').value='';
+    document.getElementById('pwInput').focus();
+  }
+}
+
+// ── 데이터 로드 ──
+async function loadData(){
+  document.getElementById('loadingMsg').style.display='block';
+  document.getElementById('mainTable').style.display='none';
+  document.getElementById('emptyMsg').style.display='none';
+  if(!db){allData=[];renderAll();return;}
+  try{
+    const snap=await db.ref('광주탐방일정').get();
+    const raw=snap.exists()?snap.val():{};
+    allData=Object.entries(raw).map(([k,v])=>({...v,_key:k}));
+    renderAll();
+  }catch(e){console.error(e);toast('로드 오류: '+e.message);document.getElementById('loadingMsg').style.display='none';}
+}
+
+// ── 전체 렌더 ──
+function renderAll(){
+  // 월 필터 옵션 생성
+  const months=[...new Set(allData.map(r=>r.날짜?r.날짜.substring(0,7):'').filter(Boolean))].sort();
+  const fMonth=document.getElementById('fMonth');
+  const curVal=fMonth.value;
+  fMonth.innerHTML='<option value="">전체 월</option>';
+  months.forEach(m=>{
+    const[y,mo]=m.split('-');
+    const o=document.createElement('option');
+    o.value=m;o.textContent=`${y}년 ${parseInt(mo)}월`;fMonth.appendChild(o);
+  });
+  if(curVal)fMonth.value=curVal;
+
+  // 통계
+  const thisMonth=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  document.getElementById('sTot').textContent=allData.length;
+  document.getElementById('sTrip').textContent=allData.filter(r=>r.유형==='광주탐방').length;
+  document.getElementById('sForest').textContent=allData.filter(r=>r.유형==='숲놀이').length;
+  document.getElementById('sBus').textContent=allData.filter(r=>r.차량이용==='이용').length;
+  document.getElementById('sThisMonth').textContent=allData.filter(r=>r.날짜&&r.날짜.startsWith(thisMonth)).length;
+
+  currentRows=allData;
+  renderTopCal();
+  applyFilter();
+}
+
+// ── 상단 달력 ──
+function topMove(d){topCm+=d;if(topCm>11){topCm=0;topCy++;}if(topCm<0){topCm=11;topCy--;}renderTopCal();}
+
+function renderTopCal(){
+  document.getElementById('topCalTitle').textContent=`${topCy}년 ${MONS[topCm]}`;
+  const g=document.getElementById('topCalGrid');g.innerHTML='';
+  DAYS.forEach((d,i)=>{
+    const el=document.createElement('div');
+    el.className='top-dow'+(i===0?' sun':i===6?' sat':'');
+    el.textContent=d;g.appendChild(el);
+  });
+
+  // 날짜별 집계
+  const daySched={};
+  allData.forEach(r=>{
+    if(!r.날짜)return;
+    if(!daySched[r.날짜])daySched[r.날짜]={trip:[],forest:[]};
+    if(r.유형==='광주탐방')daySched[r.날짜].trip.push(r.반);
+    else daySched[r.날짜].forest.push(r.반);
+  });
+
+  const first=new Date(topCy,topCm,1),dow=first.getDay(),dim=new Date(topCy,topCm+1,0).getDate();
+  const today=new Date();today.setHours(0,0,0,0);
+  for(let i=0;i<dow;i++){const e=document.createElement('div');e.className='top-cell empty';g.appendChild(e);}
+  for(let d=1;d<=dim;d++){
+    const date=new Date(topCy,topCm,d);
+    const key=fmtDate(date);
+    const dw=date.getDay();
+    const sc=daySched[key];
+    const el=document.createElement('div');
+    let cls='top-cell';
+    if(dw===0)cls+=' sun-c';else if(dw===6)cls+=' sat-c';
+    if(date.toDateString()===today.toDateString())cls+=' today-r';
+    el.className=cls;
+    let html=`<div class="dn">${d}</div><div class="class-badges">`;
+    if(sc){
+      sc.trip.forEach(c=>html+=`<span class="cb cb-trip">${c}</span>`);
+      sc.forest.forEach(c=>html+=`<span class="cb cb-forest">${c}</span>`);
+    }
+    html+='</div>';
+    el.innerHTML=html;
+    if(sc&&(sc.trip.length+sc.forest.length)>0){
+      el.style.cursor='pointer';
+      el.onclick=()=>openDayModal(key,sc);
+    }
+    g.appendChild(el);
+  }
+}
+
+// ── 날짜 클릭 모달 ──
+function openDayModal(dateKey,sc){
+  const d=parseDate(dateKey);
+  document.getElementById('dayModalTitle').textContent=
+    `${d.getMonth()+1}월 ${d.getDate()}일 (${DAYS[d.getDay()]}요일) 일정`;
+  const body=document.getElementById('dayModalBody');body.innerHTML='';
+  const items=[...allData.filter(r=>r.날짜===dateKey)].sort((a,b)=>a.출발시간>b.출발시간?1:-1);
+  if(items.length===0){body.innerHTML='<div style="color:var(--text3);font-size:13px">일정 없음</div>';return;}
+  items.forEach(r=>{
+    const el=document.createElement('div');
+    el.className='day-schedule-item'+(r.유형==='숲놀이'?' forest-type':'');
+    let html=`<div class="dsi-top">
+      <span class="bdg ${r.유형==='광주탐방'?'bdg-trip':'bdg-forest'}">${r.유형}</span>
+      <span class="dsi-class">${r.반}</span>
+      <span style="font-size:11px;color:var(--text2)">${r.기관==='무지개어린이집'?'무지개':'우리무지개'}</span>
+    </div>
+    <div class="dsi-rows">
+      <div class="dsi-row">🕐 <b>${r.출발시간}</b> 출발 → <b>${r.도착시간}</b> 도착</div>
+      <div class="dsi-row">📍 <b>${r.장소||'-'}</b></div>
+      <div class="dsi-row">🎯 ${r.주제||'-'}</div>
+      <div class="dsi-row">👥 인원 <b>${r.인원}명</b> · 지원 <b>${r.지원교사}명</b> · 차량 <b>${r.차량이용}</b></div>`;
+    if(r.유형==='광주탐방'&&r.미션){
+      html+=`<div class="dsi-row" style="grid-column:span 2">🔍 미션: ${r.미션}</div>`;
+    }
+    html+=`</div>`;
+    el.innerHTML=html;
+    body.appendChild(el);
+  });
+  document.getElementById('dayModal').classList.add('open');
+}
+function closeDayModal(){document.getElementById('dayModal').classList.remove('open');}
+
+// ── 필터 ──
+function applyFilter(){
+  const inst=document.getElementById('fInst').value;
+  const type=document.getElementById('fType').value;
+  const bus=document.getElementById('fBus').value;
+  const month=document.getElementById('fMonth').value;
+  const search=document.getElementById('fSearch').value.trim().toLowerCase();
+  let rows=allData.filter(r=>{
+    if(inst&&r.기관!==inst)return false;
+    if(type&&r.유형!==type)return false;
+    if(bus&&r.차량이용!==bus)return false;
+    if(month&&(!r.날짜||!r.날짜.startsWith(month)))return false;
+    if(search&&!r.반?.includes(search)&&!r.장소?.includes(search)&&!r.주제?.includes(search))return false;
+    return true;
+  });
+  rows=sortRows(rows);
+  document.getElementById('fcnt').textContent=`${rows.length}건`;
+  renderTable(rows);
+}
+
+// ── 정렬 ──
+function sortBy(key){
+  if(sortKey===key)sortAsc=!sortAsc;
+  else{sortKey=key;sortAsc=true;}
+  document.querySelectorAll('.sa').forEach(el=>{el.className='sa';el.textContent='↕';});
+  const sa=document.getElementById('sa_'+key);
+  if(sa){sa.className='sa on';sa.textContent=sortAsc?'↑':'↓';}
+  applyFilter();
+}
+function sortRows(rows){
+  return[...rows].sort((a,b)=>{
+    let va=a[sortKey]??'',vb=b[sortKey]??'';
+    if(typeof va==='number'&&typeof vb==='number')return sortAsc?va-vb:vb-va;
+    return sortAsc?String(va).localeCompare(String(vb),'ko'):String(vb).localeCompare(String(va),'ko');
+  });
+}
+
+// ── 테이블 렌더 ──
+function renderTable(rows){
+  document.getElementById('loadingMsg').style.display='none';
+  if(rows.length===0){
+    document.getElementById('mainTable').style.display='none';
+    document.getElementById('emptyMsg').style.display='block';return;
+  }
+  document.getElementById('emptyMsg').style.display='none';
+  document.getElementById('mainTable').style.display='table';
+  window._tRows=rows;
+  const tbody=document.getElementById('tableBody');tbody.innerHTML='';
+
+  rows.forEach((r,idx)=>{
+    const tr=document.createElement('tr');
+    const d=r.날짜?parseDate(r.날짜):null;
+    const dateStr=d?`${d.getMonth()+1}/${d.getDate()}(${DAYS[d.getDay()]})`:`-`;
+    tr.innerHTML=`
+      <td style="font-weight:600;color:var(--forest);white-space:nowrap">${dateStr}</td>
+      <td style="font-size:11px;color:var(--text2)">${r.기관==='무지개어린이집'?'무지개':'우리무지개'}</td>
+      <td style="font-weight:600">${r.반||'-'}</td>
+      <td><span class="bdg ${r.유형==='광주탐방'?'bdg-trip':'bdg-forest'}">${r.유형||'-'}</span></td>
+      <td style="white-space:nowrap;font-size:11px">${r.출발시간||'-'} → ${r.도착시간||'-'}</td>
+      <td>${r.장소||'-'}</td>
+      <td style="text-align:center">${r.인원||0}명</td>
+      <td style="text-align:center">${r.지원교사||0}명</td>
+      <td><span class="bdg ${r.차량이용==='이용'?'bdg-green':'bdg-gray'}">${r.차량이용||'-'}</span></td>
+      <td><button class="btn" style="height:26px;padding:0 10px;font-size:11px" onclick="toggleDetail(${idx})">상세 ▾</button></td>`;
+    tbody.appendChild(tr);
+
+    // 상세 행
+    const dtr=document.createElement('tr');
+    dtr.className='detail-tr';dtr.id=`dtr_${idx}`;dtr.style.display='none';
+    let html=`<td colspan="10"><div class="detail-inner">
+      <div class="detail-grid">
+        <div class="dg-item"><div class="dg-label">기관</div><div class="dg-val">${r.기관||'-'}</div></div>
+        <div class="dg-item"><div class="dg-label">날짜</div><div class="dg-val green">${r.날짜||'-'}</div></div>
+        <div class="dg-item"><div class="dg-label">출발시간</div><div class="dg-val">${r.출발시간||'-'}</div></div>
+        <div class="dg-item"><div class="dg-label">도착시간</div><div class="dg-val">${r.도착시간||'-'}</div></div>
+        <div class="dg-item"><div class="dg-label">장소</div><div class="dg-val">${r.장소||'-'}</div></div>
+        <div class="dg-item"><div class="dg-label">주제</div><div class="dg-val">${r.주제||'-'}</div></div>
+        <div class="dg-item"><div class="dg-label">인원</div><div class="dg-val">${r.인원||0}명</div></div>
+        <div class="dg-item"><div class="dg-label">지원교사</div><div class="dg-val">${r.지원교사||0}명</div></div>
+        <div class="dg-item"><div class="dg-label">차량이용</div><div class="dg-val">${r.차량이용||'-'}</div></div>
+        <div class="dg-item"><div class="dg-label">제출일시</div><div class="dg-val" style="font-size:11px">${r.제출일시?new Date(r.제출일시).toLocaleString('ko-KR'):'-'}</div></div>
+      </div>`;
+    if(r.유형==='광주탐방'){
+      html+=`<div class="trip-extra">
+        <div class="trip-extra-title">🗺 광주탐방 추가 정보</div>
+        <div class="trip-extra-grid">
+          <div class="te-item"><div class="te-label">미션</div><div class="te-val">${r.미션||'-'}</div></div>
+          <div class="te-item"><div class="te-label">사전 활동</div><div class="te-val">${r.사전활동||'-'}</div></div>
+          <div class="te-item"><div class="te-label">사후 활동</div><div class="te-val">${r.사후활동||'-'}</div></div>
+        </div>
+      </div>`;
+    }
+    html+=`</div></td>`;
+    dtr.innerHTML=html;
+    tbody.appendChild(dtr);
+  });
+}
+
+function toggleDetail(idx){
+  const dtr=document.getElementById(`dtr_${idx}`);
+  if(!dtr)return;
+  dtr.style.display=dtr.style.display==='none'?'':'none';
+}
+
+// ── 엑셀 내보내기 ──
+function exportExcel(){
+  if(!window.XLSX){toast('SheetJS 로딩 중...');return;}
+  const rows=window._tRows||[];
+  if(rows.length===0){toast('데이터 없음');return;}
+
+  const data=[['날짜','기관','반','유형','출발시간','도착시간','장소','주제','인원(명)','지원교사(명)','차량이용','미션','사전활동','사후활동','제출일시']];
+  rows.forEach(r=>{
+    data.push([
+      r.날짜||'',r.기관||'',r.반||'',r.유형||'',
+      r.출발시간||'',r.도착시간||'',r.장소||'',r.주제||'',
+      r.인원||0,r.지원교사||0,r.차량이용||'',
+      r.미션||'',r.사전활동||'',r.사후활동||'',
+      r.제출일시?new Date(r.제출일시).toLocaleString('ko-KR'):''
+    ]);
+  });
+
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet(data);
+  ws['!cols']=[{wch:12},{wch:14},{wch:8},{wch:8},{wch:10},{wch:10},{wch:18},{wch:20},{wch:8},{wch:10},{wch:8},{wch:20},{wch:20},{wch:20},{wch:18}];
+  XLSX.utils.book_append_sheet(wb,ws,'광주탐방일정');
+  const today=new Date();
+  XLSX.writeFile(wb,`광주탐방일정_${today.getFullYear()}-${today.getMonth()+1}-${today.getDate()}.xlsx`);
+  toast('엑셀 파일이 저장되었습니다.');
+}
+
+// ── 초기화 모달 ──
+function openResetModal(){document.getElementById('resetModal').classList.add('open');document.getElementById('resetInput').value='';checkResetInput();setTimeout(()=>document.getElementById('resetInput').focus(),100);}
+function closeResetModal(){document.getElementById('resetModal').classList.remove('open');}
+function checkResetInput(){
+  const ok=document.getElementById('resetInput').value.trim()==='삭제';
+  const btn=document.getElementById('resetConfirmBtn');
+  btn.className='rbtn confirm'+(ok?' active':'');
+  btn.disabled=!ok;
+}
+async function executeReset(){
+  if(!db){toast('Firebase 미설정');closeResetModal();return;}
+  try{
+    await db.ref('광주탐방일정').remove();
+    allData=[];closeResetModal();renderAll();toast('✓ 모든 데이터가 초기화되었습니다.');
+  }catch(e){toast('초기화 실패: '+e.message);}
+}
+
+// ── 유틸 ──
+function fmtDate(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function parseDate(s){const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);}
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2500);}
+
+document.getElementById('pwInput').focus();
+</script>
+</body>
+</html>
