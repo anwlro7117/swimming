@@ -137,6 +137,35 @@ body { font-family: 'Apple SD Gothic Neo','Noto Sans KR',sans-serif; background:
 .done-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
 .done-sub { font-size: 13px; color: var(--text2); line-height: 1.7; }
 
+
+/* ── 제출 목록 ── */
+.my-list-card { background: var(--surface); border: .5px solid var(--border2); border-radius: var(--r); padding: 18px; margin-bottom: 12px; display: none; }
+.my-list-title { font-size: 12px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+.my-list-empty { font-size: 13px; color: var(--text3); padding: 12px 0; text-align: center; }
+.my-item { background: var(--surface2); border-radius: var(--rs); padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; border-left: 3px solid var(--green); }
+.my-item.forest-item { border-left-color: var(--sky); }
+.my-item-left { flex: 1; }
+.my-item-top { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; }
+.my-item-badge { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+.mib-trip { background: var(--forest); color: #fff; }
+.mib-forest { background: var(--sky); color: #fff; }
+.my-item-date { font-size: 13px; font-weight: 700; color: var(--forest); }
+.my-item-info { font-size: 12px; color: var(--text2); line-height: 1.5; }
+.my-item-del { flex-shrink: 0; height: 30px; padding: 0 12px; border-radius: var(--rs); border: .5px solid rgba(155,35,53,.3); background: transparent; color: var(--red); font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.my-item-del:hover { background: var(--red-bg); }
+
+/* ── 삭제 확인 모달 ── */
+.del-modal { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: none; align-items: center; justify-content: center; z-index: 300; }
+.del-modal.open { display: flex; }
+.del-box { background: var(--surface); border-radius: var(--r); padding: 28px; width: 320px; text-align: center; }
+.del-icon { font-size: 32px; margin-bottom: 10px; }
+.del-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+.del-sub { font-size: 12px; color: var(--text2); line-height: 1.6; margin-bottom: 18px; }
+.del-btns { display: flex; gap: 8px; }
+.dbtn { flex: 1; height: 40px; border-radius: var(--rs); border: .5px solid var(--border2); background: transparent; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text); }
+.dbtn:hover { background: var(--surface2); }
+.dbtn.confirm { background: var(--red); color: #fff; border-color: var(--red); }
+.dbtn.confirm:hover { background: #7a1a28; }
 /* Toast */
 .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--text); color: #fff; font-size: 13px; padding: 10px 20px; border-radius: 20px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 999; white-space: nowrap; }
 .toast.show { opacity: 1; }
@@ -188,6 +217,16 @@ body { font-family: 'Apple SD Gothic Neo','Noto Sans KR',sans-serif; background:
 
       <div class="section-label">반 선택</div>
       <div class="class-grid" id="classGrid"></div>
+    </div>
+
+
+    <!-- 제출 목록 -->
+    <div class="my-list-card" id="myListCard">
+      <div class="my-list-title">
+        <span id="myListTitle">📋 이미 제출한 일정</span>
+        <span style="font-size:11px;color:var(--text3)" id="myListCnt"></span>
+      </div>
+      <div id="myListBody"></div>
     </div>
 
     <!-- 유형 선택 (반 선택 후 표시) -->
@@ -313,6 +352,20 @@ body { font-family: 'Apple SD Gothic Neo','Noto Sans KR',sans-serif; background:
 
 </div>
 
+
+<!-- 삭제 확인 모달 -->
+<div class="del-modal" id="delModal">
+  <div class="del-box">
+    <div class="del-icon">🗑</div>
+    <div class="del-title">일정을 삭제할까요?</div>
+    <div class="del-sub" id="delModalSub"></div>
+    <div class="del-btns">
+      <button class="dbtn" onclick="closeDelModal()">취소</button>
+      <button class="dbtn confirm" onclick="confirmDelete()">삭제</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -395,6 +448,80 @@ function fillTimeSelects() {
   });
 }
 fillTimeSelects();
+
+
+// ── 제출 목록 렌더 ──
+function renderMyList() {
+  const instFull = state.inst==='무지개' ? '무지개어린이집' : '우리무지개어린이집';
+  const card = document.getElementById('myListCard');
+  const body = document.getElementById('myListBody');
+  const cntEl = document.getElementById('myListCnt');
+
+  // 해당 반의 제출 목록 필터
+  const items = Object.entries(allSchedules)
+    .filter(([k,v]) => v.기관===instFull && v.반===state.cls)
+    .sort((a,b) => (a[1].날짜||'') > (b[1].날짜||'') ? 1 : -1);
+
+  card.style.display = 'block';
+  document.getElementById('myListTitle').textContent = `📋 ${state.cls} 제출된 일정`;
+  cntEl.textContent = items.length > 0 ? `${items.length}건` : '';
+  body.innerHTML = '';
+
+  if (items.length === 0) {
+    body.innerHTML = '<div class="my-list-empty">아직 제출된 일정이 없습니다.</div>';
+    return;
+  }
+
+  items.forEach(([key, r]) => {
+    const d = r.날짜 ? parseDate(r.날짜) : null;
+    const dateStr = d ? `${d.getMonth()+1}월 ${d.getDate()}일 (${DAYS[d.getDay()]}요일)` : '-';
+    const isForest = r.유형 === '숲놀이';
+    const el = document.createElement('div');
+    el.className = 'my-item' + (isForest ? ' forest-item' : '');
+    el.innerHTML = `
+      <div class="my-item-left">
+        <div class="my-item-top">
+          <span class="my-item-badge ${isForest?'mib-forest':'mib-trip'}">${r.유형}</span>
+          <span class="my-item-date">${dateStr}</span>
+        </div>
+        <div class="my-item-info">
+          📍 ${r.장소||'-'} · ${r.출발시간||'-'} → ${r.도착시간||'-'}<br>
+          👥 인원 ${r.인원||0}명 · 지원교사 ${r.지원교사||0}명 · 차량 ${r.차량이용||'-'}
+          ${r.주제 ? `<br>🎯 ${r.주제}` : ''}
+        </div>
+      </div>
+      <button class="my-item-del" onclick="askDelete('${key}', '${r.유형}', '${dateStr.replace(/'/g,'')}', '${r.장소||''}')">삭제</button>`;
+    body.appendChild(el);
+  });
+}
+
+// ── 삭제 관련 ──
+let _delKey = '';
+function askDelete(key, type, dateStr, place) {
+  _delKey = key;
+  document.getElementById('delModalSub').innerHTML =
+    `<b>${state.cls}</b> · ${type}<br><b>${dateStr}</b><br>📍 ${place||'-'}<br><br>이 일정을 삭제하면 되돌릴 수 없습니다.`;
+  document.getElementById('delModal').classList.add('open');
+}
+function closeDelModal() {
+  document.getElementById('delModal').classList.remove('open');
+  _delKey = '';
+}
+async function confirmDelete() {
+  if (!_delKey) return;
+  if (db) {
+    try {
+      await db.ref(`광주탐방일정/${_delKey}`).remove();
+    } catch(e) { toast('삭제 오류: '+e.message); closeDelModal(); return; }
+  }
+  delete allSchedules[_delKey];
+  closeDelModal();
+  renderMyList();
+  renderTopCal();
+  const cnt = Object.keys(allSchedules).length;
+  document.getElementById('hdrBadge').textContent = `총 ${cnt}건 등록됨`;
+  toast('✓ 일정이 삭제되었습니다.');
+}
 
 // Firebase 로드
 async function loadSchedules() {
@@ -484,11 +611,12 @@ renderClassGrid();
 function selectClass(name) {
   state.cls = name; state.type = ''; state.date = '';
   renderClassGrid();
+  renderMyList();
   document.getElementById('typeCard').style.display = 'block';
   document.getElementById('detailCard').style.display = 'none';
   document.getElementById('btnTrip').className = 'type-btn';
   document.getElementById('btnForest').className = 'type-btn';
-  window.scrollTo({top: document.getElementById('typeCard').offsetTop - 70, behavior:'smooth'});
+  window.scrollTo({top: document.getElementById('myListCard').offsetTop - 70, behavior:'smooth'});
 }
 
 // ── 유형 선택 ──
@@ -627,6 +755,7 @@ async function submitForm() {
   renderTopCal();
 
   // 완료 화면
+  renderMyList();
   document.getElementById('formArea').style.display = 'none';
   document.getElementById('doneArea').style.display = 'block';
   document.getElementById('doneTitle').textContent = `${state.cls} 일정 제출 완료!`;
