@@ -153,6 +153,13 @@ body { font-family: 'Apple SD Gothic Neo','Noto Sans KR',sans-serif; background:
 .my-item-info { font-size: 12px; color: var(--text2); line-height: 1.5; }
 .my-item-del { flex-shrink: 0; height: 30px; padding: 0 12px; border-radius: var(--rs); border: .5px solid rgba(155,35,53,.3); background: transparent; color: var(--red); font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; }
 .my-item-del:hover { background: var(--red-bg); }
+.my-item-edit { flex-shrink: 0; height: 30px; padding: 0 12px; border-radius: var(--rs); border: .5px solid rgba(27,67,50,.3); background: transparent; color: var(--forest); font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.my-item-edit:hover { background: var(--green-lt); }
+.my-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.edit-mode-banner { background: var(--amber-bg); border: .5px solid #e8c070; border-radius: var(--rs); padding: 10px 14px; margin-bottom: 14px; font-size: 13px; color: var(--amber); font-weight: 600; display: none; align-items: center; gap: 8px; justify-content: space-between; }
+.edit-mode-banner.show { display: flex; }
+.edit-cancel-btn { height: 28px; padding: 0 12px; border-radius: 20px; border: .5px solid var(--amber); background: transparent; color: var(--amber); font-size: 11px; font-weight: 600; cursor: pointer; }
+.edit-cancel-btn:hover { background: var(--amber-bg); }
 
 /* ── 삭제 확인 모달 ── */
 .del-modal { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: none; align-items: center; justify-content: center; z-index: 300; }
@@ -248,6 +255,10 @@ body { font-family: 'Apple SD Gothic Neo','Noto Sans KR',sans-serif; background:
 
     <!-- 날짜 + 상세 입력 -->
     <div class="form-card" id="detailCard" style="display:none">
+      <div class="edit-mode-banner" id="editBanner">
+        <span>✏️ 수정 모드 — 내용을 변경 후 제출하세요</span>
+        <button class="edit-cancel-btn" onclick="cancelEdit()">✕ 취소</button>
+      </div>
       <div class="section-label" id="detailTitle">날짜 및 상세 정보</div>
 
       <!-- 날짜 선택 달력 -->
@@ -334,7 +345,7 @@ body { font-family: 'Apple SD Gothic Neo','Noto Sans KR',sans-serif; background:
         </div>
       </div>
 
-      <button class="submit-btn" onclick="submitForm()">📋 일정 제출하기</button>
+      <button class="submit-btn" id="submitBtn" onclick="submitForm()">📋 일정 제출하기</button>
     </div>
   </div>
 
@@ -412,6 +423,7 @@ let state = {
   type: '',   // 'trip' | 'forest'
   date: '',   // 'YYYY-MM-DD'
   bus: null,
+  editKey: '',  // 수정 중인 Firebase key
   // 상단 달력
   topCy: 0, topCm: 0,
   // 날짜 선택 달력
@@ -490,9 +502,82 @@ function renderMyList() {
           ${r.주제 ? `<br>🎯 ${r.주제}` : ''}
         </div>
       </div>
-      <button class="my-item-del" onclick="askDelete('${key}', '${r.유형}', '${dateStr.replace(/'/g,'')}', '${r.장소||''}')">삭제</button>`;
+      <div class="my-item-actions">
+        <button class="my-item-edit" onclick="startEdit('${key}')">수정</button>
+        <button class="my-item-del" onclick="askDelete('${key}', '${r.유형}', '${dateStr.replace(/'/g,'')}', '${r.장소||''}')">삭제</button>
+      </div>\`;
     body.appendChild(el);
   });
+}
+
+
+// ── 수정 모드 ──
+function startEdit(key) {
+  const r = allSchedules[key];
+  if (!r) return;
+  state.editKey = key;
+
+  // 유형 선택
+  const t = r.유형 === '광주탐방' ? 'trip' : 'forest';
+  selectType(t);  // typeCard + detailCard 열기
+
+  // 날짜 복원
+  if (r.날짜) {
+    state.date = r.날짜;
+    const d = parseDate(r.날짜);
+    state.dateCy = d.getFullYear();
+    state.dateCm = d.getMonth();
+    const disp = document.getElementById('selDateDisplay');
+    disp.style.display = 'block';
+    disp.textContent = `📅 선택된 날짜: ${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 (${DAYS[d.getDay()]}요일)`;
+    renderDateCal();
+  }
+
+  // 시간 복원 (예: "9시 00분" → h=9, m=0)
+  const parseTime = (str) => {
+    if (!str) return {h:9,m:0};
+    const hm = str.match(/(\d+)시\s*(\d+)분/);
+    return hm ? {h:parseInt(hm[1]),m:parseInt(hm[2])} : {h:9,m:0};
+  };
+  const dep = parseTime(r.출발시간);
+  const arr = parseTime(r.도착시간);
+  document.getElementById('depH').value = dep.h;
+  document.getElementById('depM').value = dep.m;
+  document.getElementById('arrH').value = arr.h;
+  document.getElementById('arrM').value = arr.m;
+
+  // 나머지 필드
+  document.getElementById('fPlace').value = r.장소 || '';
+  document.getElementById('fTheme').value = r.주제 || '';
+  document.getElementById('fPeople').value = r.인원 || '';
+  document.getElementById('fSupport').value = r.지원교사 !== undefined ? r.지원교사 : '';
+  setBus(r.차량이용 === '이용');
+
+  if (t === 'trip') {
+    document.getElementById('fMission').value = r.미션 || '';
+    document.getElementById('fPre').value = r.사전활동 || '';
+    document.getElementById('fPost').value = r.사후활동 || '';
+  }
+
+  // 수정 모드 UI
+  document.getElementById('editBanner').classList.add('show');
+  document.getElementById('submitBtn').textContent = '✏️ 수정 저장하기';
+  document.getElementById('detailTitle').textContent = t === 'trip' ? '✏️ 광주탐방 수정' : '✏️ 숲놀이 수정';
+
+  window.scrollTo({top: document.getElementById('detailCard').offsetTop - 70, behavior:'smooth'});
+}
+
+function cancelEdit() {
+  state.editKey = '';
+  document.getElementById('editBanner').classList.remove('show');
+  document.getElementById('submitBtn').textContent = '📋 일정 제출하기';
+  document.getElementById('detailCard').style.display = 'none';
+  document.getElementById('typeCard').style.display = 'block';
+  state.type = '';
+  state.date = '';
+  document.getElementById('btnTrip').className = 'type-btn';
+  document.getElementById('btnForest').className = 'type-btn';
+  document.getElementById('selDateDisplay').style.display = 'none';
 }
 
 // ── 삭제 관련 ──
@@ -591,6 +676,8 @@ function selectInst(inst) {
   state.inst = inst; state.cls = ''; state.type = ''; state.date = '';
   document.getElementById('tab_mj').classList.toggle('active', inst==='무지개');
   document.getElementById('tab_ur').classList.toggle('active', inst==='우리무지개');
+  document.getElementById('editBanner').classList.remove('show');
+  document.getElementById('submitBtn').textContent = '📋 일정 제출하기';
   document.getElementById('typeCard').style.display = 'none';
   document.getElementById('detailCard').style.display = 'none';
   renderClassGrid();
@@ -740,7 +827,8 @@ async function submitForm() {
     payload.사후활동 = document.getElementById('fPost').value.trim();
   }
 
-  const key = `${state.inst}_${state.cls}_${state.date}`;
+  // 수정 모드면 기존 key 유지, 신규면 새 key 생성
+  const key = state.editKey || `${state.inst}_${state.cls}_${state.date}`;
 
   if (db) {
     try {
@@ -752,13 +840,17 @@ async function submitForm() {
 
   // 로컬 데이터 갱신
   allSchedules[key] = payload;
+  // 수정 모드 초기화
+  state.editKey = '';
+  document.getElementById('editBanner').classList.remove('show');
+  document.getElementById('submitBtn').textContent = '📋 일정 제출하기';
   renderTopCal();
 
   // 완료 화면
   renderMyList();
   document.getElementById('formArea').style.display = 'none';
   document.getElementById('doneArea').style.display = 'block';
-  document.getElementById('doneTitle').textContent = `${state.cls} 일정 제출 완료!`;
+  document.getElementById('doneTitle').textContent = state.editKey ? `${state.cls} 일정 수정 완료!` : `${state.cls} 일정 제출 완료!`;
   const d = parseDate(state.date);
   document.getElementById('doneSub').innerHTML =
     `<b>${payload.기관}</b> · ${state.cls}<br>` +
@@ -770,7 +862,9 @@ async function submitForm() {
 
 // ── 리셋 ──
 function resetForm() {
-  state.cls = ''; state.type = ''; state.date = ''; state.bus = null;
+  state.cls = ''; state.type = ''; state.date = ''; state.bus = null; state.editKey = '';
+  document.getElementById('editBanner').classList.remove('show');
+  document.getElementById('submitBtn').textContent = '📋 일정 제출하기';
   document.getElementById('typeCard').style.display = 'none';
   document.getElementById('detailCard').style.display = 'none';
   document.getElementById('selDateDisplay').style.display = 'none';
