@@ -505,7 +505,7 @@ function renderMyList() {
       <div class="my-item-actions">
         <button class="my-item-edit" onclick="startEdit('${key}')">수정</button>
         <button class="my-item-del" onclick="askDelete('${key}', '${r.유형}', '${dateStr.replace(/'/g,'')}', '${r.장소||''}')">삭제</button>
-      </div>\`;
+      </div>`;
     body.appendChild(el);
   });
 }
