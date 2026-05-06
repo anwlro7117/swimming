@@ -35,6 +35,21 @@
   header p { color: var(--accent); font-size: 0.85rem; margin-top: 4px; }
   .refresh-btn { padding: 10px 16px; border: 1.5px solid var(--border); border-radius: 10px; background: transparent; font-family: inherit; font-size: 0.82rem; font-weight: 700; color: var(--sub); cursor: pointer; transition: all 0.15s; }
   .refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .reset-btn { padding: 10px 16px; border: 1.5px solid rgba(239,68,68,0.4); border-radius: 10px; background: transparent; font-family: inherit; font-size: 0.82rem; font-weight: 700; color: #f87171; cursor: pointer; transition: all 0.15s; }
+  .reset-btn:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,0.07); }
+
+  /* 리셋 확인 모달 */
+  #resetModal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 9998; backdrop-filter: blur(6px); }
+  #resetModal.show { display: flex; }
+  .modal-box { background: var(--card); border: 1px solid #ef4444; border-radius: 20px; padding: 32px 28px; text-align: center; max-width: 300px; width: 90%; }
+  .modal-box .m-icon { font-size: 2.2rem; margin-bottom: 10px; }
+  .modal-box h3 { font-size: 1.1rem; font-weight: 900; color: #fff; margin-bottom: 8px; }
+  .modal-box p { font-size: 0.82rem; color: var(--sub); line-height: 1.6; margin-bottom: 22px; }
+  .modal-btns { display: flex; gap: 8px; }
+  .modal-cancel { flex: 1; padding: 12px; border: 1.5px solid var(--border); border-radius: 10px; background: transparent; font-family: inherit; font-size: 0.88rem; font-weight: 700; color: var(--sub); cursor: pointer; }
+  .modal-confirm { flex: 1; padding: 12px; border: none; border-radius: 10px; background: #ef4444; font-family: inherit; font-size: 0.88rem; font-weight: 800; color: #fff; cursor: pointer; transition: opacity 0.15s; }
+  .modal-confirm:hover { opacity: 0.85; }
+  .modal-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
 
   main { max-width: 900px; margin: 0 auto; padding: 20px 16px 40px; }
 
@@ -91,9 +106,25 @@
       <h1>🌙 저녁있는밤 현황</h1>
       <p>2026년 5월 14일 (목) · 무지개어린이집</p>
     </div>
-    <button class="refresh-btn" onclick="loadData()">🔄 새로고침</button>
+    <div style="display:flex;gap:8px;">
+      <button class="refresh-btn" onclick="loadData()">🔄 새로고침</button>
+      <button class="reset-btn" onclick="showResetModal()">🗑️ 데이터 리셋</button>
+    </div>
   </div>
 </header>
+
+<!-- 리셋 확인 모달 -->
+<div id="resetModal">
+  <div class="modal-box">
+    <div class="m-icon">⚠️</div>
+    <h3>데이터를 초기화할까요?</h3>
+    <p>5월 14일 수요조사 데이터가<br>모두 삭제됩니다.<br>이 작업은 되돌릴 수 없습니다.</p>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="hideResetModal()">취소</button>
+      <button class="modal-confirm" id="confirmResetBtn" onclick="doReset()">삭제</button>
+    </div>
+  </div>
+</div>
 
 <main>
   <div class="summary-grid">
@@ -114,7 +145,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, get, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDojXJ_9pOnla8uG240APwo3Ik9gBddMw4",
@@ -206,6 +237,31 @@ function showToast(msg) {
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2200);
 }
+
+window.showResetModal = function() {
+  document.getElementById('resetModal').classList.add('show');
+};
+
+window.hideResetModal = function() {
+  document.getElementById('resetModal').classList.remove('show');
+};
+
+window.doReset = async function() {
+  const btn = document.getElementById('confirmResetBtn');
+  btn.disabled = true;
+  btn.textContent = '삭제 중...';
+  try {
+    await remove(ref(db, `${EVENT_KEY}/classes`));
+    hideResetModal();
+    showToast('🗑️ 데이터가 초기화되었습니다');
+    loadData();
+  } catch (e) {
+    showToast('❌ 리셋 실패: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '삭제';
+  }
+};
 
 setTimeout(() => document.getElementById('pwInput').focus(), 100);
 </script>
