@@ -76,6 +76,8 @@
   .toggle-btn { padding: 6px 14px; background: transparent; border: none; border-radius: 6px; font-family: inherit; font-size: 0.78rem; font-weight: 700; color: var(--sub); cursor: pointer; transition: all 0.15s; }
   .toggle-btn.active.yes-btn { background: var(--primary); color: #fff; }
   .toggle-btn.active.no-btn { background: var(--muted); color: #fff; }
+  .toggle-btn.active.ext-btn { background: #f59e0b; color: #fff; }
+  .child-row.ext { border-color: rgba(245,158,11,0.5); background: rgba(245,158,11,0.07); }
 
   .quick-actions { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
   .quick-btn { padding: 7px 14px; background: var(--light); border: 1px solid var(--border); border-radius: 20px; font-family: inherit; font-size: 0.78rem; font-weight: 600; color: var(--sub); cursor: pointer; transition: all 0.15s; }
@@ -128,11 +130,12 @@
       <span id="selectedClsTitle">👶 아동 참여 여부</span>
     </div>
     <div class="info-box">
-      💡 참여하는 아동은 <b>참여</b>, 참여하지 않는 아동은 <b>불참</b>으로 표시해주세요.
+      💡 참여하는 아동은 <b>참여</b>, 참여하지 않는 아동은 <b>불참</b>, 연장반을 이용하는 아동은 <b>연장반</b>으로 표시해주세요.
     </div>
     <div class="quick-actions">
       <button class="quick-btn" onclick="toggleAll('yes')">✅ 전체 참여</button>
       <button class="quick-btn" onclick="toggleAll('no')">❌ 전체 불참</button>
+      <button class="quick-btn" onclick="toggleAll('ext')" style="border-color:rgba(245,158,11,0.4);color:#f59e0b;">🌙 전체 연장반</button>
     </div>
     <div class="child-list" id="childList"></div>
     <div style="margin-top:14px;">
@@ -232,15 +235,19 @@ window.selectClass = function(name) {
 
 function renderChildren() {
   const list = document.getElementById('childList');
-  list.innerHTML = CLASSES[selectedClass].children.map(name => `
-    <div class="child-row ${answers[name] === 'yes' ? 'yes' : ''}" id="row-${name}">
+  list.innerHTML = CLASSES[selectedClass].children.map(name => {
+    const val = answers[name];
+    const rowCls = val === 'yes' ? 'yes' : val === 'ext' ? 'ext' : '';
+    return `
+    <div class="child-row ${rowCls}" id="row-${name}">
       <div class="child-name">${name}</div>
       <div class="toggle-group">
-        <button class="toggle-btn yes-btn ${answers[name]==='yes'?'active':''}" onclick="setAnswer('${name}','yes')">참여</button>
-        <button class="toggle-btn no-btn ${answers[name]==='no'?'active':''}" onclick="setAnswer('${name}','no')">불참</button>
+        <button class="toggle-btn yes-btn ${val==='yes'?'active':''}" onclick="setAnswer('${name}','yes')">참여</button>
+        <button class="toggle-btn no-btn ${val==='no'?'active':''}" onclick="setAnswer('${name}','no')">불참</button>
+        <button class="toggle-btn ext-btn ${val==='ext'?'active':''}" onclick="setAnswer('${name}','ext')">연장반</button>
       </div>
     </div>
-  `).join('');
+  `}).join('');
   updateSummary();
 }
 
@@ -257,28 +264,68 @@ window.toggleAll = function(val) {
 function updateSummary() {
   const total = Object.keys(answers).length;
   const yesCount = Object.values(answers).filter(v => v === 'yes').length;
+  const extCount = Object.values(answers).filter(v => v === 'ext').length;
   const decided = Object.values(answers).filter(v => v !== null).length;
-  document.getElementById('summaryPill').textContent = `참여 ${yesCount}명 / 응답 ${decided}명 / 전체 ${total}명`;
-
+  document.getElementById('summaryPill').textContent = `참여 ${yesCount}명 · 연장반 ${extCount}명 / 전체 ${total}명`;
   document.getElementById('submitBtn').disabled = decided !== total;
 }
 
+// ── 텔레그램 알림 ──────────────────────────────
+const TG_TOKEN = '8705840306:AAFawx4brSyIxE7q94BIsHubqGB7x1FXyTw';
+const TG_CHAT  = '8226355915';
+
+async function sendTelegram(msg) {
+  try {
+    await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: TG_CHAT, text: msg, parse_mode: 'HTML' })
+    });
+  } catch(e) { console.warn('텔레그램 전송 실패:', e); }
+}
+// ───────────────────────────────────────────────
+
 window.submit = async function() {
   const yesList = Object.keys(answers).filter(k => answers[k] === 'yes');
-  const noList = Object.keys(answers).filter(k => answers[k] === 'no');
+  const noList  = Object.keys(answers).filter(k => answers[k] === 'no');
+  const extList = Object.keys(answers).filter(k => answers[k] === 'ext');
+
+  // 기존 데이터 확인 (신규 제출인지 수정인지 판별)
+  const prevSnap = await get(ref(db, `${EVENT_KEY}/classes/${selectedClass}`));
+  const isUpdate = prevSnap.exists();
 
   try {
     await set(ref(db, `${EVENT_KEY}/classes/${selectedClass}`), {
       yes: yesList,
       no: noList,
+      ext: extList,
       yesCount: yesList.length,
       noCount: noList.length,
-      total: yesList.length + noList.length,
+      extCount: extList.length,
+      total: yesList.length + noList.length + extList.length,
       submittedAt: new Date().toISOString()
     });
 
     setStep(3);
-    showToast(`✅ ${selectedClass} 제출 완료! 참여 ${yesList.length}명`);
+    showToast(`✅ ${selectedClass} 제출 완료! 참여 ${yesList.length}명 · 연장반 ${extList.length}명`);
+
+    // 텔레그램 알림 전송
+    const now = new Date().toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    const icon = isUpdate ? '🔄' : '📋';
+    const label = isUpdate ? '수정 제출' : '신규 제출';
+    const yesStr = yesList.length ? yesList.join(', ') : '없음';
+    const extStr = extList.length ? extList.join(', ') : '없음';
+    const noStr  = noList.length  ? noList.join(', ')  : '없음';
+    const msg =
+`${icon} <b>[저녁있는밤 ${label}]</b>
+📅 2026년 5월 14일 (목)
+🏫 <b>${selectedClass}</b> · ${now}
+
+✅ 참여 ${yesList.length}명: ${yesStr}
+🌙 연장반 ${extList.length}명: ${extStr}
+❌ 불참 ${noList.length}명: ${noStr}`;
+    sendTelegram(msg);
+
     setTimeout(resetForm, 2000);
   } catch (e) {
     showToast('❌ 제출 실패: ' + e.message);

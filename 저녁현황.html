@@ -186,6 +186,7 @@ window.loadData = async function() {
         totalYes += (d.yesCount || 0);
         const yesNames = (d.yes || []).join(', ') || '없음';
         const noNames = (d.no || []).join(', ') || '없음';
+        const extNames = (d.ext || []).join(', ') || '없음';
         const timeStr = d.submittedAt
           ? new Date(d.submittedAt).toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' })
           : '';
@@ -197,11 +198,12 @@ window.loadData = async function() {
             </div>
             <div class="cls-stats">
               <span>참여 <b>${d.yesCount||0}</b>명</span>
+              <span>연장반 <b style="color:#f59e0b">${d.extCount||0}</b>명</span>
               <span>불참 <b>${d.noCount||0}</b>명</span>
-              <span>전체 <b>${d.total||0}</b>명</span>
             </div>
             <div class="name-list">
               <div><span class="label">참여:</span><span class="yes-names">${yesNames}</span></div>
+              <div style="margin-top:4px;"><span class="label">연장반:</span><span style="color:#f59e0b">${extNames}</span></div>
               <div style="margin-top:4px;"><span class="label">불참:</span><span class="no-names">${noNames}</span></div>
             </div>
             <div class="cls-time">📥 ${timeStr}</div>
@@ -238,6 +240,21 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2200);
 }
 
+// ── 텔레그램 알림 ──────────────────────────────
+const TG_TOKEN = '8705840306:AAFawx4brSyIxE7q94BIsHubqGB7x1FXyTw';
+const TG_CHAT  = '8226355915';
+
+async function sendTelegram(msg) {
+  try {
+    await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: TG_CHAT, text: msg, parse_mode: 'HTML' })
+    });
+  } catch(e) { console.warn('텔레그램 전송 실패:', e); }
+}
+// ───────────────────────────────────────────────
+
 window.showResetModal = function() {
   document.getElementById('resetModal').classList.add('show');
 };
@@ -254,6 +271,8 @@ window.doReset = async function() {
     await remove(ref(db, `${EVENT_KEY}/classes`));
     hideResetModal();
     showToast('🗑️ 데이터가 초기화되었습니다');
+    const now = new Date().toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    sendTelegram(`🗑️ <b>[저녁있는밤 데이터 리셋]</b>\n📅 2026년 5월 14일\n관리자가 ${now}에 전체 수요조사 데이터를 초기화했습니다.`);
     loadData();
   } catch (e) {
     showToast('❌ 리셋 실패: ' + e.message);
