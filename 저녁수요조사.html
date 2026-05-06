@@ -23,7 +23,6 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
-  /* 헤더 */
   header {
     background: linear-gradient(135deg, #1a1040 0%, #0f0f1a 100%);
     padding: 32px 24px 52px; position: relative; overflow: hidden;
@@ -53,150 +52,101 @@
 
   main { max-width: 660px; margin: 0 auto; padding: 0 16px 80px; }
 
-  /* 단계 */
-  .steps { display: flex; gap: 0; margin-bottom: 20px; }
-  .step { flex: 1; text-align: center; padding: 10px 4px; font-size: 0.75rem; font-weight: 600; color: var(--muted); border-bottom: 3px solid var(--border); transition: all 0.2s; }
-  .step.active { color: var(--accent); border-color: var(--primary); }
+  .steps { display: flex; gap: 0; margin-bottom: 20px; padding-top: 20px; }
+  .step { flex: 1; text-align: center; padding: 12px 8px; font-size: 0.8rem; color: var(--muted); border-bottom: 2px solid var(--border); position: relative; transition: all 0.2s; }
+  .step.active { color: var(--accent); border-color: var(--accent); font-weight: 700; }
   .step.done { color: var(--green); border-color: var(--green); }
-  .step-num { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: var(--border); color: var(--muted); font-size: 0.7rem; font-weight: 700; margin-bottom: 4px; }
-  .step.active .step-num { background: var(--primary); color: #fff; }
-  .step.done .step-num { background: var(--green); color: #fff; }
+  .step .num { display: inline-block; width: 22px; height: 22px; line-height: 20px; border-radius: 50%; border: 1.5px solid currentColor; font-size: 0.75rem; margin-right: 5px; vertical-align: middle; }
 
-  /* 카드 */
-  .card { background: var(--card); border-radius: 18px; border: 1px solid var(--border); padding: 24px; margin-bottom: 14px; }
-  .card-title { font-size: 0.88rem; font-weight: 700; color: var(--accent); margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
-  .card-title::before { content: ''; display: block; width: 4px; height: 18px; border-radius: 2px; background: linear-gradient(var(--primary), var(--accent)); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 22px; margin-bottom: 16px; }
+  .card-title { font-size: 1.05rem; font-weight: 800; color: #fff; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
 
-  /* 반 버튼 */
-  .class-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-  .cls-btn {
-    padding: 10px 20px; border: 1.5px solid var(--border); border-radius: 30px;
-    background: var(--light); font-family: inherit; font-size: 0.86rem; font-weight: 600;
-    cursor: pointer; transition: all 0.18s; color: var(--sub);
-  }
-  .cls-btn:hover { border-color: var(--primary); color: var(--accent); }
-  .cls-btn.sel { border-color: var(--primary); background: var(--primary); color: #fff; }
-  .inst-label { font-size: 0.7rem; font-weight: 700; color: var(--muted); letter-spacing: 0.8px; margin: 12px 0 7px; }
+  .cls-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+  .cls-btn { padding: 18px 12px; background: var(--light); border: 1.5px solid var(--border); border-radius: 14px; font-family: inherit; font-size: 0.95rem; font-weight: 700; color: var(--text); cursor: pointer; transition: all 0.18s; text-align: center; }
+  .cls-btn:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .cls-btn.selected { background: rgba(124,106,247,0.15); border-color: var(--primary); color: var(--accent); box-shadow: 0 4px 16px rgba(124,106,247,0.25); }
+  .cls-btn .cls-name { font-size: 1rem; }
+  .cls-btn .cls-age { font-size: 0.72rem; color: var(--sub); margin-top: 4px; font-weight: 500; }
 
-  /* 아동 버튼 */
-  .child-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .child-btn {
-    padding: 12px 8px; border: 1.5px solid var(--border); border-radius: 12px;
-    background: var(--light); font-family: inherit; font-size: 0.88rem; font-weight: 600;
-    cursor: pointer; transition: all 0.18s; color: var(--sub); text-align: center;
-    position: relative;
-  }
-  .child-btn:hover { border-color: var(--primary); color: var(--accent); }
-  .child-btn.yes { border-color: var(--primary); background: var(--primary); color: #fff; }
-  .child-btn.yes::after { content: '✓'; position: absolute; top: 4px; right: 6px; font-size: 0.65rem; color: rgba(255,255,255,0.7); }
+  .child-list { display: flex; flex-direction: column; gap: 8px; }
+  .child-row { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--light); border: 1.5px solid var(--border); border-radius: 12px; transition: all 0.15s; }
+  .child-row.yes { border-color: var(--primary); background: rgba(124,106,247,0.08); }
+  .child-name { flex: 1; font-size: 0.97rem; font-weight: 600; color: var(--text); }
+  .toggle-group { display: flex; gap: 4px; background: var(--bg); padding: 3px; border-radius: 9px; border: 1px solid var(--border); }
+  .toggle-btn { padding: 6px 14px; background: transparent; border: none; border-radius: 6px; font-family: inherit; font-size: 0.78rem; font-weight: 700; color: var(--sub); cursor: pointer; transition: all 0.15s; }
+  .toggle-btn.active.yes-btn { background: var(--primary); color: #fff; }
+  .toggle-btn.active.no-btn { background: var(--muted); color: #fff; }
 
-  /* 선택 요약 */
-  .count-bar {
-    background: var(--light); border: 1px solid var(--border); border-radius: 12px;
-    padding: 14px 18px; margin-top: 16px; display: flex; align-items: center; justify-content: space-between;
-  }
-  .count-bar .lbl { font-size: 0.82rem; color: var(--sub); }
-  .count-bar .num { font-size: 1.3rem; font-weight: 900; color: var(--accent); font-family: 'DM Mono', monospace; }
+  .quick-actions { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .quick-btn { padding: 7px 14px; background: var(--light); border: 1px solid var(--border); border-radius: 20px; font-family: inherit; font-size: 0.78rem; font-weight: 600; color: var(--sub); cursor: pointer; transition: all 0.15s; }
+  .quick-btn:hover { border-color: var(--accent); color: var(--accent); }
 
-  /* 전체선택 버튼 */
-  .sel-all-btn {
-    padding: 7px 14px; border: 1.5px solid var(--border); border-radius: 8px;
-    background: transparent; font-family: inherit; font-size: 0.78rem; font-weight: 700;
-    color: var(--sub); cursor: pointer; transition: all 0.15s; margin-bottom: 14px;
-  }
-  .sel-all-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .submit-bar { position: fixed; bottom: 0; left: 0; right: 0; padding: 14px 16px; background: linear-gradient(180deg, transparent 0%, var(--bg) 30%); pointer-events: none; }
+  .submit-bar-inner { max-width: 660px; margin: 0 auto; display: flex; gap: 10px; pointer-events: auto; }
+  .btn { flex: 1; padding: 16px; border: none; border-radius: 14px; font-family: inherit; font-size: 0.97rem; font-weight: 800; cursor: pointer; transition: all 0.18s; }
+  .btn-primary { background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; box-shadow: 0 6px 20px rgba(124,106,247,0.35); }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(124,106,247,0.45); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+  .btn-ghost { flex: 0 0 auto; padding: 16px 20px; background: var(--card); border: 1px solid var(--border); color: var(--sub); }
 
-  /* 제출 버튼 */
-  .submit-btn {
-    width: 100%; margin-top: 20px; padding: 16px; border: none; border-radius: 14px;
-    background: linear-gradient(135deg, var(--primary), var(--accent));
-    color: #fff; font-family: inherit; font-size: 1rem; font-weight: 700;
-    cursor: pointer; box-shadow: 0 4px 20px rgba(124,106,247,0.35);
-    transition: all 0.2s;
-  }
-  .submit-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 7px 24px rgba(124,106,247,0.45); }
-  .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .summary-pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.3); border-radius: 20px; font-size: 0.82rem; font-weight: 700; color: var(--green); margin-bottom: 10px; }
 
-  /* 완료 */
-  .done-card { text-align: center; padding: 48px 24px; background: var(--card); border-radius: 18px; border: 1px solid var(--border); display: none; }
-  .done-icon { font-size: 3.5rem; margin-bottom: 16px; }
-  .done-card h2 { font-size: 1.4rem; font-weight: 900; color: #fff; margin-bottom: 8px; }
-  .done-card p { color: var(--sub); font-size: 0.9rem; line-height: 1.8; }
-  .done-summary { background: var(--light); border-radius: 12px; padding: 16px 20px; margin: 20px 0; text-align: left; font-size: 0.88rem; line-height: 2.2; color: var(--text); }
-  .done-summary span { font-weight: 700; color: var(--accent); }
-  .done-names { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-  .done-name-tag { padding: 4px 10px; background: rgba(124,106,247,0.2); border: 1px solid rgba(124,106,247,0.3); border-radius: 20px; font-size: 0.78rem; color: var(--accent); font-weight: 600; }
-  .back-btn { margin-top: 16px; padding: 12px 28px; border: 1.5px solid var(--border); border-radius: 30px; background: transparent; font-family: inherit; font-size: 0.88rem; font-weight: 700; color: var(--sub); cursor: pointer; transition: all 0.2s; }
-  .back-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(100px); padding: 14px 22px; background: var(--card); border: 1px solid var(--accent); border-radius: 12px; color: #fff; font-size: 0.88rem; font-weight: 700; opacity: 0; transition: all 0.3s; z-index: 1000; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-  /* 이미 제출 안내 */
-  .already-box { background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.3); border-radius: 12px; padding: 14px 18px; margin-bottom: 16px; font-size: 0.84rem; color: var(--green); display: none; }
+  .empty { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 0.88rem; }
 
-  /* 토스트 */
-  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(70px); background: var(--primary); color: #fff; padding: 12px 22px; border-radius: 30px; font-size: 0.88rem; font-weight: 600; box-shadow: 0 5px 20px rgba(124,106,247,0.4); transition: transform 0.3s cubic-bezier(.34,1.56,.64,1); z-index: 999; white-space: nowrap; }
-  .toast.show { transform: translateX(-50%) translateY(0); }
-
-  #step2card, #doneCard { display: none; }
-
-  @media (max-width: 400px) {
-    .child-grid { grid-template-columns: repeat(2, 1fr); }
-  }
+  .info-box { background: rgba(124,106,247,0.08); border: 1px solid rgba(124,106,247,0.25); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; font-size: 0.83rem; color: var(--accent); line-height: 1.5; }
 </style>
 </head>
 <body>
 
 <header>
   <div class="hdr-inner">
-    <h1>🌙 저녁있는밤</h1>
-    <div class="hdr-sub">무지개어린이집 · 참여 아동 수요조사</div>
-    <div class="event-badge">📅 2026년 4월 9일 (목)</div>
+    <h1>🌙 저녁있는밤 수요조사</h1>
+    <p class="hdr-sub">우리무지개어린이집 · 무지개어린이집</p>
+    <div class="event-badge">📅 2026년 5월 14일 (목)</div>
   </div>
 </header>
 
 <main>
   <div class="steps">
-    <div class="step active" id="st1"><div class="step-num">1</div><br>반 선택</div>
-    <div class="step" id="st2"><div class="step-num">2</div><br>아동 선택</div>
+    <div class="step active" id="step-1"><span class="num">1</span>반 선택</div>
+    <div class="step" id="step-2"><span class="num">2</span>아동 표시</div>
+    <div class="step" id="step-3"><span class="num">3</span>제출</div>
   </div>
 
   <!-- STEP 1: 반 선택 -->
-  <div class="card" id="step1card">
-    <div class="card-title">🏫 담당 반 선택</div>
-    <div class="inst-label">무지개어린이집</div>
-    <div class="class-grid" id="g-무지개"></div>
-    <div class="inst-label">우리무지개어린이집</div>
-    <div class="class-grid" id="g-우리무지개"></div>
+  <div class="card" id="cardClass">
+    <div class="card-title">📋 우리 반을 선택해주세요</div>
+    <div class="cls-grid" id="clsGrid"></div>
   </div>
 
-  <!-- STEP 2: 아동 선택 -->
-  <div class="card" id="step2card">
-    <div class="card-title" id="step2title">👶 참여 아동 선택</div>
-
-    <div class="already-box" id="alreadyBox">
-      ✅ 이미 제출한 내역이 있어요. 수정 후 다시 제출하면 덮어써져요.
+  <!-- STEP 2: 아동 명단 -->
+  <div class="card" id="cardChildren" style="display:none;">
+    <div class="card-title">
+      <span id="selectedClsTitle">👶 아동 참여 여부</span>
     </div>
-
-    <button class="sel-all-btn" onclick="toggleAll()">전체 선택 / 해제</button>
-
-    <div class="child-grid" id="childGrid"></div>
-
-    <div class="count-bar">
-      <span class="lbl">선택된 아동</span>
-      <span class="num" id="countNum">0명</span>
+    <div class="info-box">
+      💡 참여하는 아동은 <b>참여</b>, 참여하지 않는 아동은 <b>불참</b>으로 표시해주세요.
     </div>
-
-    <button class="submit-btn" id="submitBtn" onclick="submit()" disabled>✅ 제출하기</button>
-  </div>
-
-  <!-- 완료 -->
-  <div class="done-card" id="doneCard">
-    <div class="done-icon">🌙</div>
-    <h2>제출 완료!</h2>
-    <p>수요조사가 저장됐어요.<br>감사합니다 😊</p>
-    <div class="done-summary" id="doneSummary"></div>
-    <button class="back-btn" onclick="resetForm()">↩ 다른 반 입력하기</button>
+    <div class="quick-actions">
+      <button class="quick-btn" onclick="toggleAll('yes')">✅ 전체 참여</button>
+      <button class="quick-btn" onclick="toggleAll('no')">❌ 전체 불참</button>
+    </div>
+    <div class="child-list" id="childList"></div>
+    <div style="margin-top:14px;">
+      <span class="summary-pill" id="summaryPill">참여 0명 / 전체 0명</span>
+    </div>
   </div>
 </main>
+
+<div class="submit-bar" id="submitBar" style="display:none;">
+  <div class="submit-bar-inner">
+    <button class="btn btn-ghost" onclick="resetForm()">← 처음으로</button>
+    <button class="btn btn-primary" id="submitBtn" onclick="submit()">제출하기</button>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -208,176 +158,148 @@ const firebaseConfig = {
   apiKey: "AIzaSyDojXJ_9pOnla8uG240APwo3Ik9gBddMw4",
   authDomain: "mujigae-swimming.firebaseapp.com",
   databaseURL: "https://mujigae-swimming-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "mujigae-swimming",
-  storageBucket: "mujigae-swimming.firebasestorage.app",
-  messagingSenderId: "279953220805",
-  appId: "1:279953220805:web:b24cbe70f8556416c0bcac"
+  projectId: "mujigae-swimming"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const EVENT_KEY = "evening_2026_05_14";
 
-// ── 명부 (유아반만) ───────────────────────────────────────
-const ROSTER = {
-  "무지개": {
-    "은빛물결": ["이재헌","박수현","김성원","정하준","송유담","박승빈","김정후","주현수","신승혁","김수호","정연우","최보민","한다윤"]
+// ===== 아동 명부 (2026년 최신) =====
+// 유아반만 (영아반·방과후반 제외)
+const CLASSES = {
+  "아침햇살": {
+    age: "만3세 (장애반)",
+    children: ["정태호", "고은호", "김이안", "전수호", "위단우", "서현우", "김윤우", "김지안"]
   },
-  "우리무지개": {
-    "아침햇살": ["정태호","고은호","김이안","전수호","위단우","서현우","김윤우","김지안"],
-    "고운햇살": ["박재희","박지유","김민준","곽나율","김은서","장태양","홍하루","김동휘","임라희"],
-    "들꽃향기": ["한지후","박은진","곽시안","박찬율","설재은","류시환","강은호","박다엘","김사랑","손리완","이로아","이소민","방서윤","김인우","이은우","임서우","이하린","김세윤"],
-    "푸른하늘": ["김아린","김강준","박진우","한서후","윤태언","김서우","백민지","이하민","강태희","곽다온","박준","김세윤","김지민"],
-    "파도소리": ["윤지아","김수겸","돌란샤나","권민서","최도윤","장시영"],
-    "푸른바다": ["김평온","김별리","양준우","강지호","김도우","백이엘","이태헌","오주원","서연석","임하라","김태유","조믿음","유이서","윤예나","윤예지","조가온","곽시후","이소민2"]
+  "고운햇살": {
+    age: "만3·4세 (장애반)",
+    children: ["박재희", "박지유", "김민준", "곽나율", "김은서", "홍하루", "김동휘", "임라희"]
+  },
+  "들꽃향기": {
+    age: "만3세 (통합반)",
+    children: ["한지후", "박은진", "곽시안", "박찬율", "설재은", "류시환", "강은호", "박다엘", "김사랑", "손리완", "이로아", "이소민", "방서윤", "김인우", "이은우", "임서우", "이하린", "김세윤"]
+  },
+  "푸른하늘": {
+    age: "만4세 (통합반)",
+    children: ["김아린", "김강준", "박진우", "한서후", "윤태언", "김서우", "백민지", "이하민", "강태희", "곽다온", "박준", "김세윤", "김지민", "이채민"]
+  },
+  "파도소리": {
+    age: "만5세 이상 (장애반)",
+    children: ["윤지아", "김수겸", "돌란샤나", "권민서", "최도윤", "장시영"]
+  },
+  "은빛물결": {
+    age: "만5세 이상 (장애반)",
+    children: ["이재헌", "박수현", "김성원", "정하준", "송유담", "박승빈", "김정후", "주현우", "신승혁", "김수호", "정연우", "최보민", "한다윤"]
+  },
+  "푸른바다": {
+    age: "만5세 (통합반)",
+    children: ["김평온", "김별리", "양준우", "강지호", "김도우", "백이엘", "이태헌", "오주원", "서연석", "임하라", "김태유", "조믿음", "유이서", "윤예나", "윤예지", "조가온", "곽시후", "이소민2"]
   }
 };
 
-const EVENT_DATE = "2026-04-09";
 let selectedClass = null;
-let selectedChildren = new Set();
+let answers = {};
 
-// ── 반 버튼 생성 ──────────────────────────────────────────
-Object.entries(ROSTER).forEach(([inst, classes]) => {
-  const grid = document.getElementById('g-' + inst);
-  Object.keys(classes).forEach(cls => {
-    const btn = document.createElement('button');
-    btn.className = 'cls-btn';
-    btn.textContent = cls + '반';
-    btn.onclick = () => selectClass(cls, btn);
-    grid.appendChild(btn);
-  });
-});
-
-function selectClass(cls, btn) {
-  document.querySelectorAll('.cls-btn').forEach(b => b.classList.remove('sel'));
-  btn.classList.add('sel');
-  selectedClass = cls;
-  selectedChildren.clear();
-  loadClass(cls);
+function renderClasses() {
+  const grid = document.getElementById('clsGrid');
+  grid.innerHTML = Object.keys(CLASSES).map(name => `
+    <button class="cls-btn" onclick="selectClass('${name}')">
+      <div class="cls-name">${name}</div>
+      <div class="cls-age">${CLASSES[name].age}</div>
+    </button>
+  `).join('');
 }
 
-async function loadClass(cls) {
-  const children = ROSTER["무지개"][cls] || ROSTER["우리무지개"][cls] || [];
-  const grid = document.getElementById('childGrid');
-  grid.innerHTML = '';
-
-  // 기존 제출 데이터 불러오기
-  const key = EVENT_DATE + '_' + cls;
-  let existing = null;
-  try {
-    const snap = await get(ref(db, 'evening/' + key));
-    existing = snap.val();
-  } catch(e) {}
-
-  const alreadyBox = document.getElementById('alreadyBox');
-  if (existing) {
-    alreadyBox.style.display = 'block';
-    selectedChildren = new Set(existing.children || []);
-  } else {
-    alreadyBox.style.display = 'none';
-    selectedChildren.clear();
-  }
-
-  children.forEach(name => {
-    const btn = document.createElement('button');
-    btn.className = 'child-btn' + (selectedChildren.has(name) ? ' yes' : '');
-    btn.textContent = name;
-    btn.onclick = () => toggleChild(name, btn);
-    grid.appendChild(btn);
+window.selectClass = function(name) {
+  selectedClass = name;
+  document.querySelectorAll('.cls-btn').forEach(b => {
+    b.classList.toggle('selected', b.textContent.includes(name));
   });
-
-  document.getElementById('step2title').textContent = cls + '반 · 참여 아동 선택';
-  document.getElementById('step2card').style.display = 'block';
-  document.getElementById('doneCard').style.display = 'none';
+  document.getElementById('selectedClsTitle').textContent = `👶 ${name} 아동 참여 여부`;
+  document.getElementById('cardChildren').style.display = 'block';
+  document.getElementById('submitBar').style.display = 'block';
   setStep(2);
-  updateCount();
-  document.getElementById('step2card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  answers = {};
+  CLASSES[name].children.forEach(c => answers[c] = null);
+  renderChildren();
+
+  setTimeout(() => {
+    document.getElementById('cardChildren').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
+};
+
+function renderChildren() {
+  const list = document.getElementById('childList');
+  list.innerHTML = CLASSES[selectedClass].children.map(name => `
+    <div class="child-row ${answers[name] === 'yes' ? 'yes' : ''}" id="row-${name}">
+      <div class="child-name">${name}</div>
+      <div class="toggle-group">
+        <button class="toggle-btn yes-btn ${answers[name]==='yes'?'active':''}" onclick="setAnswer('${name}','yes')">참여</button>
+        <button class="toggle-btn no-btn ${answers[name]==='no'?'active':''}" onclick="setAnswer('${name}','no')">불참</button>
+      </div>
+    </div>
+  `).join('');
+  updateSummary();
 }
 
-function toggleChild(name, btn) {
-  if (selectedChildren.has(name)) {
-    selectedChildren.delete(name);
-    btn.classList.remove('yes');
-  } else {
-    selectedChildren.add(name);
-    btn.classList.add('yes');
-  }
-  updateCount();
+window.setAnswer = function(name, val) {
+  answers[name] = val;
+  renderChildren();
+};
+
+window.toggleAll = function(val) {
+  Object.keys(answers).forEach(k => answers[k] = val);
+  renderChildren();
+};
+
+function updateSummary() {
+  const total = Object.keys(answers).length;
+  const yesCount = Object.values(answers).filter(v => v === 'yes').length;
+  const decided = Object.values(answers).filter(v => v !== null).length;
+  document.getElementById('summaryPill').textContent = `참여 ${yesCount}명 / 응답 ${decided}명 / 전체 ${total}명`;
+
+  document.getElementById('submitBtn').disabled = decided !== total;
 }
 
-function toggleAll() {
-  const children = ROSTER["무지개"][selectedClass] || ROSTER["우리무지개"][selectedClass] || [];
-  const allSelected = children.every(c => selectedChildren.has(c));
-  if (allSelected) {
-    selectedChildren.clear();
-    document.querySelectorAll('.child-btn').forEach(b => b.classList.remove('yes'));
-  } else {
-    children.forEach(c => selectedChildren.add(c));
-    document.querySelectorAll('.child-btn').forEach(b => b.classList.add('yes'));
-  }
-  updateCount();
-}
-
-function updateCount() {
-  const n = selectedChildren.size;
-  document.getElementById('countNum').textContent = n + '명';
-  document.getElementById('submitBtn').disabled = false;
-}
-
-async function submit() {
-  if (!selectedClass) return;
-  const btn = document.getElementById('submitBtn');
-  btn.disabled = true;
-  btn.textContent = '저장 중...';
+window.submit = async function() {
+  const yesList = Object.keys(answers).filter(k => answers[k] === 'yes');
+  const noList = Object.keys(answers).filter(k => answers[k] === 'no');
 
   try {
-    const key = EVENT_DATE + '_' + selectedClass;
-    await set(ref(db, 'evening/' + key), {
-      cls: selectedClass,
-      date: EVENT_DATE,
-      children: [...selectedChildren],
-      count: selectedChildren.size,
-      savedAt: new Date().toISOString()
+    await set(ref(db, `${EVENT_KEY}/classes/${selectedClass}`), {
+      yes: yesList,
+      no: noList,
+      yesCount: yesList.length,
+      noCount: noList.length,
+      total: yesList.length + noList.length,
+      submittedAt: new Date().toISOString()
     });
 
-    // 완료 화면
-    const names = [...selectedChildren];
-    const summary = document.getElementById('doneSummary');
-    summary.innerHTML =
-      '<span>반</span> ' + selectedClass + '반<br>' +
-      '<span>참여 아동</span> ' + selectedChildren.size + '명<br>' +
-      '<div class="done-names">' +
-      (names.length ? names.map(n => '<span class="done-name-tag">' + n + '</span>').join('') : '<span style="color:var(--muted)">없음</span>') +
-      '</div>';
-
-    document.getElementById('step1card').style.display = 'none';
-    document.getElementById('step2card').style.display = 'none';
-    document.getElementById('doneCard').style.display = 'block';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-
-  } catch(e) {
-    showToast('❌ 저장 실패: ' + e.message);
-    btn.disabled = false;
-    btn.textContent = '✅ 제출하기';
+    setStep(3);
+    showToast(`✅ ${selectedClass} 제출 완료! 참여 ${yesList.length}명`);
+    setTimeout(resetForm, 2000);
+  } catch (e) {
+    showToast('❌ 제출 실패: ' + e.message);
   }
-}
+};
 
-function resetForm() {
+window.resetForm = function() {
   selectedClass = null;
-  selectedChildren.clear();
-  document.querySelectorAll('.cls-btn').forEach(b => b.classList.remove('sel'));
-  document.getElementById('step1card').style.display = 'block';
-  document.getElementById('step2card').style.display = 'none';
-  document.getElementById('doneCard').style.display = 'none';
+  answers = {};
+  document.getElementById('cardChildren').style.display = 'none';
+  document.getElementById('submitBar').style.display = 'none';
+  document.querySelectorAll('.cls-btn').forEach(b => b.classList.remove('selected'));
   setStep(1);
   window.scrollTo({ top: 0, behavior: 'smooth' });
-}
+};
 
 function setStep(n) {
-  [1,2].forEach(i => {
-    const el = document.getElementById('st' + i);
+  for (let i = 1; i <= 3; i++) {
+    const el = document.getElementById('step-' + i);
     el.className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
-  });
+  }
 }
 
 function showToast(msg) {
@@ -387,9 +309,7 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2800);
 }
 
-window.toggleAll = toggleAll;
-window.submit = submit;
-window.resetForm = resetForm;
+renderClasses();
 </script>
 </body>
 </html>

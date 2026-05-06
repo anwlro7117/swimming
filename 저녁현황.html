@@ -21,53 +21,54 @@
   .login-box .icon { font-size: 2.4rem; margin-bottom: 12px; }
   .login-box h2 { font-size: 1.2rem; font-weight: 900; color: #fff; margin-bottom: 6px; }
   .login-box p { font-size: 0.82rem; color: var(--sub); margin-bottom: 22px; }
-  .pw-input { width: 100%; padding: 13px; border: 1.5px solid var(--border); border-radius: 12px; background: var(--light); font-family: 'DM Mono', monospace; font-size: 1.4rem; text-align: center; letter-spacing: 8px; outline: none; color: #fff; margin-bottom: 12px; transition: border-color 0.2s; }
-  .pw-input:focus { border-color: var(--primary); }
-  .pw-input.shake { animation: shake 0.4s; }
-  @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-6px)} 80%{transform:translateX(6px)} }
-  .login-btn { width: 100%; padding: 13px; border: none; border-radius: 12px; background: linear-gradient(135deg, var(--primary), var(--accent)); font-family: inherit; font-size: 0.95rem; font-weight: 700; color: #fff; cursor: pointer; }
-  .pw-err { color: #f87171; font-size: 0.8rem; margin-top: 8px; min-height: 18px; }
+  .pw-input { width: 100%; padding: 13px; border: 1.5px solid var(--border); border-radius: 12px; background: var(--light); font-family: 'DM Mono', monospace; font-size: 1.4rem; text-align: center; letter-spacing: 8px; outline: none; color: #fff; margin-bottom: 12px; transition: border 0.2s; }
+  .pw-input:focus { border-color: var(--accent); }
+  .login-btn { width: 100%; padding: 13px; background: linear-gradient(135deg, var(--primary), var(--accent)); border: none; border-radius: 12px; color: #fff; font-family: inherit; font-weight: 800; font-size: 0.95rem; cursor: pointer; }
+  .pw-err { color: #ff6b6b; font-size: 0.78rem; margin-top: 6px; min-height: 16px; }
 
-  header { background: linear-gradient(135deg, #1a1040 0%, #0f0f1a 100%); padding: 28px 24px 48px; position: relative; overflow: hidden; border-bottom: 1px solid var(--border); }
-  header::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 28px; background: var(--bg); clip-path: ellipse(55% 100% at 50% 100%); }
-  .hdr-inner { max-width: 860px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
-  header h1 { font-size: 1.4rem; font-weight: 900; color: #fff; }
-  header p { color: var(--accent); font-size: 0.82rem; margin-top: 4px; }
+  header {
+    background: linear-gradient(135deg, #1a1040 0%, #0f0f1a 100%);
+    padding: 28px 24px; border-bottom: 1px solid var(--border);
+  }
+  .hdr-inner { max-width: 900px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  header h1 { font-size: 1.5rem; font-weight: 900; color: #fff; letter-spacing: -0.5px; }
+  header p { color: var(--accent); font-size: 0.85rem; margin-top: 4px; }
+  .refresh-btn { padding: 10px 16px; border: 1.5px solid var(--border); border-radius: 10px; background: transparent; font-family: inherit; font-size: 0.82rem; font-weight: 700; color: var(--sub); cursor: pointer; transition: all 0.15s; }
+  .refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
 
-  main { max-width: 860px; margin: 0 auto; padding: 0 16px 60px; }
-  .card { background: var(--card); border-radius: 18px; border: 1px solid var(--border); padding: 24px; margin-bottom: 14px; }
-  .card-title { font-size: 0.88rem; font-weight: 700; color: var(--accent); margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
-  .card-title::before { content: ''; display: block; width: 4px; height: 18px; border-radius: 2px; background: linear-gradient(var(--primary), var(--accent)); }
+  main { max-width: 900px; margin: 0 auto; padding: 20px 16px 40px; }
 
-  /* 요약 카드 */
-  .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 14px; }
-  .s-card { background: var(--card); border-radius: 14px; padding: 18px; border: 1px solid var(--border); border-top: 3px solid var(--primary); text-align: center; }
-  .s-card.green { border-top-color: var(--green); }
-  .s-card.warn { border-top-color: var(--warn); }
-  .s-num { font-size: 2rem; font-weight: 900; color: var(--accent); font-family: 'DM Mono', monospace; }
+  .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+  .s-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 18px 14px; text-align: center; }
+  .s-card.green { border-color: rgba(52,211,153,0.35); background: rgba(52,211,153,0.06); }
+  .s-card.warn { border-color: rgba(251,191,36,0.35); background: rgba(251,191,36,0.06); }
+  .s-num { font-family: 'DM Mono', monospace; font-size: 2rem; font-weight: 700; color: #fff; }
   .s-card.green .s-num { color: var(--green); }
   .s-card.warn .s-num { color: var(--warn); }
-  .s-lbl { font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
+  .s-lbl { font-size: 0.78rem; color: var(--sub); margin-top: 4px; font-weight: 600; }
 
-  /* 반별 현황 */
-  .cls-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
-  .cls-card { background: var(--light); border-radius: 14px; border: 1px solid var(--border); padding: 18px; }
-  .cls-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-  .cls-name { font-size: 0.95rem; font-weight: 700; color: #fff; }
-  .cls-count { font-family: 'DM Mono', monospace; font-size: 0.9rem; font-weight: 700; color: var(--accent); }
-  .cls-bar-wrap { background: var(--border); border-radius: 30px; height: 6px; margin-bottom: 12px; overflow: hidden; }
-  .cls-bar { height: 100%; border-radius: 30px; background: linear-gradient(90deg, var(--primary), var(--accent)); transition: width 0.5s ease; }
-  .cls-names { display: flex; flex-wrap: wrap; gap: 5px; }
-  .name-tag { padding: 3px 9px; background: rgba(124,106,247,0.15); border: 1px solid rgba(124,106,247,0.25); border-radius: 20px; font-size: 0.72rem; color: var(--accent); font-weight: 600; }
-  .not-submitted { font-size: 0.78rem; color: var(--muted); font-style: italic; }
-  .submitted-time { font-size: 0.7rem; color: var(--muted); margin-top: 8px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 22px; margin-bottom: 16px; }
+  .card-title { font-size: 1.05rem; font-weight: 800; color: #fff; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
 
-  /* 토스트 */
-  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(70px); background: var(--primary); color: #fff; padding: 12px 22px; border-radius: 30px; font-size: 0.88rem; font-weight: 600; box-shadow: 0 5px 20px rgba(124,106,247,0.4); transition: transform 0.3s cubic-bezier(.34,1.56,.64,1); z-index: 999; }
-  .toast.show { transform: translateX(-50%) translateY(0); }
+  .cls-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+  .cls-row { background: var(--light); border: 1.5px solid var(--border); border-radius: 14px; padding: 16px; }
+  .cls-row.submitted { border-color: rgba(52,211,153,0.4); background: rgba(52,211,153,0.04); }
+  .cls-row.pending { border-color: rgba(251,191,36,0.3); background: rgba(251,191,36,0.04); }
+  .cls-row-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .cls-name { font-size: 1rem; font-weight: 800; color: #fff; }
+  .cls-status { font-size: 0.75rem; padding: 3px 9px; border-radius: 12px; font-weight: 700; }
+  .cls-status.done { background: rgba(52,211,153,0.18); color: var(--green); }
+  .cls-status.pending { background: rgba(251,191,36,0.15); color: var(--warn); }
+  .cls-stats { display: flex; gap: 14px; font-size: 0.85rem; color: var(--sub); margin-bottom: 8px; font-family: 'DM Mono', monospace; }
+  .cls-stats b { color: var(--text); }
+  .cls-time { font-size: 0.72rem; color: var(--muted); margin-top: 6px; font-family: 'DM Mono', monospace; }
+  .name-list { font-size: 0.82rem; color: var(--text); line-height: 1.6; padding: 8px 0 0; border-top: 1px dashed var(--border); margin-top: 6px; }
+  .name-list .label { font-size: 0.72rem; color: var(--sub); font-weight: 700; margin-right: 4px; }
+  .name-list .yes-names { color: var(--accent); }
+  .name-list .no-names { color: var(--muted); }
 
-  .refresh-btn { padding: 8px 16px; border: 1.5px solid var(--border); border-radius: 10px; background: transparent; font-family: inherit; font-size: 0.82rem; font-weight: 700; color: var(--sub); cursor: pointer; transition: all 0.15s; }
-  .refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); padding: 14px 22px; background: var(--card); border: 1px solid var(--accent); border-radius: 12px; color: #fff; font-size: 0.88rem; font-weight: 700; opacity: 0; transition: all 0.3s; z-index: 1000; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
@@ -88,21 +89,19 @@
   <div class="hdr-inner">
     <div>
       <h1>🌙 저녁있는밤 현황</h1>
-      <p>2026년 4월 9일 (목) · 무지개어린이집</p>
+      <p>2026년 5월 14일 (목) · 무지개어린이집</p>
     </div>
     <button class="refresh-btn" onclick="loadData()">🔄 새로고침</button>
   </div>
 </header>
 
 <main>
-  <!-- 요약 -->
   <div class="summary-grid">
     <div class="s-card"><div class="s-num" id="s-total">-</div><div class="s-lbl">총 참여 아동</div></div>
     <div class="s-card green"><div class="s-num" id="s-submitted">-</div><div class="s-lbl">제출 완료 반</div></div>
     <div class="s-card warn"><div class="s-num" id="s-pending">-</div><div class="s-lbl">미제출 반</div></div>
   </div>
 
-  <!-- 반별 현황 -->
   <div class="card">
     <div class="card-title">📋 반별 참여 현황</div>
     <div class="cls-cards" id="clsCards">
@@ -121,119 +120,94 @@ const firebaseConfig = {
   apiKey: "AIzaSyDojXJ_9pOnla8uG240APwo3Ik9gBddMw4",
   authDomain: "mujigae-swimming.firebaseapp.com",
   databaseURL: "https://mujigae-swimming-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "mujigae-swimming",
-  storageBucket: "mujigae-swimming.firebasestorage.app",
-  messagingSenderId: "279953220805",
-  appId: "1:279953220805:web:b24cbe70f8556416c0bcac"
+  projectId: "mujigae-swimming"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const EVENT_KEY = "evening_2026_05_14";
 
-const ROSTER = {
-  "은빛물결": ["이재헌","박수현","김성원","정하준","송유담","박승빈","김정후","주현수","신승혁","김수호","정연우","최보민","한다윤"],
-  "아침햇살": ["정태호","고은호","김이안","전수호","위단우","서현우","김윤우","김지안"],
-  "고운햇살": ["박재희","박지유","김민준","곽나율","김은서","장태양","홍하루","김동휘","임라희"],
-  "들꽃향기": ["한지후","박은진","곽시안","박찬율","설재은","류시환","강은호","박다엘","김사랑","손리완","이로아","이소민","방서윤","김인우","이은우","임서우","이하린","김세윤"],
-  "푸른하늘": ["김아린","김강준","박진우","한서후","윤태언","김서우","백민지","이하민","강태희","곽다온","박준","김세윤","김지민"],
-  "파도소리": ["윤지아","김수겸","돌란샤나","권민서","최도윤","장시영"],
-  "푸른바다": ["김평온","김별리","양준우","강지호","김도우","백이엘","이태헌","오주원","서연석","임하라","김태유","조믿음","유이서","윤예나","윤예지","조가온","곽시후","이소민2"]
-};
-const EVENT_DATE = "2026-04-09";
-const ADMIN_PW = '7117';
+const ALL_CLASSES = ["아침햇살", "고운햇살", "들꽃향기", "푸른하늘", "파도소리", "은빛물결", "푸른바다"];
 
-// 로그인
-(function() {
-  if (sessionStorage.getItem('mujigae_auth') === 'ok') {
-    document.getElementById('loginOverlay').style.display = 'none';
-    loadData();
-  }
-})();
-
-function tryLogin() {
+window.tryLogin = function() {
   const pw = document.getElementById('pwInput').value;
-  if (pw === ADMIN_PW) {
-    sessionStorage.setItem('mujigae_auth', 'ok');
+  if (pw === '7117') {
     document.getElementById('loginOverlay').style.display = 'none';
     loadData();
   } else {
-    const input = document.getElementById('pwInput');
-    input.classList.remove('shake');
-    void input.offsetWidth;
-    input.classList.add('shake');
-    input.value = '';
-    document.getElementById('pwErr').textContent = '비밀번호가 틀렸어요';
+    document.getElementById('pwErr').textContent = '비밀번호가 올바르지 않습니다';
+    document.getElementById('pwInput').value = '';
   }
-}
+};
 
-async function loadData() {
+window.loadData = async function() {
   try {
-    const snap = await get(ref(db, 'evening'));
-    const data = snap.val() || {};
+    const snap = await get(ref(db, `${EVENT_KEY}/classes`));
+    const data = snap.exists() ? snap.val() : {};
 
-    let totalChildren = 0;
+    let totalYes = 0;
     let submitted = 0;
-    let pending = 0;
-    const container = document.getElementById('clsCards');
-    container.innerHTML = '';
 
-    Object.entries(ROSTER).forEach(([cls, allChildren]) => {
-      const key = EVENT_DATE + '_' + cls;
-      const entry = data[key];
-      const isSubmitted = !!entry;
-
-      if (isSubmitted) {
+    const cards = ALL_CLASSES.map(cls => {
+      const d = data[cls];
+      if (d) {
         submitted++;
-        totalChildren += (entry.children || []).length;
+        totalYes += (d.yesCount || 0);
+        const yesNames = (d.yes || []).join(', ') || '없음';
+        const noNames = (d.no || []).join(', ') || '없음';
+        const timeStr = d.submittedAt
+          ? new Date(d.submittedAt).toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' })
+          : '';
+        return `
+          <div class="cls-row submitted">
+            <div class="cls-row-head">
+              <div class="cls-name">${cls}</div>
+              <div class="cls-status done">✓ 제출완료</div>
+            </div>
+            <div class="cls-stats">
+              <span>참여 <b>${d.yesCount||0}</b>명</span>
+              <span>불참 <b>${d.noCount||0}</b>명</span>
+              <span>전체 <b>${d.total||0}</b>명</span>
+            </div>
+            <div class="name-list">
+              <div><span class="label">참여:</span><span class="yes-names">${yesNames}</span></div>
+              <div style="margin-top:4px;"><span class="label">불참:</span><span class="no-names">${noNames}</span></div>
+            </div>
+            <div class="cls-time">📥 ${timeStr}</div>
+          </div>
+        `;
       } else {
-        pending++;
+        return `
+          <div class="cls-row pending">
+            <div class="cls-row-head">
+              <div class="cls-name">${cls}</div>
+              <div class="cls-status pending">⏳ 미제출</div>
+            </div>
+            <div class="cls-stats" style="color:var(--muted);">아직 제출되지 않았습니다</div>
+          </div>
+        `;
       }
+    }).join('');
 
-      const pct = isSubmitted ? Math.round((entry.children || []).length / allChildren.length * 100) : 0;
-      const time = isSubmitted && entry.savedAt
-        ? new Date(entry.savedAt).toLocaleString('ko-KR', {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'})
-        : null;
+    document.getElementById('clsCards').innerHTML = cards;
+    document.getElementById('s-total').textContent = totalYes;
+    document.getElementById('s-submitted').textContent = `${submitted}/${ALL_CLASSES.length}`;
+    document.getElementById('s-pending').textContent = ALL_CLASSES.length - submitted;
 
-      const card = document.createElement('div');
-      card.className = 'cls-card';
-      card.innerHTML =
-        '<div class="cls-card-head">' +
-          '<span class="cls-name">' + cls + '반</span>' +
-          (isSubmitted
-            ? '<span class="cls-count">' + (entry.children||[]).length + ' / ' + allChildren.length + '명</span>'
-            : '<span style="font-size:0.75rem;color:var(--muted);">미제출</span>') +
-        '</div>' +
-        '<div class="cls-bar-wrap"><div class="cls-bar" style="width:' + pct + '%"></div></div>' +
-        (isSubmitted
-          ? '<div class="cls-names">' +
-              (entry.children && entry.children.length
-                ? entry.children.map(n => '<span class="name-tag">' + n + '</span>').join('')
-                : '<span class="not-submitted">참여 아동 없음</span>') +
-            '</div>' +
-            (time ? '<div class="submitted-time">제출: ' + time + '</div>' : '')
-          : '<div class="not-submitted">아직 제출 전이에요</div>');
-
-      container.appendChild(card);
-    });
-
-    document.getElementById('s-total').textContent = totalChildren + '명';
-    document.getElementById('s-submitted').textContent = submitted + '반';
-    document.getElementById('s-pending').textContent = pending + '반';
-
-  } catch(e) {
+    showToast('🔄 새로고침 완료');
+  } catch (e) {
     showToast('❌ 불러오기 실패: ' + e.message);
   }
-}
+};
 
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2800);
+  setTimeout(() => t.classList.remove('show'), 2200);
 }
 
-window.tryLogin = tryLogin;
-window.loadData = loadData;
+setTimeout(() => document.getElementById('pwInput').focus(), 100);
 </script>
 </body>
 </html>
