@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌸 부모교육·힐링프로그램 수요조사</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fff8fa;
+    --card: #ffffff;
+    --border: #f4dfe6;
+    --primary: #e87aa3;
+    --primary-dark: #d65a87;
+    --accent: #f9b8cf;
+    --light: #fff0f5;
+    --text: #3d2530;
+    --sub: #7a5a68;
+    --muted: #b89aa5;
+    --yes: #e87aa3;
+    --no: #c5c5c5;
+    --green: #7cc4a4;
+    --shadow: 0 4px 16px rgba(232,122,163,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* 헤더 */
+  header {
+    background: linear-gradient(135deg, #ffd5e3 0%, #ffeef4 100%);
+    padding: 36px 24px 56px; position: relative; overflow: hidden;
+    border-bottom: 1px solid var(--border);
+  }
+  header::before {
+    content: '🌸'; position: absolute; top: 16px; right: 24px;
+    font-size: 5rem; opacity: 0.18; transform: rotate(15deg);
+  }
+  header::after {
+    content: ''; position: absolute;
+    bottom: -2px; left: 0; right: 0; height: 32px;
+    background: var(--bg);
+    clip-path: ellipse(55% 100% at 50% 100%);
+  }
+  .hdr-inner { max-width: 660px; margin: 0 auto; position: relative; z-index: 1; }
+  header h1 { font-size: 1.75rem; font-weight: 900; color: #5a2b3d; letter-spacing: -0.5px; }
+  .hdr-sub { color: var(--primary-dark); font-size: 0.86rem; margin-top: 6px; font-weight: 500; }
+  .event-info {
+    margin-top: 16px; padding: 14px 18px;
+    background: rgba(255,255,255,0.65); border-radius: 14px;
+    border: 1px solid rgba(232,122,163,0.2);
+  }
+  .event-date { font-weight: 800; color: #5a2b3d; font-size: 0.95rem; margin-bottom: 6px; }
+  .event-prog { font-size: 0.82rem; color: var(--sub); line-height: 1.6; }
+  .event-prog strong { color: var(--primary-dark); }
+
+  main { max-width: 660px; margin: 0 auto; padding: 0 16px 100px; }
+
+  /* 단계 표시 */
+  .steps { display: flex; gap: 0; margin-bottom: 22px; }
+  .step { flex: 1; text-align: center; position: relative; }
+  .step::after {
+    content: ''; position: absolute; top: 14px; right: -50%; width: 100%; height: 2px;
+    background: var(--border); z-index: 0;
+  }
+  .step:last-child::after { display: none; }
+  .step .dot {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: #fff; border: 2px solid var(--border);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 0.78rem; color: var(--muted);
+    position: relative; z-index: 1;
+  }
+  .step.active .dot { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .step.done .dot { background: var(--green); border-color: var(--green); color: #fff; }
+  .step .lbl { font-size: 0.7rem; color: var(--muted); margin-top: 6px; font-weight: 600; }
+  .step.active .lbl { color: var(--primary-dark); }
+
+  /* 카드 */
+  .card {
+    background: var(--card); border-radius: 18px; padding: 22px 20px;
+    box-shadow: var(--shadow); margin-bottom: 16px;
+    border: 1px solid var(--border);
+  }
+  .card-title { font-size: 1rem; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+  .card-sub { font-size: 0.78rem; color: var(--sub); margin-bottom: 16px; }
+
+  /* 반/아동 선택 */
+  .inst-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+  .inst-tab {
+    flex: 1; padding: 11px; background: #fff; border: 1.5px solid var(--border);
+    border-radius: 11px; font-family: inherit; font-size: 0.82rem; font-weight: 700;
+    color: var(--sub); cursor: pointer; transition: all 0.15s;
+  }
+  .inst-tab.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+  .class-group { margin-bottom: 14px; }
+  .class-group-title {
+    font-size: 0.72rem; font-weight: 700; color: var(--muted);
+    letter-spacing: 0.8px; margin-bottom: 8px; padding-left: 4px;
+  }
+  .class-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+  .class-btn {
+    padding: 12px 8px; background: #fff; border: 1.5px solid var(--border);
+    border-radius: 11px; font-family: inherit; font-size: 0.85rem; font-weight: 700;
+    color: var(--text); cursor: pointer; transition: all 0.15s; text-align: center;
+  }
+  .class-btn:hover { border-color: var(--accent); background: var(--light); }
+  .class-btn.sel { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+  .child-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(95px, 1fr)); gap: 8px; }
+  .child-btn {
+    padding: 11px 8px; background: #fff; border: 1.5px solid var(--border);
+    border-radius: 10px; font-family: inherit; font-size: 0.84rem; font-weight: 600;
+    color: var(--text); cursor: pointer; transition: all 0.15s; text-align: center;
+  }
+  .child-btn:hover { border-color: var(--accent); background: var(--light); }
+  .child-btn.sel { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 700; }
+
+  /* 프로그램 카드 */
+  .prog-section { margin-bottom: 18px; }
+  .prog-header {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+    padding: 14px 16px; border-radius: 13px;
+    background: linear-gradient(135deg, #fff0f5, #ffe0eb);
+    border: 1px solid var(--border);
+  }
+  .prog-icon { font-size: 1.5rem; }
+  .prog-info { flex: 1; }
+  .prog-name { font-weight: 800; color: var(--text); font-size: 0.95rem; }
+  .prog-time { font-size: 0.76rem; color: var(--sub); margin-top: 2px; }
+
+  .yn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .yn-btn {
+    padding: 16px; background: #fff; border: 2px solid var(--border);
+    border-radius: 12px; font-family: inherit; font-weight: 800;
+    cursor: pointer; transition: all 0.15s; font-size: 0.95rem;
+  }
+  .yn-btn.yes { color: var(--sub); }
+  .yn-btn.no { color: var(--sub); }
+  .yn-btn:hover { border-color: var(--accent); }
+  .yn-btn.yes.sel { background: var(--yes); border-color: var(--yes); color: #fff; }
+  .yn-btn.no.sel { background: var(--no); border-color: var(--no); color: #fff; }
+
+  /* 참석자 영역 */
+  .attendee-area {
+    margin-top: 14px; padding: 14px;
+    background: var(--light); border-radius: 12px;
+    border: 1px dashed var(--accent);
+    display: none;
+  }
+  .attendee-area.show { display: block; }
+  .attendee-label {
+    font-size: 0.78rem; font-weight: 700; color: var(--primary-dark);
+    margin-bottom: 8px;
+  }
+  .text-input {
+    width: 100%; padding: 12px 14px; border: 1.5px solid var(--border);
+    border-radius: 10px; font-family: inherit; font-size: 0.92rem;
+    background: #fff; color: var(--text); outline: none;
+  }
+  .text-input:focus { border-color: var(--primary); }
+  .input-help { font-size: 0.72rem; color: var(--muted); margin-top: 6px; }
+
+  /* 주차장 */
+  .parking-section { margin-top: 18px; padding-top: 18px; border-top: 1px dashed var(--border); }
+  .parking-title { font-weight: 800; color: var(--text); font-size: 0.92rem; margin-bottom: 4px; }
+  .parking-sub { font-size: 0.75rem; color: var(--sub); margin-bottom: 12px; }
+
+  /* 버튼 */
+  .btn {
+    width: 100%; padding: 16px; border: none; border-radius: 13px;
+    font-family: inherit; font-size: 0.98rem; font-weight: 800;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-primary:disabled { background: var(--muted); cursor: not-allowed; opacity: 0.6; }
+  .btn-secondary {
+    background: #fff; color: var(--sub); border: 1.5px solid var(--border);
+    margin-bottom: 8px;
+  }
+
+  /* 요약 */
+  .summary-row {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 10px 0; border-bottom: 1px dashed var(--border); gap: 12px;
+  }
+  .summary-row:last-child { border-bottom: none; }
+  .summary-key { color: var(--sub); font-size: 0.85rem; font-weight: 600; min-width: 90px; }
+  .summary-val { color: var(--text); font-weight: 700; text-align: right; font-size: 0.9rem; flex: 1; }
+  .summary-val.yes-val { color: var(--primary-dark); }
+  .summary-val.no-val { color: var(--muted); }
+
+  /* 완료 */
+  .done-card {
+    text-align: center; padding: 36px 22px;
+    background: linear-gradient(135deg, #fff0f5, #ffe5ed);
+    border: 1px solid var(--border);
+  }
+  .done-icon {
+    width: 70px; height: 70px; border-radius: 50%; background: var(--green);
+    margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;
+    font-size: 2.2rem; color: #fff;
+  }
+  .done-title { font-size: 1.25rem; font-weight: 900; color: var(--text); margin-bottom: 8px; }
+  .done-sub { color: var(--sub); font-size: 0.88rem; line-height: 1.6; }
+
+  /* 토스트 */
+  .toast {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+    background: var(--text); color: #fff; padding: 12px 22px; border-radius: 30px;
+    font-size: 0.86rem; font-weight: 600; z-index: 9999; opacity: 0;
+    transition: opacity 0.25s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+
+  /* 기제출 안내 */
+  .already-submitted {
+    background: linear-gradient(135deg, #fff8e1, #fff3c4);
+    border: 1px solid #ffd966;
+    padding: 14px 16px; border-radius: 12px;
+    margin-bottom: 16px; display: none;
+  }
+  .already-submitted.show { display: block; }
+  .already-title { font-weight: 800; color: #7a5a00; font-size: 0.88rem; margin-bottom: 4px; }
+  .already-text { font-size: 0.78rem; color: #7a5a00; line-height: 1.5; }
+
+  @media (max-width: 480px) {
+    header h1 { font-size: 1.5rem; }
+    .class-grid { grid-template-columns: repeat(auto-fill, minmax(95px, 1fr)); }
+    .child-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr-inner">
+    <h1>🌸 부모교육 · 힐링프로그램</h1>
+    <p class="hdr-sub">참석 수요조사 · 학부모님께서 직접 작성해 주세요</p>
+    <div class="event-info">
+      <div class="event-date">📅 2026년 6월 17일 (수)</div>
+      <div class="event-prog">
+        <strong>부모교육</strong> 14:00 ~ 14:50<br>
+        <strong>힐링프로그램</strong> (꽃바구니 만들기) 15:00 ~ 16:00
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- 단계 -->
+  <div class="steps" id="stepsBar">
+    <div class="step active" id="step1"><div class="dot">1</div><div class="lbl">아동 선택</div></div>
+    <div class="step" id="step2"><div class="dot">2</div><div class="lbl">참석 응답</div></div>
+    <div class="step" id="step3"><div class="dot">3</div><div class="lbl">확인·제출</div></div>
+  </div>
+
+  <!-- STEP 1: 반·아동 선택 -->
+  <div id="step1card" class="card">
+    <div class="card-title">아동을 선택해 주세요</div>
+    <div class="card-sub">먼저 어린이집 → 반 → 아동 순서로 선택해 주세요.</div>
+
+    <div class="inst-tabs">
+      <button class="inst-tab active" id="tab-A" onclick="selectInst('A')">무지개어린이집</button>
+      <button class="inst-tab" id="tab-B" onclick="selectInst('B')">우리무지개어린이집</button>
+    </div>
+
+    <div id="classWrap"></div>
+
+    <div id="childWrap" style="display:none; margin-top:18px;">
+      <div class="card-sub" style="margin-bottom:10px;">아동 이름을 선택하세요</div>
+      <div class="child-grid" id="childGrid"></div>
+    </div>
+  </div>
+
+  <!-- STEP 2: 응답 입력 -->
+  <div id="step2card" style="display:none;">
+    <div id="alreadyMsg" class="already-submitted">
+      <div class="already-title">⚠️ 이미 제출된 응답이 있습니다</div>
+      <div class="already-text" id="alreadyText"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" id="selectedTitle">선택한 아동</div>
+      <div class="card-sub" id="selectedSub"></div>
+
+      <!-- 부모교육 -->
+      <div class="prog-section">
+        <div class="prog-header">
+          <div class="prog-icon">📚</div>
+          <div class="prog-info">
+            <div class="prog-name">부모교육</div>
+            <div class="prog-time">14:00 ~ 14:50</div>
+          </div>
+        </div>
+        <div class="yn-row">
+          <button class="yn-btn yes" onclick="setAttend('edu','yes')" id="edu-yes">✅ 참석</button>
+          <button class="yn-btn no" onclick="setAttend('edu','no')" id="edu-no">❌ 불참</button>
+        </div>
+        <div class="attendee-area" id="edu-attendee">
+          <div class="attendee-label">참석자 이름 <span style="color:#d63a3a;">*</span></div>
+          <input type="text" class="text-input" id="edu-names" placeholder="예) 엄마 김OO, 아빠 박OO" maxlength="50">
+          <div class="input-help">두 분 이상 참석 시 쉼표(,)로 구분해 주세요</div>
+          <div style="margin-top:10px; padding:10px 12px; background:#fff4d6; border-radius:8px; border:1px solid #ffd966; font-size:0.78rem; color:#7a5a00; line-height:1.5;">
+            📜 <b>수료증 발급</b>을 위해 정확한 성함을 작성해 주세요.
+          </div>
+        </div>
+      </div>
+
+      <!-- 힐링프로그램 -->
+      <div class="prog-section">
+        <div class="prog-header">
+          <div class="prog-icon">🌷</div>
+          <div class="prog-info">
+            <div class="prog-name">힐링프로그램 (꽃바구니 만들기)</div>
+            <div class="prog-time">15:00 ~ 16:00</div>
+          </div>
+        </div>
+        <div style="margin-bottom:12px; padding:10px 12px; background:#f0faf5; border-radius:8px; border:1px solid #b8e0cc; font-size:0.78rem; color:#3d6b53; line-height:1.5;">
+          🌷 <b>가정당 꽃바구니 1개</b>씩 제공됩니다.
+        </div>
+        <div class="yn-row">
+          <button class="yn-btn yes" onclick="setAttend('healing','yes')" id="healing-yes">✅ 참석</button>
+          <button class="yn-btn no" onclick="setAttend('healing','no')" id="healing-no">❌ 불참</button>
+        </div>
+        <div class="attendee-area" id="healing-attendee">
+          <div class="attendee-label">참석자 이름 <span style="color:#d63a3a;">*</span></div>
+          <input type="text" class="text-input" id="healing-names" placeholder="예) 엄마 김OO, 아빠 박OO" maxlength="50">
+          <div class="input-help">두 분 이상 참석 시 쉼표(,)로 구분해 주세요</div>
+        </div>
+      </div>
+
+      <!-- 주차장 -->
+      <div class="parking-section" id="parkingSection" style="display:none;">
+        <div class="parking-title">🚗 주차장 사용 여부</div>
+        <div class="parking-sub">행사 당일 주차장을 사용하실 예정인가요?</div>
+        <div class="yn-row">
+          <button class="yn-btn yes" onclick="setParking('yes')" id="park-yes">사용</button>
+          <button class="yn-btn no" onclick="setParking('no')" id="park-no">미사용</button>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-secondary" onclick="backToStep1()">⬅ 다시 선택하기</button>
+    <button class="btn btn-primary" id="nextBtn" onclick="goConfirm()" disabled>다음 (확인)</button>
+  </div>
+
+  <!-- STEP 3: 최종 확인 -->
+  <div id="step3card" style="display:none;">
+    <div class="card">
+      <div class="card-title">제출 내용을 확인해 주세요</div>
+      <div class="card-sub">아래 내용으로 제출됩니다. 수정이 필요하면 뒤로 가기를 눌러주세요.</div>
+
+      <div class="summary-row">
+        <div class="summary-key">어린이집</div>
+        <div class="summary-val" id="sm-inst"></div>
+      </div>
+      <div class="summary-row">
+        <div class="summary-key">반 · 아동</div>
+        <div class="summary-val" id="sm-child"></div>
+      </div>
+      <div class="summary-row">
+        <div class="summary-key">📚 부모교육</div>
+        <div class="summary-val" id="sm-edu"></div>
+      </div>
+      <div class="summary-row" id="sm-edu-name-row" style="display:none;">
+        <div class="summary-key">참석자</div>
+        <div class="summary-val" id="sm-edu-name"></div>
+      </div>
+      <div class="summary-row">
+        <div class="summary-key">🌷 힐링프로그램</div>
+        <div class="summary-val" id="sm-healing"></div>
+      </div>
+      <div class="summary-row" id="sm-healing-name-row" style="display:none;">
+        <div class="summary-key">참석자</div>
+        <div class="summary-val" id="sm-healing-name"></div>
+      </div>
+      <div class="summary-row" id="sm-park-row" style="display:none;">
+        <div class="summary-key">🚗 주차장</div>
+        <div class="summary-val" id="sm-park"></div>
+      </div>
+    </div>
+
+    <button class="btn btn-secondary" onclick="backToStep2()">⬅ 수정하기</button>
+    <button class="btn btn-primary" id="submitBtn" onclick="submitData()">제출하기</button>
+  </div>
+
+  <!-- 완료 -->
+  <div id="doneCard" class="card done-card" style="display:none;">
+    <div class="done-icon">✓</div>
+    <div class="done-title">제출이 완료되었습니다</div>
+    <div class="done-sub" id="doneSub"></div>
+    <button class="btn btn-primary" style="margin-top:20px;" onclick="resetAll()">다른 아동 등록</button>
+  </div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDojXJ_9pOnla8uG240APwo3Ik9gBddMw4",
+  authDomain: "mujigae-swimming.firebaseapp.com",
+  databaseURL: "https://mujigae-swimming-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "mujigae-swimming"
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const EVENT_ID = "2026-06-17_부모교육_힐링";
+
+// ─────────────────────────────────────────────
+// 명부 (방과후 제외)
+// ─────────────────────────────────────────────
+const ROSTER = {
+  A: {
+    name: "무지개어린이집",
+    groups: [
+      { title: "영아반", classes: {
+        "아기참새": ["박범준","정윤하","정다엘","고이솔","조은준"],
+        "초롱이슬": ["전유주","양선우","박하엘","박유하","정이안","정이준"]
+      }},
+      { title: "유아반", classes: {
+        "은빛물결": ["이재헌","박수현","김성원","정하준","송유담","박승빈","김정후","주현우","신승혁","김수호","정연우","최보민","한다윤"]
+      }}
+    ]
+  },
+  B: {
+    name: "우리무지개어린이집",
+    groups: [
+      { title: "유아반", classes: {
+        "아침햇살": ["정태호","고은호","김이안","전수호","위단우","서현우","김윤우","김지안"],
+        "들꽃향기": ["한지후","박은진","곽시안","박찬율","설재은","류시환","강은호","박다엘","김사랑","손리완","이로아","이소민","방서윤","김인우","이은우","임서우","이하린"],
+        "고운햇살": ["박재희","박지유","김민준","곽나율","김은서","홍하루","김동휘","임라희"],
+        "푸른하늘": ["김아린","김강준","박진우","한서후","윤태언","김서우","백민지","이하민","강태희","곽다온","박준","김세윤","김지민","이채민"],
+        "파도소리": ["윤지아","김수겸","돌란샤나","권민서","최도윤","장시영"],
+        "푸른바다": ["김평온","김별리","양준우","강지호","김도우","백이엘","이태헌","오주원","서연석","임하라","김태유","조믿음","유이서","윤예나","윤예지","조가온","곽시후","이소민"]
+      }}
+    ]
+  }
+};
+
+// ─────────────────────────────────────────────
+// 상태
+// ─────────────────────────────────────────────
+let state = {
+  inst: 'A',
+  cls: '',
+  child: '',
+  edu: '',
+  healing: '',
+  eduNames: '',
+  healingNames: '',
+  parking: ''
+};
+
+window.selectInst = function(k) {
+  state.inst = k;
+  document.getElementById('tab-A').classList.toggle('active', k === 'A');
+  document.getElementById('tab-B').classList.toggle('active', k === 'B');
+  state.cls = '';
+  state.child = '';
+  document.getElementById('childWrap').style.display = 'none';
+  renderClasses();
+};
+
+function renderClasses() {
+  const wrap = document.getElementById('classWrap');
+  const inst = ROSTER[state.inst];
+  let html = '';
+  inst.groups.forEach(g => {
+    html += `<div class="class-group">
+      <div class="class-group-title">${g.title}</div>
+      <div class="class-grid">`;
+    Object.keys(g.classes).forEach(c => {
+      html += `<button class="class-btn" data-cls="${c}" onclick="selectClass('${c}')">${c}</button>`;
+    });
+    html += `</div></div>`;
+  });
+  wrap.innerHTML = html;
+}
+
+window.selectClass = function(c) {
+  state.cls = c;
+  state.child = '';
+  document.querySelectorAll('.class-btn').forEach(b => b.classList.remove('sel'));
+  const target = document.querySelector(`.class-btn[data-cls="${c}"]`);
+  if (target) target.classList.add('sel');
+
+  // 아동 렌더링
+  let children = [];
+  ROSTER[state.inst].groups.forEach(g => { if (g.classes[c]) children = g.classes[c]; });
+  const grid = document.getElementById('childGrid');
+  grid.innerHTML = children.map(n =>
+    `<button class="child-btn" data-name="${n}" onclick="selectChild('${n}')">${n}</button>`
+  ).join('');
+  document.getElementById('childWrap').style.display = 'block';
+};
+
+window.selectChild = async function(n) {
+  state.child = n;
+  document.querySelectorAll('.child-btn').forEach(b => b.classList.remove('sel'));
+  document.querySelector(`.child-btn[data-name="${n}"]`).classList.add('sel');
+
+  await goStep2();
+};
+
+// ─────────────────────────────────────────────
+// 단계 이동
+// ─────────────────────────────────────────────
+function setStep(n) {
+  ['step1','step2','step3'].forEach((id, idx) => {
+    const el = document.getElementById(id);
+    el.classList.remove('active','done');
+    if (idx + 1 < n) el.classList.add('done');
+    if (idx + 1 === n) el.classList.add('active');
+  });
+}
+
+async function goStep2() {
+  document.getElementById('step1card').style.display = 'none';
+  document.getElementById('step2card').style.display = 'block';
+  setStep(2);
+
+  document.getElementById('selectedTitle').textContent = `${state.cls} · ${state.child}`;
+  document.getElementById('selectedSub').textContent = `${ROSTER[state.inst].name}`;
+
+  // 기존 응답 조회
+  try {
+    const key = `${state.inst}_${state.cls}_${state.child}`;
+    const snap = await get(ref(db, `${EVENT_ID}/${key}`));
+    if (snap.exists()) {
+      const data = snap.val();
+      state.edu = data.edu || '';
+      state.healing = data.healing || '';
+      state.eduNames = data.eduNames || '';
+      state.healingNames = data.healingNames || '';
+      state.parking = data.parking || '';
+
+      // UI 반영
+      if (state.edu) setAttend('edu', state.edu, true);
+      if (state.healing) setAttend('healing', state.healing, true);
+      if (state.parking) setParking(state.parking, true);
+      if (state.eduNames) document.getElementById('edu-names').value = state.eduNames;
+      if (state.healingNames) document.getElementById('healing-names').value = state.healingNames;
+
+      document.getElementById('alreadyMsg').classList.add('show');
+      document.getElementById('alreadyText').textContent =
+        `이전에 제출한 내용이 표시되어 있습니다. 내용을 수정하시면 덮어쓰기 됩니다.`;
+    } else {
+      // 초기화
+      state.edu = state.healing = state.eduNames = state.healingNames = state.parking = '';
+      document.getElementById('edu-names').value = '';
+      document.getElementById('healing-names').value = '';
+      document.querySelectorAll('.yn-btn').forEach(b => b.classList.remove('sel'));
+      document.getElementById('edu-attendee').classList.remove('show');
+      document.getElementById('healing-attendee').classList.remove('show');
+      document.getElementById('parkingSection').style.display = 'none';
+      document.getElementById('alreadyMsg').classList.remove('show');
+    }
+    updateNextBtn();
+  } catch(e) {
+    console.warn('기제출 조회 실패:', e);
+  }
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+window.backToStep1 = function() {
+  document.getElementById('step1card').style.display = 'block';
+  document.getElementById('step2card').style.display = 'none';
+  setStep(1);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+window.backToStep2 = function() {
+  document.getElementById('step2card').style.display = 'block';
+  document.getElementById('step3card').style.display = 'none';
+  setStep(2);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+// ─────────────────────────────────────────────
+// 응답 입력
+// ─────────────────────────────────────────────
+window.setAttend = function(prog, val, skipUpdate) {
+  state[prog] = val;
+  document.getElementById(`${prog}-yes`).classList.toggle('sel', val === 'yes');
+  document.getElementById(`${prog}-no`).classList.toggle('sel', val === 'no');
+  document.getElementById(`${prog}-attendee`).classList.toggle('show', val === 'yes');
+  toggleParking();
+  if (!skipUpdate) updateNextBtn();
+};
+
+window.setParking = function(val, skipUpdate) {
+  state.parking = val;
+  document.getElementById('park-yes').classList.toggle('sel', val === 'yes');
+  document.getElementById('park-no').classList.toggle('sel', val === 'no');
+  if (!skipUpdate) updateNextBtn();
+};
+
+function toggleParking() {
+  // 둘 중 하나라도 참석이면 주차장 질문 표시
+  const show = state.edu === 'yes' || state.healing === 'yes';
+  document.getElementById('parkingSection').style.display = show ? 'block' : 'none';
+  if (!show) state.parking = '';
+}
+
+function updateNextBtn() {
+  const eduOk = state.edu === 'yes' || state.edu === 'no';
+  const healingOk = state.healing === 'yes' || state.healing === 'no';
+  const needParking = state.edu === 'yes' || state.healing === 'yes';
+  const parkOk = !needParking || state.parking === 'yes' || state.parking === 'no';
+  document.getElementById('nextBtn').disabled = !(eduOk && healingOk && parkOk);
+}
+
+// 이름 입력 실시간 저장
+document.getElementById('edu-names').addEventListener('input', e => { state.eduNames = e.target.value.trim(); });
+document.getElementById('healing-names').addEventListener('input', e => { state.healingNames = e.target.value.trim(); });
+
+// ─────────────────────────────────────────────
+// 최종 확인
+// ─────────────────────────────────────────────
+window.goConfirm = function() {
+  // 부모교육 참석인데 이름 비었으면 경고
+  if (state.edu === 'yes' && !state.eduNames) {
+    toast('부모교육 참석자 이름을 입력해 주세요');
+    document.getElementById('edu-names').focus();
+    return;
+  }
+  if (state.healing === 'yes' && !state.healingNames) {
+    toast('힐링프로그램 참석자 이름을 입력해 주세요');
+    document.getElementById('healing-names').focus();
+    return;
+  }
+
+  document.getElementById('sm-inst').textContent = ROSTER[state.inst].name;
+  document.getElementById('sm-child').textContent = `${state.cls} · ${state.child}`;
+
+  const eduEl = document.getElementById('sm-edu');
+  eduEl.textContent = state.edu === 'yes' ? '✅ 참석' : '❌ 불참';
+  eduEl.className = 'summary-val ' + (state.edu === 'yes' ? 'yes-val' : 'no-val');
+  document.getElementById('sm-edu-name-row').style.display = state.edu === 'yes' ? 'flex' : 'none';
+  document.getElementById('sm-edu-name').textContent = state.eduNames;
+
+  const heaEl = document.getElementById('sm-healing');
+  heaEl.textContent = state.healing === 'yes' ? '✅ 참석' : '❌ 불참';
+  heaEl.className = 'summary-val ' + (state.healing === 'yes' ? 'yes-val' : 'no-val');
+  document.getElementById('sm-healing-name-row').style.display = state.healing === 'yes' ? 'flex' : 'none';
+  document.getElementById('sm-healing-name').textContent = state.healingNames;
+
+  const needParking = state.edu === 'yes' || state.healing === 'yes';
+  document.getElementById('sm-park-row').style.display = needParking ? 'flex' : 'none';
+  if (needParking) {
+    document.getElementById('sm-park').textContent = state.parking === 'yes' ? '🚗 사용' : '미사용';
+  }
+
+  document.getElementById('step2card').style.display = 'none';
+  document.getElementById('step3card').style.display = 'block';
+  setStep(3);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+// ─────────────────────────────────────────────
+// 제출
+// ─────────────────────────────────────────────
+window.submitData = async function() {
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '제출 중...';
+
+  const payload = {
+    inst: state.inst,
+    instName: ROSTER[state.inst].name,
+    cls: state.cls,
+    child: state.child,
+    edu: state.edu,
+    healing: state.healing,
+    eduNames: state.edu === 'yes' ? state.eduNames : '',
+    healingNames: state.healing === 'yes' ? state.healingNames : '',
+    parking: (state.edu === 'yes' || state.healing === 'yes') ? state.parking : '',
+    submittedAt: new Date().toISOString()
+  };
+
+  try {
+    const key = `${state.inst}_${state.cls}_${state.child}`;
+    await set(ref(db, `${EVENT_ID}/${key}`), payload);
+
+    document.getElementById('step3card').style.display = 'none';
+    document.getElementById('doneCard').style.display = 'block';
+    document.getElementById('doneSub').innerHTML =
+      `<b>${state.cls} · ${state.child}</b> 응답이 저장되었습니다.<br>참여해 주셔서 감사합니다 🌸`;
+    setStep(4);
+    ['step1','step2','step3'].forEach(id => {
+      document.getElementById(id).classList.remove('active');
+      document.getElementById(id).classList.add('done');
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } catch(e) {
+    console.error(e);
+    toast('제출 중 오류가 발생했어요. 다시 시도해 주세요.');
+    btn.disabled = false;
+    btn.textContent = '제출하기';
+  }
+};
+
+window.resetAll = function() {
+  state = { inst: 'A', cls: '', child: '', edu: '', healing: '', eduNames: '', healingNames: '', parking: '' };
+  selectInst('A');
+  document.getElementById('childWrap').style.display = 'none';
+  document.getElementById('doneCard').style.display = 'none';
+  document.getElementById('step1card').style.display = 'block';
+  setStep(1);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+window.toast = toast;
+
+// 초기 렌더링
+selectInst('A');
+</script>
+
+</body>
+</html>

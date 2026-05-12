@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌸 부모교육·힐링프로그램 현황</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --bg: #fff8fa;
+    --card: #ffffff;
+    --border: #f4dfe6;
+    --primary: #e87aa3;
+    --primary-dark: #d65a87;
+    --accent: #f9b8cf;
+    --light: #fff0f5;
+    --text: #3d2530;
+    --sub: #7a5a68;
+    --muted: #b89aa5;
+    --yes: #e87aa3;
+    --no: #c5c5c5;
+    --green: #7cc4a4;
+    --warn: #f4a85a;
+    --shadow: 0 4px 16px rgba(232,122,163,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* 로그인 */
+  #loginOverlay {
+    position: fixed; inset: 0; background: rgba(255, 240, 245, 0.97);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999; backdrop-filter: blur(8px);
+  }
+  .login-box {
+    background: #fff; padding: 36px 30px; border-radius: 20px; max-width: 340px;
+    width: calc(100% - 40px); text-align: center; box-shadow: 0 20px 60px rgba(232,122,163,0.15);
+    border: 1px solid var(--border);
+  }
+  .login-box .icon { font-size: 2.6rem; margin-bottom: 12px; }
+  .login-box h2 { font-size: 1.3rem; color: var(--text); margin-bottom: 6px; }
+  .login-box p { color: var(--sub); font-size: 0.85rem; margin-bottom: 22px; }
+  .pw-input {
+    width: 100%; padding: 14px; border: 2px solid var(--border); border-radius: 12px;
+    font-family: inherit; font-size: 1.4rem; text-align: center; letter-spacing: 8px;
+    margin-bottom: 14px; outline: none;
+  }
+  .pw-input:focus { border-color: var(--primary); }
+  .login-btn {
+    width: 100%; padding: 14px; background: var(--primary); color: #fff; border: none;
+    border-radius: 12px; font-family: inherit; font-size: 1rem; font-weight: 800; cursor: pointer;
+  }
+  .login-btn:hover { background: var(--primary-dark); }
+  .pw-err { color: #d63a3a; font-size: 0.82rem; margin-top: 10px; min-height: 1em; }
+
+  header {
+    background: linear-gradient(135deg, #ffd5e3 0%, #ffeef4 100%);
+    padding: 22px 24px; border-bottom: 1px solid var(--border);
+  }
+  .hdr-inner {
+    max-width: 1100px; margin: 0 auto;
+    display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+  header h1 { font-size: 1.35rem; font-weight: 900; color: #5a2b3d; }
+  header p { color: var(--primary-dark); font-size: 0.78rem; margin-top: 3px; }
+  .hdr-actions { display: flex; gap: 8px; }
+  .hdr-btn {
+    padding: 10px 16px; border: 1.5px solid var(--border); border-radius: 10px;
+    background: #fff; font-family: inherit; font-size: 0.82rem; font-weight: 700;
+    color: var(--sub); cursor: pointer; transition: all 0.15s;
+  }
+  .hdr-btn:hover { border-color: var(--primary); color: var(--primary-dark); }
+  .hdr-btn.excel { background: var(--green); border-color: var(--green); color: #fff; }
+  .hdr-btn.excel:hover { background: #5fa888; }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 80px; }
+
+  /* 요약 카드 */
+  .summary-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px; margin-bottom: 20px;
+  }
+  .s-card {
+    background: var(--card); padding: 18px; border-radius: 14px;
+    border: 1px solid var(--border); box-shadow: var(--shadow); text-align: center;
+  }
+  .s-card.edu { background: linear-gradient(135deg, #fff0f5, #ffe5ed); }
+  .s-card.healing { background: linear-gradient(135deg, #f0faf5, #e0f5ea); }
+  .s-card.parking { background: linear-gradient(135deg, #fff8e8, #fff0d5); }
+  .s-card.submitted { background: linear-gradient(135deg, #f0f4ff, #e5edff); }
+  .s-num { font-size: 1.9rem; font-weight: 900; color: var(--text); }
+  .s-lbl { font-size: 0.78rem; color: var(--sub); margin-top: 4px; font-weight: 600; }
+  .s-sub { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+
+  /* 탭 */
+  .tabs {
+    display: flex; gap: 8px; margin-bottom: 16px;
+    background: #fff; padding: 6px; border-radius: 12px;
+    border: 1px solid var(--border); width: fit-content;
+  }
+  .tab {
+    padding: 10px 18px; background: transparent; border: none; border-radius: 8px;
+    font-family: inherit; font-size: 0.85rem; font-weight: 700; color: var(--sub);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .tab.active { background: var(--primary); color: #fff; }
+
+  /* 카드/테이블 */
+  .card {
+    background: var(--card); border-radius: 14px; padding: 20px;
+    box-shadow: var(--shadow); margin-bottom: 16px;
+    border: 1px solid var(--border);
+  }
+  .card-title { font-size: 1rem; font-weight: 800; color: var(--text); margin-bottom: 14px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  thead { background: var(--light); }
+  th { padding: 11px 10px; text-align: left; font-weight: 700; color: var(--sub); font-size: 0.78rem; border-bottom: 2px solid var(--border); }
+  td { padding: 11px 10px; border-bottom: 1px solid var(--border); color: var(--text); }
+  tbody tr:hover { background: #fffafc; }
+  td.center, th.center { text-align: center; }
+  .pill {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 0.72rem; font-weight: 700;
+  }
+  .pill.yes { background: #fde8ef; color: var(--primary-dark); }
+  .pill.no { background: #f0f0f0; color: var(--muted); }
+  .pill.none { background: #fff5e0; color: #c08540; }
+
+  /* 반별 그룹 */
+  .class-section { margin-bottom: 22px; }
+  .class-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px; background: var(--light); border-radius: 10px; margin-bottom: 8px;
+  }
+  .class-name { font-weight: 800; font-size: 0.92rem; color: var(--text); }
+  .class-stat { font-size: 0.78rem; color: var(--sub); }
+  .class-stat strong { color: var(--primary-dark); }
+
+  .empty {
+    text-align: center; padding: 50px 20px; color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  .toast {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+    background: var(--text); color: #fff; padding: 12px 22px; border-radius: 30px;
+    font-size: 0.86rem; font-weight: 600; z-index: 9999; opacity: 0;
+    transition: opacity 0.25s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+
+  @media (max-width: 600px) {
+    .summary-grid { grid-template-columns: repeat(2, 1fr); }
+    .s-num { font-size: 1.5rem; }
+    th, td { padding: 8px 6px; font-size: 0.78rem; }
+    .hdr-btn { padding: 8px 12px; font-size: 0.78rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 로그인 -->
+<div id="loginOverlay">
+  <div class="login-box">
+    <div class="icon">🌸</div>
+    <h2>관리자 로그인</h2>
+    <p>부모교육·힐링프로그램 수요조사</p>
+    <input type="password" class="pw-input" id="pwInput" maxlength="6" placeholder="••••" onkeydown="if(event.key==='Enter')tryLogin()">
+    <button class="login-btn" onclick="tryLogin()">확인</button>
+    <div class="pw-err" id="pwErr"></div>
+  </div>
+</div>
+
+<header>
+  <div class="hdr-inner">
+    <div>
+      <h1>🌸 부모교육 · 힐링프로그램 현황</h1>
+      <p>2026년 6월 17일 (수) · 무지개+우리무지개어린이집</p>
+    </div>
+    <div class="hdr-actions">
+      <button class="hdr-btn" onclick="loadData()">🔄 새로고침</button>
+      <button class="hdr-btn excel" onclick="exportExcel()">📥 엑셀 내보내기</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- 요약 -->
+  <div class="summary-grid">
+    <div class="s-card submitted">
+      <div class="s-num" id="s-submit">-</div>
+      <div class="s-lbl">제출 가정 수</div>
+      <div class="s-sub" id="s-submit-sub">/ 전체</div>
+    </div>
+    <div class="s-card edu">
+      <div class="s-num" id="s-edu">-</div>
+      <div class="s-lbl">📚 부모교육 참석</div>
+      <div class="s-sub" id="s-edu-sub">총 인원</div>
+    </div>
+    <div class="s-card healing">
+      <div class="s-num" id="s-healing">-</div>
+      <div class="s-lbl">🌷 힐링프로그램 참석</div>
+      <div class="s-sub" id="s-healing-sub">총 인원</div>
+    </div>
+    <div class="s-card parking">
+      <div class="s-num" id="s-park">-</div>
+      <div class="s-lbl">🚗 주차장 사용</div>
+      <div class="s-sub">대수</div>
+    </div>
+  </div>
+
+  <!-- 탭 -->
+  <div class="tabs">
+    <button class="tab active" id="tabA" onclick="switchTab('A')">무지개어린이집</button>
+    <button class="tab" id="tabB" onclick="switchTab('B')">우리무지개어린이집</button>
+    <button class="tab" id="tabAll" onclick="switchTab('all')">전체 명단</button>
+  </div>
+
+  <div id="contentArea">
+    <div class="empty">불러오는 중...</div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDojXJ_9pOnla8uG240APwo3Ik9gBddMw4",
+  authDomain: "mujigae-swimming.firebaseapp.com",
+  databaseURL: "https://mujigae-swimming-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "mujigae-swimming"
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const EVENT_ID = "2026-06-17_부모교육_힐링";
+const PASSWORD = "7117";
+
+const ROSTER = {
+  A: {
+    name: "무지개어린이집",
+    groups: [
+      { title: "영아반", classes: {
+        "아기참새": ["박범준","정윤하","정다엘","고이솔","조은준"],
+        "초롱이슬": ["전유주","양선우","박하엘","박유하","정이안","정이준"]
+      }},
+      { title: "유아반", classes: {
+        "은빛물결": ["이재헌","박수현","김성원","정하준","송유담","박승빈","김정후","주현우","신승혁","김수호","정연우","최보민","한다윤"]
+      }}
+    ]
+  },
+  B: {
+    name: "우리무지개어린이집",
+    groups: [
+      { title: "유아반", classes: {
+        "아침햇살": ["정태호","고은호","김이안","전수호","위단우","서현우","김윤우","김지안"],
+        "들꽃향기": ["한지후","박은진","곽시안","박찬율","설재은","류시환","강은호","박다엘","김사랑","손리완","이로아","이소민","방서윤","김인우","이은우","임서우","이하린"],
+        "고운햇살": ["박재희","박지유","김민준","곽나율","김은서","홍하루","김동휘","임라희"],
+        "푸른하늘": ["김아린","김강준","박진우","한서후","윤태언","김서우","백민지","이하민","강태희","곽다온","박준","김세윤","김지민","이채민"],
+        "파도소리": ["윤지아","김수겸","돌란샤나","권민서","최도윤","장시영"],
+        "푸른바다": ["김평온","김별리","양준우","강지호","김도우","백이엘","이태헌","오주원","서연석","임하라","김태유","조믿음","유이서","윤예나","윤예지","조가온","곽시후","이소민"]
+      }}
+    ]
+  }
+};
+
+let allData = {};
+let currentTab = 'A';
+
+// ─────────────────────────────────────────────
+// 로그인
+// ─────────────────────────────────────────────
+window.tryLogin = function() {
+  const pw = document.getElementById('pwInput').value;
+  if (pw === PASSWORD) {
+    document.getElementById('loginOverlay').style.display = 'none';
+    loadData();
+  } else {
+    document.getElementById('pwErr').textContent = '비밀번호가 일치하지 않습니다';
+    document.getElementById('pwInput').value = '';
+  }
+};
+
+// ─────────────────────────────────────────────
+// 데이터 로드
+// ─────────────────────────────────────────────
+window.loadData = async function() {
+  try {
+    const snap = await get(ref(db, EVENT_ID));
+    allData = snap.exists() ? snap.val() : {};
+    updateSummary();
+    renderCurrentTab();
+    toast('데이터를 불러왔어요');
+  } catch(e) {
+    console.error(e);
+    toast('불러오기 실패');
+  }
+};
+
+function updateSummary() {
+  const entries = Object.values(allData);
+
+  // 전체 아동 수
+  let totalChildren = 0;
+  ['A','B'].forEach(k => {
+    ROSTER[k].groups.forEach(g => {
+      Object.values(g.classes).forEach(arr => totalChildren += arr.length);
+    });
+  });
+
+  const submitCount = entries.length;
+  let eduParents = 0, healingParents = 0, parkingCount = 0;
+  let eduChildren = 0, healingChildren = 0;
+
+  entries.forEach(e => {
+    if (e.edu === 'yes') {
+      eduChildren++;
+      eduParents += countNames(e.eduNames);
+    }
+    if (e.healing === 'yes') {
+      healingChildren++;
+      healingParents += countNames(e.healingNames);
+    }
+    if (e.parking === 'yes') parkingCount++;
+  });
+
+  document.getElementById('s-submit').textContent = submitCount;
+  document.getElementById('s-submit-sub').textContent = `/ 전체 ${totalChildren}명`;
+  document.getElementById('s-edu').textContent = `${eduParents}명`;
+  document.getElementById('s-edu-sub').textContent = `아동 ${eduChildren}명 가정`;
+  document.getElementById('s-healing').textContent = `${healingParents}명`;
+  document.getElementById('s-healing-sub').textContent = `꽃바구니 ${healingChildren}개 (${healingChildren}가정)`;
+  document.getElementById('s-park').textContent = `${parkingCount}대`;
+}
+
+function countNames(s) {
+  if (!s) return 0;
+  return s.split(/[,，、/]/).map(x => x.trim()).filter(Boolean).length || 1;
+}
+
+// ─────────────────────────────────────────────
+// 탭
+// ─────────────────────────────────────────────
+window.switchTab = function(t) {
+  currentTab = t;
+  document.getElementById('tabA').classList.toggle('active', t === 'A');
+  document.getElementById('tabB').classList.toggle('active', t === 'B');
+  document.getElementById('tabAll').classList.toggle('active', t === 'all');
+  renderCurrentTab();
+};
+
+function renderCurrentTab() {
+  if (currentTab === 'all') {
+    renderAllList();
+  } else {
+    renderByClass(currentTab);
+  }
+}
+
+function renderByClass(instKey) {
+  const inst = ROSTER[instKey];
+  let html = '';
+
+  inst.groups.forEach(g => {
+    Object.entries(g.classes).forEach(([cls, children]) => {
+      // 반별 통계
+      let submitted = 0, eduYes = 0, healingYes = 0;
+      children.forEach(c => {
+        const key = `${instKey}_${cls}_${c}`;
+        const d = allData[key];
+        if (d) {
+          submitted++;
+          if (d.edu === 'yes') eduYes++;
+          if (d.healing === 'yes') healingYes++;
+        }
+      });
+
+      html += `
+        <div class="class-section">
+          <div class="class-header">
+            <div class="class-name">${cls} <span style="color:var(--muted);font-weight:500;font-size:0.78rem;">(${g.title})</span></div>
+            <div class="class-stat">제출 <strong>${submitted}/${children.length}</strong> · 부모교육 <strong>${eduYes}</strong> · 힐링 <strong>${healingYes}</strong></div>
+          </div>
+          <div class="card" style="padding:0;overflow:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>아동</th>
+                  <th class="center">📚 부모교육</th>
+                  <th>참석자</th>
+                  <th class="center">🌷 힐링</th>
+                  <th>참석자</th>
+                  <th class="center">🚗 주차장</th>
+                </tr>
+              </thead>
+              <tbody>`;
+
+      children.forEach(c => {
+        const key = `${instKey}_${cls}_${c}`;
+        const d = allData[key];
+        if (!d) {
+          html += `
+            <tr>
+              <td><strong>${c}</strong></td>
+              <td class="center"><span class="pill none">미제출</span></td>
+              <td>-</td>
+              <td class="center"><span class="pill none">미제출</span></td>
+              <td>-</td>
+              <td class="center">-</td>
+            </tr>`;
+        } else {
+          html += `
+            <tr>
+              <td><strong>${c}</strong></td>
+              <td class="center"><span class="pill ${d.edu === 'yes' ? 'yes' : 'no'}">${d.edu === 'yes' ? '참석' : '불참'}</span></td>
+              <td>${d.edu === 'yes' ? (d.eduNames || '-') : '-'}</td>
+              <td class="center"><span class="pill ${d.healing === 'yes' ? 'yes' : 'no'}">${d.healing === 'yes' ? '참석' : '불참'}</span></td>
+              <td>${d.healing === 'yes' ? (d.healingNames || '-') : '-'}</td>
+              <td class="center">${d.parking === 'yes' ? '🚗 사용' : (d.parking === 'no' ? '미사용' : '-')}</td>
+            </tr>`;
+        }
+      });
+
+      html += `</tbody></table></div></div>`;
+    });
+  });
+
+  document.getElementById('contentArea').innerHTML = html;
+}
+
+function renderAllList() {
+  // 참석자 명단 (참석자만 모아서)
+  const eduList = [];
+  const healingList = [];
+  const parkingList = [];
+
+  ['A','B'].forEach(k => {
+    ROSTER[k].groups.forEach(g => {
+      Object.entries(g.classes).forEach(([cls, children]) => {
+        children.forEach(c => {
+          const key = `${k}_${cls}_${c}`;
+          const d = allData[key];
+          if (!d) return;
+          if (d.edu === 'yes') eduList.push({ inst: ROSTER[k].name, cls, child: c, names: d.eduNames });
+          if (d.healing === 'yes') healingList.push({ inst: ROSTER[k].name, cls, child: c, names: d.healingNames });
+          if (d.parking === 'yes') parkingList.push({ inst: ROSTER[k].name, cls, child: c });
+        });
+      });
+    });
+  });
+
+  let html = `
+    <div class="card">
+      <div class="card-title">📚 부모교육 참석 명단 (${eduList.length}가정)</div>
+      <div style="overflow:auto;">
+      <table>
+        <thead><tr><th>어린이집</th><th>반</th><th>아동</th><th>참석자 (수료증)</th></tr></thead>
+        <tbody>
+          ${eduList.length === 0 ? `<tr><td colspan="4" class="center" style="color:var(--muted);padding:20px;">참석자 없음</td></tr>` :
+            eduList.map(e => `<tr><td>${e.inst}</td><td>${e.cls}</td><td><strong>${e.child}</strong></td><td>${e.names || '-'}</td></tr>`).join('')}
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🌷 힐링프로그램 참석 명단 (${healingList.length}가정 · 꽃바구니 ${healingList.length}개)</div>
+      <div style="overflow:auto;">
+      <table>
+        <thead><tr><th>어린이집</th><th>반</th><th>아동</th><th>참석자</th></tr></thead>
+        <tbody>
+          ${healingList.length === 0 ? `<tr><td colspan="4" class="center" style="color:var(--muted);padding:20px;">참석자 없음</td></tr>` :
+            healingList.map(e => `<tr><td>${e.inst}</td><td>${e.cls}</td><td><strong>${e.child}</strong></td><td>${e.names || '-'}</td></tr>`).join('')}
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🚗 주차장 사용 가정 (${parkingList.length}가정)</div>
+      <div style="overflow:auto;">
+      <table>
+        <thead><tr><th>어린이집</th><th>반</th><th>아동</th></tr></thead>
+        <tbody>
+          ${parkingList.length === 0 ? `<tr><td colspan="3" class="center" style="color:var(--muted);padding:20px;">주차장 사용 없음</td></tr>` :
+            parkingList.map(e => `<tr><td>${e.inst}</td><td>${e.cls}</td><td><strong>${e.child}</strong></td></tr>`).join('')}
+        </tbody>
+      </table>
+      </div>
+    </div>`;
+
+  document.getElementById('contentArea').innerHTML = html;
+}
+
+// ─────────────────────────────────────────────
+// 엑셀 내보내기
+// ─────────────────────────────────────────────
+window.exportExcel = function() {
+  const wb = XLSX.utils.book_new();
+
+  // 시트 1: 전체 응답
+  const all = [['어린이집','반','아동','부모교육','부모교육 참석자(수료증)','힐링프로그램','힐링 참석자','주차장','제출시각']];
+  ['A','B'].forEach(k => {
+    ROSTER[k].groups.forEach(g => {
+      Object.entries(g.classes).forEach(([cls, children]) => {
+        children.forEach(c => {
+          const key = `${k}_${cls}_${c}`;
+          const d = allData[key];
+          if (d) {
+            all.push([
+              ROSTER[k].name, cls, c,
+              d.edu === 'yes' ? '참석' : '불참',
+              d.edu === 'yes' ? (d.eduNames || '') : '',
+              d.healing === 'yes' ? '참석' : '불참',
+              d.healing === 'yes' ? (d.healingNames || '') : '',
+              d.parking === 'yes' ? '사용' : (d.parking === 'no' ? '미사용' : ''),
+              d.submittedAt ? new Date(d.submittedAt).toLocaleString('ko-KR') : ''
+            ]);
+          } else {
+            all.push([ROSTER[k].name, cls, c, '미제출','','미제출','','','']);
+          }
+        });
+      });
+    });
+  });
+  const ws1 = XLSX.utils.aoa_to_sheet(all);
+  ws1['!cols'] = [{wch:18},{wch:10},{wch:10},{wch:10},{wch:25},{wch:10},{wch:25},{wch:10},{wch:18}];
+  XLSX.utils.book_append_sheet(wb, ws1, '전체 응답');
+
+  // 시트 2: 부모교육 참석 (수료증용)
+  const edu = [['어린이집','반','아동','참석자(수료증)','주차장']];
+  // 시트 3: 힐링 참석 (꽃바구니 1가정당 1개)
+  const hea = [['어린이집','반','아동','참석자','꽃바구니','주차장']];
+
+  Object.entries(allData).forEach(([key, d]) => {
+    if (d.edu === 'yes') edu.push([d.instName || '', d.cls, d.child, d.eduNames || '', d.parking === 'yes' ? '사용' : '미사용']);
+    if (d.healing === 'yes') hea.push([d.instName || '', d.cls, d.child, d.healingNames || '', '1개', d.parking === 'yes' ? '사용' : '미사용']);
+  });
+
+  const ws2 = XLSX.utils.aoa_to_sheet(edu);
+  ws2['!cols'] = [{wch:18},{wch:10},{wch:10},{wch:25},{wch:10}];
+  XLSX.utils.book_append_sheet(wb, ws2, '부모교육 참석');
+
+  const ws3 = XLSX.utils.aoa_to_sheet(hea);
+  ws3['!cols'] = [{wch:18},{wch:10},{wch:10},{wch:25},{wch:10},{wch:10}];
+  XLSX.utils.book_append_sheet(wb, ws3, '힐링 참석');
+
+  // 시트 4: 요약
+  const eduChildren = Object.values(allData).filter(d => d.edu === 'yes').length;
+  const heaChildren = Object.values(allData).filter(d => d.healing === 'yes').length;
+  const eduParents = Object.values(allData).reduce((s,d) => s + (d.edu === 'yes' ? countNames(d.eduNames) : 0), 0);
+  const heaParents = Object.values(allData).reduce((s,d) => s + (d.healing === 'yes' ? countNames(d.healingNames) : 0), 0);
+  const parkCount = Object.values(allData).filter(d => d.parking === 'yes').length;
+
+  const sum = [
+    ['부모교육·힐링프로그램 수요조사 요약'],
+    ['행사일','2026년 6월 17일 (수)'],
+    [],
+    ['📚 부모교육 (14:00~14:50)'],
+    ['참석 가정', `${eduChildren}가정`],
+    ['참석 인원 (수료증)', `${eduParents}명`],
+    [],
+    ['🌷 힐링프로그램 - 꽃바구니 만들기 (15:00~16:00)'],
+    ['참석 가정', `${heaChildren}가정`],
+    ['참석 인원', `${heaParents}명`],
+    ['꽃바구니 준비', `${heaChildren}개 (가정당 1개)`],
+    [],
+    ['🚗 주차장 사용', `${parkCount}대`],
+    [],
+    ['총 제출 가정 수', `${Object.keys(allData).length}가정`]
+  ];
+  const ws4 = XLSX.utils.aoa_to_sheet(sum);
+  ws4['!cols'] = [{wch:22},{wch:20}];
+  XLSX.utils.book_append_sheet(wb, ws4, '요약');
+
+  const fname = `부모교육_힐링_수요조사_${new Date().toISOString().slice(0,10)}.xlsx`;
+  XLSX.writeFile(wb, fname);
+  toast('엑셀 파일이 다운로드되었어요');
+};
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+window.toast = toast;
+
+// 자동 포커스
+document.getElementById('pwInput').focus();
+</script>
+
+</body>
+</html>
