@@ -287,7 +287,7 @@
   <header>
     <div>
       <h1>🌿 2026년 아토피·천식 안심학교 알레르기질환 조사 관리</h1>
-      <div class="deadline">광주광역시 남구보건소 | 조사기간 2026.4.24 ~ 5.29</div>
+      <div class="deadline">광주광역시 남구보건소 | 조사기간 2026.4.24 ~ 5.20</div>
     </div>
     <div style="display:flex; gap:8px;">
       <button onclick="openResetModal()" style="padding:8px 16px; background:rgba(244,67,54,0.9); color:#fff; border:1px solid rgba(255,255,255,0.3); border-radius:6px; cursor:pointer; font-weight:bold;">🗑️ 데이터 리셋</button>
@@ -616,7 +616,7 @@ window.renderForm = function() {
       <span><strong>시도:</strong> 광주광역시</span>
       <span><strong>시군구:</strong> 남구</span>
       <span><strong>안심학교명:</strong> ${center}</span>
-      <span><strong>조사기간:</strong> 2026.4.24 ~ 5.29</span>
+      <span><strong>조사기간:</strong> 2026.4.24 ~ 5.20</span>
       <span><strong>출력일:</strong> ${dateStr}</span>
     </div>
     <p style="font-size:12px; color:#666; margin-bottom:10px;">※ 반드시 의사로부터 해당 질환을 진단받은 경우에만 명수 표시 / 2개 이상 복합 시 각각 표시</p>
@@ -871,7 +871,7 @@ window.downloadFormExcel = function() {
 
   const rows = [
     [`알레르기질환 조사표 - ${center}`],
-    ["시도","광주광역시","시군구","남구","안심학교명",center,"조사기간","2026.4.24~5.29"],
+    ["시도","광주광역시","시군구","남구","안심학교명",center,"조사기간","2026.4.24~5.20"],
     [],
     ["구분","","전체 원아수*","총명수","천식","아토피피부염","알레르기비염","식품알레르기","아나필락시스"]
   ];
