@@ -4,614 +4,493 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🏊 수영참여 현황</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
 <style>
-  :root {
-    --bg:#f0f8ff;--card:#fff;--border:#d0e8f8;--primary:#3a9bd5;--primary-dark:#2178b0;
-    --light:#e8f5fd;--text:#1a3a4a;--sub:#4a7a96;--muted:#8aafc4;
-    --swim:#3a9bd5;--indoor:#f4a85a;--absent:#9e9e9e;--green:#5cb85c;
-    --shadow:0 4px 16px rgba(58,155,213,.10);
-  }
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
-
-  #loginOverlay{position:fixed;inset:0;background:rgba(224,243,253,.97);display:flex;align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(8px);}
-  .login-box{background:#fff;padding:36px 30px;border-radius:20px;max-width:320px;width:calc(100% - 40px);text-align:center;box-shadow:0 20px 60px rgba(58,155,213,.15);border:1px solid var(--border);}
-  .login-box .icon{font-size:2.5rem;margin-bottom:12px;}
-  .login-box h2{font-size:1.2rem;color:var(--text);margin-bottom:6px;}
-  .login-box p{color:var(--sub);font-size:.82rem;margin-bottom:20px;}
-  .pw-input{width:100%;padding:14px;border:2px solid var(--border);border-radius:12px;font-family:inherit;font-size:1.4rem;text-align:center;letter-spacing:8px;margin-bottom:12px;outline:none;}
-  .pw-input:focus{border-color:var(--primary);}
-  .login-btn{width:100%;padding:14px;background:var(--primary);color:#fff;border:none;border-radius:12px;font-family:inherit;font-size:1rem;font-weight:800;cursor:pointer;}
-  .login-btn:hover{background:var(--primary-dark);}
-  .pw-err{color:#d63a3a;font-size:.8rem;margin-top:8px;min-height:1em;}
-
-  header{background:linear-gradient(135deg,#b8dff5,#e0f3fd);padding:20px 24px;border-bottom:1px solid var(--border);}
-  .hdr-inner{max-width:1100px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;}
-  header h1{font-size:1.3rem;font-weight:900;color:#0d3a5c;}
-  header p{color:var(--primary-dark);font-size:.78rem;margin-top:2px;}
-  .hdr-actions{display:flex;gap:8px;flex-wrap:wrap;}
-  .hdr-btn{padding:9px 14px;border:1.5px solid var(--border);border-radius:10px;background:#fff;font-family:inherit;font-size:.8rem;font-weight:700;color:var(--sub);cursor:pointer;transition:all .15s;}
-  .hdr-btn:hover{border-color:var(--primary);color:var(--primary-dark);}
-  .hdr-btn.excel{background:var(--green);border-color:var(--green);color:#fff;}
-  .hdr-btn.excel:hover{background:#4a9e4a;}
-
-  main{max-width:1100px;margin:0 auto;padding:20px 16px 80px;}
-
-  .filter-bar{background:var(--card);border-radius:14px;padding:16px 18px;border:1px solid var(--border);margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
-  .filter-label{font-weight:700;font-size:.85rem;color:var(--sub);}
-  .filter-date{padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;font-family:inherit;font-size:.88rem;color:var(--text);outline:none;}
-  .filter-date:focus{border-color:var(--primary);}
-  .filter-btn{padding:9px 16px;background:var(--primary);color:#fff;border:none;border-radius:9px;font-family:inherit;font-size:.85rem;font-weight:700;cursor:pointer;}
-
-  .pending-box{background:#fff8e1;border:1px solid #ffd966;border-radius:12px;padding:14px 16px;margin-bottom:16px;display:none;}
-  .pending-box.show{display:block;}
-  .pending-title{font-weight:800;color:#7a5a00;font-size:.88rem;margin-bottom:6px;}
-  .pending-list{font-size:.8rem;color:#7a5a00;}
-
-  .summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px;}
-  .s-card{background:var(--card);padding:16px;border-radius:14px;border:1px solid var(--border);box-shadow:var(--shadow);text-align:center;}
-  .s-card.swim-c{background:linear-gradient(135deg,#e0f3fd,#cce8f7);}
-  .s-card.indoor-c{background:linear-gradient(135deg,#fff5e8,#ffe8cc);}
-  .s-card.absent-c{background:linear-gradient(135deg,#f5f5f5,#e8e8e8);}
-  .s-card.sub-c{background:linear-gradient(135deg,#e8f5e9,#d4edda);}
-  .s-num{font-size:1.8rem;font-weight:900;color:var(--text);}
-  .s-lbl{font-size:.75rem;color:var(--sub);margin-top:4px;font-weight:600;}
-
-  .tabs{display:flex;gap:8px;margin-bottom:16px;background:#fff;padding:6px;border-radius:12px;border:1px solid var(--border);width:fit-content;flex-wrap:wrap;}
-  .tab{padding:9px 16px;background:transparent;border:none;border-radius:8px;font-family:inherit;font-size:.82rem;font-weight:700;color:var(--sub);cursor:pointer;transition:all .15s;}
-  .tab.active{background:var(--primary);color:#fff;}
-
-  .card{background:var(--card);border-radius:14px;padding:18px;box-shadow:var(--shadow);margin-bottom:14px;border:1px solid var(--border);}
-  .card-title{font-size:.95rem;font-weight:800;color:var(--text);margin-bottom:12px;}
-
-  table{width:100%;border-collapse:collapse;font-size:.83rem;}
-  thead{background:var(--light);}
-  th{padding:10px 8px;text-align:left;font-weight:700;color:var(--sub);font-size:.76rem;border-bottom:2px solid var(--border);}
-  td{padding:10px 8px;border-bottom:1px solid var(--border);}
-  tbody tr:hover{background:#f5fbff;}
-  td.center,th.center{text-align:center;}
-
-  .pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:700;}
-  .pill.swim{background:#d0ecfa;color:#1565a0;}
-  .pill.indoor{background:#ffe8cc;color:#c06000;}
-  .pill.absent{background:#e8e8e8;color:#666;}
-  .pill.none{background:#fff5d0;color:#c08540;}
-
-  .class-section{margin-bottom:20px;}
-  .class-header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--light);border-radius:10px;margin-bottom:8px;}
-  .class-name{font-weight:800;font-size:.9rem;color:var(--text);}
-  .class-stat{font-size:.76rem;color:var(--sub);}
-  .class-stat strong{color:var(--primary-dark);}
-
-  .empty{text-align:center;padding:50px 20px;color:var(--muted);font-size:.9rem;}
-  .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:12px 22px;border-radius:30px;font-size:.86rem;font-weight:600;z-index:9999;opacity:0;transition:opacity .25s;pointer-events:none;}
-  .toast.show{opacity:1;}
-
-
-  /* 메인 섹션 탭 */
-  .main-tabs{display:flex;gap:0;margin-bottom:20px;background:#fff;border-radius:14px;border:1px solid var(--border);overflow:hidden;box-shadow:var(--shadow);}
-  .main-tab{flex:1;padding:15px;border:none;font-family:inherit;font-size:.88rem;font-weight:800;cursor:pointer;background:#fff;color:var(--sub);transition:all .15s;}
-  .main-tab.active{background:var(--primary);color:#fff;}
-  /* 교사 현황 */
-  .t-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:18px;}
-  .ts-card{background:var(--card);padding:14px;border-radius:14px;border:1px solid var(--border);box-shadow:var(--shadow);text-align:center;}
-  .ts-card.attend-c{background:linear-gradient(135deg,#e8f5e9,#d4edda);}
-  .ts-card.off-c{background:linear-gradient(135deg,#fde8ef,#fad0df);}
-  .ts-card.leave-c{background:linear-gradient(135deg,#fff5e8,#ffe8cc);}
-  .ts-card.none-c{background:linear-gradient(135deg,#f5f5f5,#e8e8e8);}
-  .ts-num{font-size:1.7rem;font-weight:900;color:var(--text);}
-  .ts-lbl{font-size:.73rem;color:var(--sub);margin-top:4px;font-weight:600;}
-  .pill.t-attend{background:#d4edda;color:#1a6630;}
-  .pill.t-off{background:#fde8ef;color:#a01050;}
-  .pill.t-leave-am{background:#fff0cc;color:#c06000;}
-  .pill.t-leave-pm{background:#ffe0cc;color:#c04000;}
-  .pill.t-leave-all{background:#ffd0b0;color:#a03000;}
-  .pill.t-none{background:#f0f0f0;color:#888;}
-  @media(max-width:600px){
-    .summary-grid{grid-template-columns:repeat(2,1fr);}
-    th,td{padding:8px 5px;font-size:.75rem;}
-    .hdr-btn{padding:7px 10px;font-size:.75rem;}
-    .tabs{gap:4px;}.tab{padding:8px 10px;font-size:.76rem;}
-  }
+:root{--bg:#f0f8ff;--card:#fff;--border:#d0e8f8;--pri:#3a9bd5;--dark:#2178b0;--light:#e8f5fd;--text:#1a3a4a;--sub:#4a7a96;--muted:#8aafc4;--swim:#3a9bd5;--indoor:#f4a85a;--absent:#9e9e9e;--green:#5cb85c;--red:#e05050;--sh:0 4px 16px rgba(58,155,213,.10);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+#loginWrap{position:fixed;inset:0;background:rgba(224,243,253,.97);display:flex;align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(8px);}
+.lbox{background:#fff;padding:34px 28px;border-radius:20px;max-width:310px;width:calc(100% - 32px);text-align:center;box-shadow:0 20px 60px rgba(58,155,213,.15);border:1px solid var(--border);}
+.lbox .ic{font-size:2.4rem;margin-bottom:11px;}
+.lbox h2{font-size:1.15rem;color:var(--text);margin-bottom:5px;}
+.lbox p{color:var(--sub);font-size:.8rem;margin-bottom:18px;}
+.pwinput{width:100%;padding:13px;border:2px solid var(--border);border-radius:11px;font-family:inherit;font-size:1.4rem;text-align:center;letter-spacing:8px;margin-bottom:11px;outline:none;}
+.pwinput:focus{border-color:var(--pri);}
+.loginbtn{width:100%;padding:13px;background:var(--pri);color:#fff;border:none;border-radius:11px;font-family:inherit;font-size:.95rem;font-weight:800;cursor:pointer;}
+.loginbtn:hover{background:var(--dark);}
+.pwerr{color:#d63a3a;font-size:.78rem;margin-top:7px;min-height:1em;}
+header{background:linear-gradient(135deg,#b8dff5,#e0f3fd);padding:18px 20px;border-bottom:1px solid var(--border);}
+.hi{max-width:1100px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+header h1{font-size:1.25rem;font-weight:900;color:#0d3a5c;}
+header p{color:var(--dark);font-size:.76rem;margin-top:2px;}
+.hbtns{display:flex;gap:7px;flex-wrap:wrap;}
+.hbtn{padding:8px 13px;border:1.5px solid var(--border);border-radius:9px;background:#fff;font-family:inherit;font-size:.78rem;font-weight:700;color:var(--sub);cursor:pointer;transition:all .13s;}
+.hbtn:hover{border-color:var(--pri);color:var(--dark);}
+.hbtn.excel{background:var(--green);border-color:var(--green);color:#fff;}
+.hbtn.excel:hover{background:#4a9e4a;}
+.hbtn.reset{background:var(--red);border-color:var(--red);color:#fff;}
+.hbtn.reset:hover{background:#c03030;}
+main{max-width:1100px;margin:0 auto;padding:18px 14px 80px;}
+.today-bar{background:var(--card);border-radius:13px;padding:12px 16px;border:1px solid var(--border);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.today-lbl{font-size:.88rem;font-weight:800;color:var(--text);}
+.today-date{font-size:.82rem;color:var(--sub);}
+.mtabs{display:flex;margin-bottom:16px;background:#fff;border-radius:13px;border:1px solid var(--border);overflow:hidden;box-shadow:var(--sh);}
+.mtab{flex:1;padding:14px 8px;border:none;font-family:inherit;font-size:.86rem;font-weight:800;cursor:pointer;background:#fff;color:var(--sub);transition:all .13s;}
+.mtab.on{background:var(--pri);color:#fff;}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:16px;}
+.sc{background:var(--card);padding:14px;border-radius:13px;border:1px solid var(--border);box-shadow:var(--sh);text-align:center;}
+.sc.sw{background:linear-gradient(135deg,#e0f3fd,#cce8f7);}
+.sc.id{background:linear-gradient(135deg,#fff5e8,#ffe8cc);}
+.sc.ab{background:linear-gradient(135deg,#f5f5f5,#e8e8e8);}
+.sc.sb{background:linear-gradient(135deg,#e8f5e9,#d4edda);}
+.sc.at{background:linear-gradient(135deg,#e8f5e9,#d4edda);}
+.sc.of{background:linear-gradient(135deg,#fde8ef,#fad0df);}
+.sc.lv{background:linear-gradient(135deg,#fff5e8,#ffe8cc);}
+.sc.no{background:linear-gradient(135deg,#f5f5f5,#e8e8e8);}
+.snum{font-size:1.7rem;font-weight:900;color:var(--text);}
+.slbl{font-size:.7rem;color:var(--sub);margin-top:3px;font-weight:600;}
+.tabs{display:flex;gap:7px;margin-bottom:14px;background:#fff;padding:5px;border-radius:11px;border:1px solid var(--border);width:fit-content;flex-wrap:wrap;}
+.tab{padding:8px 14px;background:transparent;border:none;border-radius:7px;font-family:inherit;font-size:.8rem;font-weight:700;color:var(--sub);cursor:pointer;transition:all .13s;}
+.tab.on{background:var(--pri);color:#fff;}
+.card{background:var(--card);border-radius:13px;padding:16px;box-shadow:var(--sh);margin-bottom:13px;border:1px solid var(--border);}
+.ctitle{font-size:.92rem;font-weight:800;color:var(--text);margin-bottom:11px;}
+table{width:100%;border-collapse:collapse;font-size:.81rem;}
+thead{background:var(--light);}
+th{padding:9px 7px;text-align:left;font-weight:700;color:var(--sub);font-size:.74rem;border-bottom:2px solid var(--border);}
+td{padding:9px 7px;border-bottom:1px solid var(--border);}
+tbody tr:hover{background:#f5fbff;}
+td.c,th.c{text-align:center;}
+.pill{display:inline-block;padding:3px 9px;border-radius:18px;font-size:.7rem;font-weight:700;}
+.pill.sw{background:#d0ecfa;color:#1565a0;}
+.pill.id{background:#ffe8cc;color:#c06000;}
+.pill.ab{background:#e8e8e8;color:#666;}
+.pill.no{background:#fff5d0;color:#c08540;}
+.pill.at{background:#d4edda;color:#1a6630;}
+.pill.of{background:#fde8ef;color:#a01050;}
+.pill.lv-am{background:#fff0cc;color:#c06000;}
+.pill.lv-pm{background:#ffe0cc;color:#c04000;}
+.pill.lv-all{background:#ffd0b0;color:#a03000;}
+.pill.lv-none{background:#fff5d0;color:#c08540;}
+.csect{margin-bottom:18px;}
+.chdr{display:flex;justify-content:space-between;align-items:center;padding:9px 13px;background:var(--light);border-radius:9px;margin-bottom:7px;}
+.cname{font-weight:800;font-size:.88rem;color:var(--text);}
+.cstat{font-size:.74rem;color:var(--sub);}
+.cstat strong{color:var(--dark);}
+.empty{text-align:center;padding:48px 18px;color:var(--muted);font-size:.88rem;}
+/* 리셋 모달 */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:9998;}
+.modal-bg.show{display:flex;}
+.modal{background:#fff;border-radius:18px;padding:28px 24px;max-width:360px;width:calc(100% - 32px);text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.2);}
+.modal h3{font-size:1.05rem;font-weight:900;color:var(--text);margin-bottom:8px;}
+.modal p{font-size:.82rem;color:var(--sub);margin-bottom:18px;line-height:1.6;}
+.modal-btns{display:flex;gap:8px;}
+.mbtn{flex:1;padding:13px;border:none;border-radius:10px;font-family:inherit;font-size:.88rem;font-weight:800;cursor:pointer;}
+.mbtn.cancel{background:var(--light);color:var(--sub);}
+.mbtn.confirm{background:var(--red);color:#fff;}
+.reset-list{text-align:left;margin-bottom:16px;}
+.reset-item{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);}
+.reset-item:last-child{border-bottom:none;}
+.reset-item label{font-size:.84rem;color:var(--text);cursor:pointer;flex:1;}
+.reset-item input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--red);}
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:10px 18px;border-radius:26px;font-size:.82rem;font-weight:600;z-index:9999;opacity:0;transition:opacity .25s;pointer-events:none;}
+.toast.show{opacity:1;}
+@media(max-width:600px){.sgrid{grid-template-columns:repeat(2,1fr);}th,td{padding:7px 4px;font-size:.72rem;}.hbtn{padding:6px 9px;font-size:.72rem;}.tabs{gap:3px;}.tab{padding:7px 9px;font-size:.74rem;}.mtab{font-size:.8rem;padding:12px 5px;}}
 </style>
 </head>
 <body>
 
-<div id="loginOverlay">
-  <div class="login-box">
-    <div class="icon">🏊</div>
+<!-- 로그인 -->
+<div id="loginWrap">
+  <div class="lbox">
+    <div class="ic">🏊</div>
     <h2>관리자 로그인</h2>
     <p>수영참여 현황 관리자 페이지</p>
-    <input type="password" class="pw-input" id="pwInput" maxlength="6" placeholder="••••" onkeydown="if(event.key==='Enter')tryLogin()">
-    <button class="login-btn" onclick="tryLogin()">확인</button>
-    <div class="pw-err" id="pwErr"></div>
+    <input type="password" class="pwinput" id="pwInput" maxlength="6" placeholder="••••" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="loginbtn" onclick="doLogin()">확인</button>
+    <div class="pwerr" id="pwErr"></div>
+  </div>
+</div>
+
+<!-- 리셋 모달 -->
+<div class="modal-bg" id="resetModal">
+  <div class="modal">
+    <h3>🗑️ 데이터 초기화</h3>
+    <p>삭제할 항목을 선택하세요.<br>삭제된 데이터는 복구할 수 없어요.</p>
+    <div class="reset-list" id="resetList"></div>
+    <div class="modal-btns">
+      <button class="mbtn cancel" onclick="closeReset()">취소</button>
+      <button class="mbtn confirm" onclick="doReset()">삭제하기</button>
+    </div>
   </div>
 </div>
 
 <header>
-  <div class="hdr-inner">
-    <div>
-      <h1>🏊 수영참여 현황</h1>
-      <p>무지개어린이집 · 우리무지개어린이집</p>
-    </div>
-    <div class="hdr-actions">
-      <button class="hdr-btn" onclick="loadData()">🔄 새로고침</button>
-      <button class="hdr-btn excel" onclick="exportExcel()">📥 엑셀 내보내기</button>
+  <div class="hi">
+    <div><h1>🏊 수영참여 현황</h1><p>무지개어린이집 · 우리무지개어린이집</p></div>
+    <div class="hbtns">
+      <button class="hbtn" onclick="loadData()">🔄 새로고침</button>
+      <button class="hbtn reset" onclick="openReset()">🗑️ 데이터 초기화</button>
+      <button class="hbtn excel" onclick="doExcel()">📥 엑셀 내보내기</button>
     </div>
   </div>
 </header>
 
 <main>
-  <!-- 메인 탭 -->
-  <div class="main-tabs">
-    <button class="main-tab active" id="mainTabChild" onclick="switchMainSection('child')">🧒 아동 현황</button>
-    <button class="main-tab" id="mainTabTeacher" onclick="switchMainSection('teacher')">👩‍🏫 교사 현황</button>
+  <!-- 오늘 날짜 표시 -->
+  <div class="today-bar">
+    <div class="today-lbl">📅 오늘 데이터</div>
+    <div class="today-date" id="todayDisp"></div>
+  </div>
+
+  <!-- 메인탭 -->
+  <div class="mtabs">
+    <button class="mtab on" id="mTabC" onclick="showMain('child')">🧒 아동 현황</button>
+    <button class="mtab"    id="mTabT" onclick="showMain('teacher')">👩‍🏫 교사 현황</button>
   </div>
 
   <!-- 아동 섹션 -->
-  <div id="childSection">
-  <div class="filter-bar">
-    <span class="filter-label">📅 날짜</span>
-    <input type="date" class="filter-date" id="filterDate">
-    <button class="filter-btn" onclick="applyFilter()">조회</button>
-    <button class="hdr-btn" onclick="clearFilter()">전체 보기</button>
+  <div id="secChild">
+    <div class="sgrid">
+      <div class="sc sb"><div class="snum" id="s_sub">-</div><div class="slbl">입력 반 수</div></div>
+      <div class="sc sw"><div class="snum" id="s_sw">-</div><div class="slbl">🏊 수영</div></div>
+      <div class="sc id"><div class="snum" id="s_id">-</div><div class="slbl">🏠 원내보육</div></div>
+      <div class="sc ab"><div class="snum" id="s_ab">-</div><div class="slbl">❌ 결석</div></div>
+    </div>
+    <div class="tabs">
+      <button class="tab on" id="tabA"   onclick="switchTab('A')">무지개어린이집</button>
+      <button class="tab"    id="tabB"   onclick="switchTab('B')">우리무지개어린이집</button>
+      <button class="tab"    id="tabAll" onclick="switchTab('all')">전체 명단</button>
+    </div>
+    <div id="contentArea"><div class="empty">데이터를 불러오는 중...</div></div>
   </div>
-
-  <div class="pending-box" id="pendingBox">
-    <div class="pending-title">⚠️ 미제출 반</div>
-    <div class="pending-list" id="pendingList"></div>
-  </div>
-
-  <div class="summary-grid">
-    <div class="s-card sub-c"><div class="s-num" id="s-sub">-</div><div class="s-lbl">제출 반 수</div></div>
-    <div class="s-card swim-c"><div class="s-num" id="s-swim">-</div><div class="s-lbl">🏊 수영</div></div>
-    <div class="s-card indoor-c"><div class="s-num" id="s-indoor">-</div><div class="s-lbl">🏠 원내보육</div></div>
-    <div class="s-card absent-c"><div class="s-num" id="s-absent">-</div><div class="s-lbl">❌ 결석</div></div>
-  </div>
-
-  <div class="tabs">
-    <button class="tab active" id="tabA" onclick="switchTab('A')">무지개어린이집</button>
-    <button class="tab" id="tabB" onclick="switchTab('B')">우리무지개어린이집</button>
-    <button class="tab" id="tabAll" onclick="switchTab('all')">전체 명단</button>
-  </div>
-
-  <div id="contentArea"><div class="empty">날짜를 선택하거나 전체 데이터를 불러오세요.</div></div>
-  </div><!-- /childSection -->
 
   <!-- 교사 섹션 -->
-  <div id="teacherSection" style="display:none;">
-    <div class="filter-bar">
-      <span class="filter-label">📅 날짜</span>
-      <input type="date" class="filter-date" id="teacherFilterDate">
-      <button class="filter-btn" onclick="applyTeacherFilter()">조회</button>
-      <button class="hdr-btn" onclick="clearTeacherFilter()">전체 보기</button>
+  <div id="secTeacher" style="display:none;">
+    <div class="sgrid">
+      <div class="sc at"><div class="snum" id="ts_at">-</div><div class="slbl">✅ 참여</div></div>
+      <div class="sc of"><div class="snum" id="ts_of">-</div><div class="slbl">❌ 불참</div></div>
+      <div class="sc lv"><div class="snum" id="ts_lv">-</div><div class="slbl">🏖️ 당일휴가</div></div>
+      <div class="sc no"><div class="snum" id="ts_no">-</div><div class="slbl">⬜ 미입력</div></div>
     </div>
-    <div class="t-summary-grid">
-      <div class="ts-card attend-c"><div class="ts-num" id="ts-attend">-</div><div class="ts-lbl">✅ 참여</div></div>
-      <div class="ts-card off-c"><div class="ts-num" id="ts-off">-</div><div class="ts-lbl">❌ 불참</div></div>
-      <div class="ts-card leave-c"><div class="ts-num" id="ts-leave">-</div><div class="ts-lbl">🏖️ 당일휴가</div></div>
-      <div class="ts-card none-c"><div class="ts-num" id="ts-none">-</div><div class="ts-lbl">⬜ 미제출</div></div>
-    </div>
-    <div id="teacherContentArea"><div class="empty">날짜를 선택해 주세요.</div></div>
-  </div><!-- /teacherSection -->
-
+    <div id="tContentArea"><div class="empty">데이터를 불러오는 중...</div></div>
+  </div>
 </main>
-
 <div class="toast" id="toast"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, get, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDojXJ_9pOnla8uG240APwo3Ik9gBddMw4",
-  authDomain: "mujigae-swimming.firebaseapp.com",
-  databaseURL: "https://mujigae-swimming-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "mujigae-swimming"
-};
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const PASSWORD = "7117";
+const fbApp = initializeApp({
+  apiKey:"AIzaSyDojXJ_9pOnla8uG240APwo3Ik9gBddMw4",
+  authDomain:"mujigae-swimming.firebaseapp.com",
+  databaseURL:"https://mujigae-swimming-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"mujigae-swimming"
+});
+const db = getDatabase(fbApp);
+const PW = "7117";
+const TODAY = new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'});
 
 const ROSTER = {
-  A: {
-    name: "무지개어린이집",
-    groups: [
-      { title: "영아반", classes: {
-        "아기참새": ["박범준","정윤하","정다엘","고이솔","조은준"],
-        "초롱이슬": ["전유주","양선우","박하엘","박유하","정이안","정이준"]
-      }},
-      { title: "유아반", classes: {
-        "은빛물결": ["이재헌","박수현","김성원","정하준","송지우","박승빈","김정후","주현우","신승혁","김수호","정연우","최보민","한다윤"]
-      }}
-    ]
-  },
-  B: {
-    name: "우리무지개어린이집",
-    groups: [
-      { title: "유아반", classes: {
-        "아침햇살": ["정태호","고은호","김이안","전수호","위단우","서현우","김윤우","김지안"],
-        "들꽃향기": ["한지후","박은진","곽시안","박찬율","설재은","류시환","강은호","박다엘","김사랑","손리완","이로아","이소민","방서윤","김인우","이은우","임서우","이하린"],
-        "고운햇살": ["박재희","박지유","김민준","곽나율","김은서","홍하루","김동휘","임라희"],
-        "푸른하늘": ["김아린","김강준","박진우","한서후","윤태언","김서우","백민지","이하민","강태희","곽다온","박준","김세윤","김지민","이채민"],
-        "파도소리": ["윤지아","김수겸","돌란샤나","권민서","최도윤","장시영"],
-        "푸른바다": ["김평온","김별리","양준우","강지호","김도우","백이엘","이태헌","오주원","서연석","임하라","김태유","조믿음","유이서","윤예나","윤예지","조가온","곽시후","이소민"]
-      }}
-    ]
-  }
+  A:{name:"무지개어린이집",groups:[
+    {title:"영아반",classes:{
+      "아기참새":["박범준","정윤하","정다엘","고이솔","조은준"],
+      "초롱이슬":["전유주","양선우","박하엘","박유하","정이안","정이준"]
+    }},
+    {title:"유아반",classes:{
+      "은빛물결":["이재헌","박수현","김성원","정하준","송지우","박승빈","김정후","주현우","신승혁","김수호","정연우","최보민","한다윤"]
+    }}
+  ]},
+  B:{name:"우리무지개어린이집",groups:[
+    {title:"유아반",classes:{
+      "아침햇살":["정태호","고은호","김이안","전수호","위단우","서현우","김윤우","김지안"],
+      "들꽃향기":["한지후","박은진","곽시안","박찬율","설재은","류시환","강은호","박다엘","김사랑","손리완","이로아","이소민","방서윤","김인우","이은우","임서우","이하린"],
+      "고운햇살":["박재희","박지유","김민준","곽나율","김은서","홍하루","김동휘","임라희"],
+      "푸른하늘":["김아린","김강준","박진우","한서후","윤태언","김서우","백민지","이하민","강태희","곽다온","박준","김세윤","김지민","이채민"],
+      "파도소리":["윤지아","김수겸","돌란샤나","권민서","최도윤","장시영"],
+      "푸른바다":["김평온","김별리","양준우","강지호","김도우","백이엘","이태헌","오주원","서연석","임하라","김태유","조믿음","유이서","윤예나","윤예지","조가온","곽시후","이소민"]
+    }}
+  ]}
 };
 
-function getAllClasses() {
-  const list = [];
-  ['A','B'].forEach(k => {
-    ROSTER[k].groups.forEach(g => {
-      Object.entries(g.classes).forEach(([cls, children]) => {
-        list.push({ inst:k, instName:ROSTER[k].name, group:g.title, cls, children });
+const TGROUPS=[
+  {title:"무지개어린이집",list:[
+    {n:"우지선",r:"아기참새"},{n:"정선윤",r:"초롱이슬"},
+    {n:"채준범",r:"은빛물결"},{n:"이왕성",r:"은빛물결"},{n:"서명화",r:"은빛물결"},{n:"임민주",r:"은빛물결"},
+    {n:"황경하",r:"드림(방과후)"},{n:"이승원",r:"드림(방과후)"},{n:"박정민",r:"드림(방과후)"},
+    {n:"주은아",r:"연장반"},{n:"윤혜정",r:"연장반"},
+    {n:"강수민",r:"치료사"},{n:"서홍련",r:"치료사"},{n:"정소윤",r:"치료사"}
+  ]},
+  {title:"우리무지개어린이집",list:[
+    {n:"강수지",r:"아침햇살"},{n:"김보라",r:"아침햇살"},{n:"김하민",r:"아침햇살"},
+    {n:"박서정",r:"고운햇살"},{n:"천은주",r:"고운햇살"},{n:"모정아",r:"고운햇살"},
+    {n:"박초롱",r:"들꽃향기"},{n:"이효선",r:"들꽃향기"},
+    {n:"조현아",r:"푸른하늘"},{n:"황선하",r:"푸른하늘"},
+    {n:"임정연",r:"파도소리"},{n:"조명원",r:"파도소리"},
+    {n:"백장미",r:"푸른바다"},{n:"이슬아",r:"푸른바다"},{n:"유주환",r:"푸른바다"},
+    {n:"송태헌",r:"다짐(방과후)"},{n:"마호진",r:"다짐(방과후)"},
+    {n:"정인애",r:"모둠(방과후)"},{n:"변아진",r:"모둠(방과후)"},{n:"윤아름",r:"모둠(방과후)"},{n:"정다송",r:"모둠(방과후)"},
+    {n:"이미화",r:"치료사"},{n:"권다애",r:"치료사"},{n:"표영민",r:"치료사"},
+    {n:"전나인",r:"치료사"},{n:"박규리",r:"치료사"},{n:"임주현",r:"치료사"}
+  ]}
+];
+const ALL_T = TGROUPS.flatMap(g=>g.list);
+
+function getAllClasses(){
+  const list=[];
+  ['A','B'].forEach(k=>{
+    ROSTER[k].groups.forEach(g=>{
+      Object.entries(g.classes).forEach(([cls,children])=>{
+        list.push({inst:k,instName:ROSTER[k].name,group:g.title,cls,children});
       });
     });
   });
   return list;
 }
 
-let allData = {};
-let currentTab = 'A';
-let currentDate = '';
+let allData={};
+let curTab='A';
 
-window.tryLogin = function() {
-  if (document.getElementById('pwInput').value === PASSWORD) {
-    document.getElementById('loginOverlay').style.display = 'none';
-    // 오늘 날짜 기본 선택
-    const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
-    document.getElementById('filterDate').value = today;
+const $=id=>document.getElementById(id);
+const toast=msg=>{const t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);};
+
+// 오늘 날짜 표시
+$('todayDisp').textContent=TODAY;
+
+// ── 로그인 ───────────────────────────────────────────────
+window.doLogin = function(){
+  if($('pwInput').value===PW){
+    $('loginWrap').style.display='none';
     loadData();
   } else {
-    document.getElementById('pwErr').textContent = '비밀번호가 일치하지 않습니다';
-    document.getElementById('pwInput').value = '';
+    $('pwErr').textContent='비밀번호가 일치하지 않습니다';
+    $('pwInput').value='';
   }
 };
 
-window.loadData = async function() {
+// ── 데이터 로드 (오늘 날짜 고정) ────────────────────────
+window.loadData = async function(){
   try {
-    const snap = await get(ref(db, 'swimming_survey'));
+    const snap = await get(ref(db,'swimming_survey'));
     allData = snap.exists() ? snap.val() : {};
-    if (currentDate) { updateSummary(); renderCurrentTab(); checkPending(); }
-    if (teacherDate) renderTeacherSection();
-    else { updateSummary(); renderCurrentTab(); }
+    // 오늘 날짜 기준으로만 필터
+    updateSummary(); renderCurrent();
+    if($('secTeacher').style.display!=='none') renderTeacherSection();
     toast('데이터를 불러왔어요');
-  } catch(e) { toast('불러오기 실패'); }
+  } catch(e){ toast('불러오기 실패: '+e.message); }
 };
 
-window.applyFilter = function() {
-  currentDate = document.getElementById('filterDate').value;
-  if (!currentDate) { toast('날짜를 선택해 주세요'); return; }
-  updateSummary(); renderCurrentTab(); checkPending();
-};
-
-window.clearFilter = function() {
-  currentDate = '';
-  document.getElementById('filterDate').value = '';
-  document.getElementById('pendingBox').classList.remove('show');
-  updateSummary(); renderCurrentTab();
-};
-
-function updateSummary() {
-  const data = currentDate
-    ? Object.fromEntries(Object.entries(allData).filter(([k]) => k.startsWith(currentDate+'_')))
-    : allData;
-  let swim=0, indoor=0, absent=0, submitted=0;
-  Object.values(data).forEach(d => {
-    if (!d.children) return;
-    submitted++;
-    Object.values(d.children).forEach(s => {
-      if (s==='swim') swim++;
-      else if (s==='indoor') indoor++;
-      else if (s==='absent') absent++;
-    });
+// ── 요약 ─────────────────────────────────────────────────
+function updateSummary(){
+  let sw=0,id=0,ab=0,sub=0;
+  getAllClasses().forEach(({cls})=>{
+    const d=allData[`${TODAY}_${cls}`];
+    if(!d||!d.children)return; sub++;
+    Object.values(d.children).forEach(s=>{if(s==='swim')sw++;else if(s==='indoor')id++;else if(s==='absent')ab++;});
   });
-  document.getElementById('s-sub').textContent = submitted;
-  document.getElementById('s-swim').textContent = swim;
-  document.getElementById('s-indoor').textContent = indoor;
-  document.getElementById('s-absent').textContent = absent;
+  $('s_sub').textContent=sub; $('s_sw').textContent=sw;
+  $('s_id').textContent=id;   $('s_ab').textContent=ab;
 }
 
-function checkPending() {
-  if (!currentDate) { document.getElementById('pendingBox').classList.remove('show'); return; }
-  const pending = getAllClasses().filter(c => !allData[`${currentDate}_${c.cls}`]);
-  const box = document.getElementById('pendingBox');
-  if (!pending.length) { box.classList.remove('show'); return; }
-  box.classList.add('show');
-  document.getElementById('pendingList').textContent = pending.map(c => `${c.instName} ${c.cls}`).join(' · ');
-}
-
-window.switchTab = function(t) {
-  currentTab = t;
-  ['A','B','all'].forEach(id => document.getElementById('tab'+id).classList.toggle('active', id===t));
-  renderCurrentTab();
+// ── 메인탭 ───────────────────────────────────────────────
+window.showMain = function(sec){
+  $('mTabC').classList.toggle('on',sec==='child');
+  $('mTabT').classList.toggle('on',sec==='teacher');
+  $('secChild').style.display   = sec==='child'   ?'block':'none';
+  $('secTeacher').style.display = sec==='teacher' ?'block':'none';
+  if(sec==='teacher') renderTeacherSection();
 };
 
-function renderCurrentTab() {
-  if (currentTab === 'all') renderAllList();
-  else renderByClass(currentTab);
+// ── 아동탭 ───────────────────────────────────────────────
+window.switchTab = function(t){
+  curTab=t;
+  ['A','B','all'].forEach(id=>$('tab'+id).classList.toggle('on',id===t));
+  renderCurrent();
+};
+
+function renderCurrent(){
+  if(curTab==='all') renderAllList();
+  else renderByClass(curTab);
 }
 
-function statusPill(s) {
-  if (s==='swim') return '<span class="pill swim">🏊 수영</span>';
-  if (s==='indoor') return '<span class="pill indoor">🏠 원내보육</span>';
-  if (s==='absent') return '<span class="pill absent">❌ 결석</span>';
-  return '<span class="pill none">미입력</span>';
+function pill(s){
+  if(s==='swim')   return '<span class="pill sw">🏊 수영</span>';
+  if(s==='indoor') return '<span class="pill id">🏠 원내보육</span>';
+  if(s==='absent') return '<span class="pill ab">❌ 결석</span>';
+  return '<span class="pill no">미입력</span>';
 }
 
-function renderByClass(instKey) {
-  let html = '';
-  ROSTER[instKey].groups.forEach(g => {
-    Object.entries(g.classes).forEach(([cls, children]) => {
-      const d = currentDate ? allData[`${currentDate}_${cls}`] : null;
-      const submitted = !!(d && d.children);
-      const sw = submitted ? Object.values(d.children).filter(v=>v==='swim').length : 0;
-      const id = submitted ? Object.values(d.children).filter(v=>v==='indoor').length : 0;
-      const ab = submitted ? Object.values(d.children).filter(v=>v==='absent').length : 0;
-
-      html += `
-        <div class="class-section">
-          <div class="class-header">
-            <div class="class-name">${cls} <span style="color:var(--muted);font-weight:500;font-size:.76rem;">(${g.title})</span></div>
-            <div class="class-stat">${submitted
-              ? `🏊 <strong>${sw}</strong> · 🏠 <strong>${id}</strong> · ❌ <strong>${ab}</strong>`
-              : '<span style="color:#c08540;">⚠️ 미제출</span>'}</div>
-          </div>
-          <div class="card" style="padding:0;overflow:auto;"><table>
-            <thead><tr>
-              <th>아동</th><th class="center">참여 여부</th>
-              ${!currentDate ? '<th>날짜</th>' : ''}
-            </tr></thead><tbody>`;
-
-      children.forEach(child => {
-        let status='', dateStr='';
-        if (submitted && d.children[child]) { status=d.children[child]; dateStr=d.date||'-'; }
-        else if (!currentDate) {
-          const keys = Object.keys(allData).filter(k=>k.endsWith('_'+cls)).sort().reverse();
-          if (keys.length && allData[keys[0]].children) {
-            status = allData[keys[0]].children[child]||'';
-            dateStr = allData[keys[0]].date||'-';
-          }
-        }
-        html += `<tr>
-          <td><strong>${child}</strong></td>
-          <td class="center">${statusPill(status)}</td>
-          ${!currentDate ? `<td style="color:var(--muted);font-size:.78rem;">${dateStr}</td>` : ''}
-        </tr>`;
+function renderByClass(ik){
+  let html='';
+  ROSTER[ik].groups.forEach(g=>{
+    Object.entries(g.classes).forEach(([cls,children])=>{
+      const d=allData[`${TODAY}_${cls}`];
+      const ok=!!(d&&d.children);
+      const sw=ok?Object.values(d.children).filter(v=>v==='swim').length:0;
+      const id=ok?Object.values(d.children).filter(v=>v==='indoor').length:0;
+      const ab=ok?Object.values(d.children).filter(v=>v==='absent').length:0;
+      html+=`<div class="csect">
+        <div class="chdr">
+          <div class="cname">${cls} <span style="color:var(--muted);font-weight:500;font-size:.74rem;">(${g.title})</span></div>
+          <div class="cstat">${ok
+            ?`🏊 <strong>${sw}</strong> · 🏠 <strong>${id}</strong> · ❌ <strong>${ab}</strong>`
+            :'<span style="color:#c08540;">⚠️ 미입력</span>'}</div>
+        </div>
+        <div class="card" style="padding:0;overflow:auto;"><table>
+          <thead><tr><th>아동</th><th class="c">참여여부</th></tr></thead><tbody>`;
+      children.forEach(ch=>{
+        const st=ok&&d.children[ch]?d.children[ch]:'';
+        html+=`<tr><td><strong>${ch}</strong></td><td class="c">${pill(st)}</td></tr>`;
       });
-      html += `</tbody></table></div></div>`;
+      html+=`</tbody></table></div></div>`;
     });
   });
-  document.getElementById('contentArea').innerHTML = html;
+  $('contentArea').innerHTML=html||'<div class="empty">데이터가 없어요.</div>';
 }
 
-function renderAllList() {
-  const swim=[], indoor=[], absent=[];
-  getAllClasses().forEach(({ instName, cls, children }) => {
-    const d = currentDate ? allData[`${currentDate}_${cls}`] : null;
-    if (!d || !d.children) return;
-    children.forEach(child => {
-      const s = d.children[child];
-      const row = { instName, cls, child, date: d.date };
-      if (s==='swim') swim.push(row);
-      else if (s==='indoor') indoor.push(row);
-      else if (s==='absent') absent.push(row);
+function renderAllList(){
+  const sw=[],id=[],ab=[];
+  getAllClasses().forEach(({instName,cls,children})=>{
+    const d=allData[`${TODAY}_${cls}`];
+    if(!d||!d.children)return;
+    children.forEach(ch=>{
+      const s=d.children[ch];
+      const row={instName,cls,child:ch};
+      if(s==='swim')sw.push(row);else if(s==='indoor')id.push(row);else if(s==='absent')ab.push(row);
     });
   });
-
-  const tbl = (list, empty) => list.length===0
-    ? `<tr><td colspan="4" class="center" style="color:var(--muted);padding:20px;">${empty}</td></tr>`
-    : list.map(r=>`<tr><td>${r.instName}</td><td>${r.cls}</td><td><strong>${r.child}</strong></td><td style="color:var(--muted);font-size:.78rem;">${r.date||'-'}</td></tr>`).join('');
-
-  document.getElementById('contentArea').innerHTML = `
-    <div class="card"><div class="card-title">🏊 수영 (${swim.length}명)</div>
-    <div style="overflow:auto;"><table><thead><tr><th>어린이집</th><th>반</th><th>아동</th><th>날짜</th></tr></thead>
-    <tbody>${tbl(swim,'수영 참여자 없음')}</tbody></table></div></div>
-
-    <div class="card"><div class="card-title">🏠 원내보육 (${indoor.length}명)</div>
-    <div style="overflow:auto;"><table><thead><tr><th>어린이집</th><th>반</th><th>아동</th><th>날짜</th></tr></thead>
-    <tbody>${tbl(indoor,'원내보육 없음')}</tbody></table></div></div>
-
-    <div class="card"><div class="card-title">❌ 결석 (${absent.length}명)</div>
-    <div style="overflow:auto;"><table><thead><tr><th>어린이집</th><th>반</th><th>아동</th><th>날짜</th></tr></thead>
-    <tbody>${tbl(absent,'결석자 없음')}</tbody></table></div></div>`;
+  const tbl=(list,empty)=>list.length===0
+    ?`<tr><td colspan="3" class="c" style="color:var(--muted);padding:18px;">${empty}</td></tr>`
+    :list.map(r=>`<tr><td>${r.instName}</td><td>${r.cls}</td><td><strong>${r.child}</strong></td></tr>`).join('');
+  $('contentArea').innerHTML=`
+    <div class="card"><div class="ctitle">🏊 수영 (${sw.length}명)</div><div style="overflow:auto;"><table><thead><tr><th>어린이집</th><th>반</th><th>아동</th></tr></thead><tbody>${tbl(sw,'수영 참여자 없음')}</tbody></table></div></div>
+    <div class="card"><div class="ctitle">🏠 원내보육 (${id.length}명)</div><div style="overflow:auto;"><table><thead><tr><th>어린이집</th><th>반</th><th>아동</th></tr></thead><tbody>${tbl(id,'원내보육 없음')}</tbody></table></div></div>
+    <div class="card"><div class="ctitle">❌ 결석 (${ab.length}명)</div><div style="overflow:auto;"><table><thead><tr><th>어린이집</th><th>반</th><th>아동</th></tr></thead><tbody>${tbl(ab,'결석자 없음')}</tbody></table></div></div>`;
 }
 
-window.exportExcel = function() {
-  const wb = XLSX.utils.book_new();
-  const all = [['어린이집','반','아동','참여여부','날짜','제출시각']];
-  const swimData=[['어린이집','반','아동','날짜']];
-  const indoorData=[['어린이집','반','아동','날짜']];
-  const absentData=[['어린이집','반','아동','날짜']];
-
-  getAllClasses().forEach(({ instName, cls, children }) => {
-    const d = currentDate ? allData[`${currentDate}_${cls}`] : null;
-    if (!d || !d.children) {
-      children.forEach(c => all.push([instName, cls, c, '미제출', currentDate||'', '']));
-      return;
-    }
-    children.forEach(c => {
-      const s = d.children[c]||'미입력';
-      const label = s==='swim'?'수영': s==='indoor'?'원내보육': s==='absent'?'결석': s;
-      all.push([instName, cls, c, label, d.date||'', d.submittedAt?new Date(d.submittedAt).toLocaleString('ko-KR'):'']);
-      const row = [instName, cls, c, d.date||''];
-      if (s==='swim') swimData.push(row);
-      else if (s==='indoor') indoorData.push(row);
-      else if (s==='absent') absentData.push(row);
-    });
-  });
-
-  const mkSheet = (data, cols) => {
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    ws['!cols'] = cols;
-    return ws;
-  };
-  XLSX.utils.book_append_sheet(wb, mkSheet(all,[{wch:18},{wch:10},{wch:10},{wch:10},{wch:12},{wch:18}]), '전체 명단');
-  XLSX.utils.book_append_sheet(wb, mkSheet(swimData,[{wch:18},{wch:10},{wch:10},{wch:12}]), '수영 명단');
-  XLSX.utils.book_append_sheet(wb, mkSheet(indoorData,[{wch:18},{wch:10},{wch:10},{wch:12}]), '원내보육 명단');
-  XLSX.utils.book_append_sheet(wb, mkSheet(absentData,[{wch:18},{wch:10},{wch:10},{wch:12}]), '결석 명단');
-
-
-  // 교사 시트
-  const teacherData = [['이름','담당','참여여부','휴가유형','날짜']];
-  const td2 = teacherDate ? allData['teachers_' + teacherDate] : null;
-  const tTeachers = td2 ? (td2.teachers || {}) : {};
-  ALL_TEACHER_NAMES.forEach(n => {
-    const tInfo = TEACHER_GROUPS.flatMap(g=>g.teachers).find(t=>t.name===n);
-    const st = tTeachers[n];
-    const status = !st?.status ? '미제출' : st.status === 'attend' ? '참여' : st.status === 'off' ? '불참' : '당일휴가';
-    const leaveType = st?.leaveType === 'am' ? '오전반차' : st?.leaveType === 'pm' ? '오후반차' : st?.leaveType === 'all' ? '종일휴가' : '';
-    teacherData.push([n, tInfo?.role||'', status, leaveType, td2?.date||'']);
-  });
-  XLSX.utils.book_append_sheet(wb, mkSheet(teacherData,[{wch:10},{wch:14},{wch:10},{wch:10},{wch:12}]), '교사 현황');
-  XLSX.writeFile(wb, `수영참여현황_${currentDate||new Date().toISOString().slice(0,10)}.xlsx`);
-  toast('엑셀 파일이 다운로드되었어요');
-};
-
-
-// ════════════════════════════════════════════════════════════════
-// 교사 명단
-// ════════════════════════════════════════════════════════════════
-const TEACHER_GROUPS = [
-  { title: "무지개어린이집", teachers: [
-    { name:"우지선", role:"아기참새" }, { name:"정선윤", role:"초롱이슬" },
-    { name:"채준범", role:"은빛물결" }, { name:"이왕성", role:"은빛물결" },
-    { name:"서명화", role:"은빛물결" }, { name:"임민주", role:"은빛물결" },
-    { name:"황경하", role:"드림(방과후)" }, { name:"이승원", role:"드림(방과후)" }, { name:"박정민", role:"드림(방과후)" },
-    { name:"주은아", role:"연장반" }, { name:"윤혜정", role:"연장반" },
-    { name:"강수민", role:"치료사" }, { name:"서홍련", role:"치료사" }, { name:"정소윤", role:"치료사" }
-  ]},
-  { title: "우리무지개어린이집", teachers: [
-    { name:"강수지", role:"아침햇살" }, { name:"김보라", role:"아침햇살" }, { name:"김하민", role:"아침햇살" },
-    { name:"박서정", role:"고운햇살" }, { name:"천은주", role:"고운햇살" }, { name:"모정아", role:"고운햇살" },
-    { name:"박초롱", role:"들꽃향기" }, { name:"이효선", role:"들꽃향기" },
-    { name:"조현아", role:"푸른하늘" }, { name:"황선하", role:"푸른하늘" },
-    { name:"임정연", role:"파도소리" }, { name:"조명원", role:"파도소리" },
-    { name:"백장미", role:"푸른바다" }, { name:"이슬아", role:"푸른바다" }, { name:"유주환", role:"푸른바다" },
-    { name:"송태헌", role:"다짐(방과후)" }, { name:"마호진", role:"다짐(방과후)" },
-    { name:"정인애", role:"모둠(방과후)" }, { name:"변아진", role:"모둠(방과후)" },
-    { name:"윤아름", role:"모둠(방과후)" }, { name:"정다송", role:"모둠(방과후)" },
-    { name:"이미화", role:"치료사" }, { name:"권다애", role:"치료사" }, { name:"표영민", role:"치료사" },
-    { name:"전나인", role:"치료사" }, { name:"박규리", role:"치료사" }, { name:"임주현", role:"치료사" }
-  ]}
-];
-const ALL_TEACHER_NAMES = TEACHER_GROUPS.flatMap(g => g.teachers.map(t => t.name));
-
-// 메인 섹션 탭 전환
-window.switchMainSection = function(section) {
-  document.getElementById('mainTabChild').classList.toggle('active', section === 'child');
-  document.getElementById('mainTabTeacher').classList.toggle('active', section === 'teacher');
-  document.getElementById('childSection').style.display = section === 'child' ? 'block' : 'none';
-  document.getElementById('teacherSection').style.display = section === 'teacher' ? 'block' : 'none';
-  if (section === 'teacher') {
-    // 현재 날짜 필터 동기화
-    const fd = document.getElementById('filterDate').value;
-    if (fd) document.getElementById('teacherFilterDate').value = fd;
-    renderTeacherSection();
+// ── 교사 현황 ────────────────────────────────────────────
+function tpill(st){
+  if(!st||!st.s) return '<span class="pill no">미입력</span>';
+  if(st.s==='attend') return '<span class="pill at">✅ 참여</span>';
+  if(st.s==='off')    return '<span class="pill of">❌ 불참</span>';
+  if(st.s==='leave'){
+    const m=st.lt==='am'?'🌅 오전반차':st.lt==='pm'?'🌇 오후반차':st.lt==='all'?'☀️ 종일휴가':'미선택';
+    const c=st.lt==='am'?'lv-am':st.lt==='pm'?'lv-pm':st.lt==='all'?'lv-all':'lv-none';
+    return `<span class="pill ${c}">🏖️ ${m}</span>`;
   }
-};
-
-// 교사 날짜 필터
-let teacherDate = '';
-window.applyTeacherFilter = function() {
-  teacherDate = document.getElementById('teacherFilterDate').value;
-  if (!teacherDate) { toast('날짜를 선택해 주세요'); return; }
-  renderTeacherSection();
-};
-window.clearTeacherFilter = function() {
-  teacherDate = '';
-  document.getElementById('teacherFilterDate').value = '';
-  renderTeacherSection();
-};
-
-function getTeacherData() {
-  if (!teacherDate) return null;
-  return allData['teachers_' + teacherDate] || null;
+  return '<span class="pill no">미입력</span>';
 }
 
-function teacherPill(st) {
-  if (!st || !st.status) return '<span class="pill t-none">미제출</span>';
-  if (st.status === 'attend') return '<span class="pill t-attend">✅ 참여</span>';
-  if (st.status === 'off')    return '<span class="pill t-off">❌ 불참</span>';
-  if (st.status === 'leave') {
-    const lbl = st.leaveType === 'am' ? '🌅 오전반차' : st.leaveType === 'pm' ? '🌇 오후반차' : '☀️ 종일휴가';
-    const cls = st.leaveType === 'am' ? 't-leave-am' : st.leaveType === 'pm' ? 't-leave-pm' : 't-leave-all';
-    return `<span class="pill ${cls}">🏖️ ${lbl}</span>`;
-  }
-  return '<span class="pill t-none">미제출</span>';
-}
-
-function renderTeacherSection() {
-  const td = getTeacherData();
-  const teachers = td ? td.teachers || {} : {};
-
-  // 요약
-  let attend=0, off=0, leave=0, none=0;
-  ALL_TEACHER_NAMES.forEach(n => {
-    const st = teachers[n];
-    if (!st || !st.status) none++;
-    else if (st.status === 'attend') attend++;
-    else if (st.status === 'off') off++;
-    else if (st.status === 'leave') leave++;
+function renderTeacherSection(){
+  const td=allData[`teachers_${TODAY}`];
+  const teachers=td?td.teachers||{}:{};
+  let att=0,off=0,lv=0,none=0;
+  ALL_T.forEach(t=>{
+    const s=teachers[t.n];
+    if(!s||!s.s)none++;
+    else if(s.s==='attend')att++;
+    else if(s.s==='off')off++;
+    else if(s.s==='leave')lv++;
   });
-  document.getElementById('ts-attend').textContent = attend;
-  document.getElementById('ts-off').textContent = off;
-  document.getElementById('ts-leave').textContent = leave;
-  document.getElementById('ts-none').textContent = none;
-
-  // 테이블
-  let html = '';
-  TEACHER_GROUPS.forEach(g => {
-    const gAttend = g.teachers.filter(t => teachers[t.name]?.status === 'attend').length;
-    const gOff    = g.teachers.filter(t => teachers[t.name]?.status === 'off').length;
-    const gLeave  = g.teachers.filter(t => teachers[t.name]?.status === 'leave').length;
-
-    html += `<div class="class-section">
-      <div class="class-header">
-        <div class="class-name">${g.title}</div>
-        <div class="class-stat">✅ <strong>${gAttend}</strong> · ❌ <strong>${gOff}</strong> · 🏖️ <strong>${gLeave}</strong></div>
+  $('ts_at').textContent=att; $('ts_of').textContent=off;
+  $('ts_lv').textContent=lv;  $('ts_no').textContent=none;
+  let html='';
+  TGROUPS.forEach(g=>{
+    const gA=g.list.filter(t=>teachers[t.n]?.s==='attend').length;
+    const gO=g.list.filter(t=>teachers[t.n]?.s==='off').length;
+    const gL=g.list.filter(t=>teachers[t.n]?.s==='leave').length;
+    html+=`<div class="csect">
+      <div class="chdr">
+        <div class="cname">${g.title}</div>
+        <div class="cstat">✅ <strong>${gA}</strong> · ❌ <strong>${gO}</strong> · 🏖️ <strong>${gL}</strong></div>
       </div>
       <div class="card" style="padding:0;overflow:auto;"><table>
-        <thead><tr><th>이름</th><th>담당</th><th class="center">참여 여부</th>${!teacherDate?'<th>날짜</th>':''}</tr></thead>
-        <tbody>`;
-
-    g.teachers.forEach(t => {
-      let st = teachers[t.name], dateStr = td ? (td.date || '-') : '-';
-      if (!teacherDate) {
-        // 날짜 미선택 시 최근 데이터 탐색
-        const keys = Object.keys(allData).filter(k => k.startsWith('teachers_')).sort().reverse();
-        if (keys.length && allData[keys[0]].teachers) {
-          st = allData[keys[0]].teachers[t.name];
-          dateStr = allData[keys[0]].date || '-';
-        }
-      }
-      html += `<tr>
-        <td><strong>${t.name}</strong></td>
-        <td style="color:var(--muted);font-size:.78rem;">${t.role}</td>
-        <td class="center">${teacherPill(st)}</td>
-        ${!teacherDate ? `<td style="color:var(--muted);font-size:.78rem;">${dateStr}</td>` : ''}
-      </tr>`;
+        <thead><tr><th>이름</th><th>담당</th><th class="c">참여여부</th></tr></thead><tbody>`;
+    g.list.forEach(t=>{
+      const st=teachers[t.n];
+      html+=`<tr><td><strong>${t.n}</strong></td><td style="color:var(--muted);font-size:.76rem;">${t.r}</td><td class="c">${tpill(st)}</td></tr>`;
     });
-    html += `</tbody></table></div></div>`;
+    html+=`</tbody></table></div></div>`;
   });
-
-  if (!teacherDate && Object.keys(teachers).length === 0) {
-    html = '<div class="empty">날짜를 선택하거나 데이터를 조회하세요.</div>';
-  }
-  document.getElementById('teacherContentArea').innerHTML = html;
+  $('tContentArea').innerHTML=html||'<div class="empty">입력된 교사 데이터가 없어요.</div>';
 }
 
-function toast(msg) {
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2000);
-}
-window.toast=toast;
-document.getElementById('pwInput').focus();
+// ── 데이터 리셋 ──────────────────────────────────────────
+window.openReset = function(){
+  // 오늘 데이터 있는 항목만 체크박스로 표시
+  const items=[];
+  // 아동
+  getAllClasses().forEach(({instName,cls})=>{
+    const key=`${TODAY}_${cls}`;
+    if(allData[key]) items.push({key, label:`🧒 ${instName} · ${cls}`});
+  });
+  // 교사
+  const tKey=`teachers_${TODAY}`;
+  if(allData[tKey]) items.push({key:tKey, label:`👩‍🏫 교사 전체`});
+
+  if(!items.length){toast('오늘 입력된 데이터가 없어요.');return;}
+
+  $('resetList').innerHTML=items.map(item=>`
+    <div class="reset-item">
+      <input type="checkbox" id="rc_${item.key}" value="${item.key}" checked>
+      <label for="rc_${item.key}">${item.label}</label>
+    </div>`).join('');
+  $('resetModal').classList.add('show');
+};
+
+window.closeReset = function(){
+  $('resetModal').classList.remove('show');
+};
+
+window.doReset = async function(){
+  const checked=[...document.querySelectorAll('#resetList input:checked')].map(el=>el.value);
+  if(!checked.length){toast('삭제할 항목을 선택해 주세요.');return;}
+  try {
+    await Promise.all(checked.map(key=>remove(ref(db,`swimming_survey/${key}`))));
+    checked.forEach(key=>delete allData[key]);
+    $('resetModal').classList.remove('show');
+    updateSummary(); renderCurrent();
+    if($('secTeacher').style.display!=='none') renderTeacherSection();
+    toast(`${checked.length}개 항목을 삭제했어요.`);
+  } catch(e){ toast('삭제 실패: '+e.message); }
+};
+
+// ── 엑셀 ─────────────────────────────────────────────────
+window.doExcel = function(){
+  const wb=XLSX.utils.book_new();
+  const all=[['어린이집','반','아동','참여여부']];
+  const swD=[['어린이집','반','아동']],idD=[['어린이집','반','아동']],abD=[['어린이집','반','아동']];
+  getAllClasses().forEach(({instName,cls,children})=>{
+    const d=allData[`${TODAY}_${cls}`];
+    if(!d||!d.children){children.forEach(c=>all.push([instName,cls,c,'미입력']));return;}
+    children.forEach(c=>{
+      const s=d.children[c]||'미입력';
+      const lbl=s==='swim'?'수영':s==='indoor'?'원내보육':s==='absent'?'결석':s;
+      all.push([instName,cls,c,lbl]);
+      const row=[instName,cls,c];
+      if(s==='swim')swD.push(row);else if(s==='indoor')idD.push(row);else if(s==='absent')abD.push(row);
+    });
+  });
+  const mk=(data,cols)=>{const ws=XLSX.utils.aoa_to_sheet(data);ws['!cols']=cols;return ws;};
+  XLSX.utils.book_append_sheet(wb,mk(all,[{wch:18},{wch:10},{wch:10},{wch:10}]),'전체 아동');
+  XLSX.utils.book_append_sheet(wb,mk(swD,[{wch:18},{wch:10},{wch:10}]),'수영');
+  XLSX.utils.book_append_sheet(wb,mk(idD,[{wch:18},{wch:10},{wch:10}]),'원내보육');
+  XLSX.utils.book_append_sheet(wb,mk(abD,[{wch:18},{wch:10},{wch:10}]),'결석');
+  const td=allData[`teachers_${TODAY}`],tt=td?td.teachers||{}:{};
+  const tD=[['이름','담당','참여여부','휴가유형']];
+  ALL_T.forEach(t=>{
+    const s=tt[t.n];
+    const st=!s?.s?'미입력':s.s==='attend'?'참여':s.s==='off'?'불참':'당일휴가';
+    const lt=s?.lt==='am'?'오전반차':s?.lt==='pm'?'오후반차':s?.lt==='all'?'종일휴가':'';
+    tD.push([t.n,t.r,st,lt]);
+  });
+  XLSX.utils.book_append_sheet(wb,mk(tD,[{wch:10},{wch:14},{wch:10},{wch:10}]),'교사 현황');
+  XLSX.writeFile(wb,`수영참여현황_${TODAY}.xlsx`);
+  toast('엑셀 파일이 다운로드됐어요');
+};
+
+$('pwInput').focus();
 </script>
 </body>
 </html>

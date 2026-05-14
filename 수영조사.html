@@ -105,7 +105,7 @@ main{max-width:640px;margin:0 auto;padding:0 14px 100px;}
   <div class="hi">
     <h1>🏊 수영참여 조사</h1>
     <p class="hsub">무지개어린이집 · 우리무지개어린이집 Funday 수영</p>
-    <div class="hdate" id="todayLbl"></div>
+    
   </div>
 </header>
 <main>
@@ -140,13 +140,6 @@ main{max-width:640px;margin:0 auto;padding:0 14px 100px;}
         <div class="clist" id="childList"></div>
       </div>
       <button class="btn btn-sec" onclick="c_back()">⬅ 반 다시 선택</button>
-      <button class="btn btn-pri" id="c_submitBtn" onclick="c_submit()" disabled>제출하기</button>
-    </div>
-    <div id="c_done" class="card done" style="display:none;">
-      <div class="dicon">✓</div>
-      <div class="dtitle">아동 입력 완료!</div>
-      <div class="dsub" id="c_doneSub"></div>
-      <button class="btn btn-pri" style="margin-top:18px;" onclick="c_reset()">다른 반 입력</button>
     </div>
   </div>
 
@@ -189,7 +182,7 @@ const fbApp = initializeApp(FC);
 const db = getDatabase(fbApp);
 
 const TODAY = new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'});
-document.getElementById('todayLbl').textContent = '📅 ' + TODAY;
+
 
 const ROSTER = {
   A:{name:"무지개어린이집",groups:[
@@ -288,7 +281,7 @@ window.selClass = async function(c) {
     if(snap.exists()&&snap.val().children){ C.ch={...snap.val().children}; $('c_already').classList.add('show'); }
     else $('c_already').classList.remove('show');
   } catch(e){ $('c_already').classList.remove('show'); }
-  $('c_title').textContent = `${c} · ${TODAY}`;
+  $('c_title').textContent = `${c}`;
   $('c_sub').textContent   = `${ROSTER[C.inst].name} · ${C.grp}`;
   renderChildren();
   $('c_step1').style.display='none'; $('c_step2').style.display='block';
@@ -312,12 +305,13 @@ function renderChildren() {
         <button class="sb id${cur==='indoor'?' on':''}" onclick="setCS('${nm}','indoor')">🏠 원내보육</button>
         <button class="sb ab${cur==='absent'?' on':''}" onclick="setCS('${nm}','absent')">❌ 결석</button>
       </div>
+      <div class="tsave-ok${cur?' show':''}" id="ok_c_${nm}">✓</div>
     </div>`;
   }).join('');
   updateCP(kids);
 }
 
-window.setCS = function(nm, st) {
+window.setCS = async function(nm, st) {
   C.ch[nm]=st;
   const row=$(`cr_${nm}`);
   if(row){
@@ -327,6 +321,14 @@ window.setCS = function(nm, st) {
   }
   let kids=[]; ROSTER[C.inst].groups.forEach(g=>{ if(g.classes[C.cls]) kids=g.classes[C.cls]; });
   updateCP(kids);
+  // 즉시저장
+  try {
+    await set(ref(db,`swimming_survey/${TODAY}_${C.cls}`),{
+      inst:C.inst, instName:ROSTER[C.inst].name, cls:C.cls, date:TODAY,
+      children:C.ch, submittedAt:new Date().toISOString()
+    });
+    const ok=$(`ok_c_${nm}`); if(ok){ ok.classList.add('show'); }
+  } catch(e){ toast('저장 실패. 다시 눌러주세요.'); }
 };
 
 function updateCP(kids) {
@@ -335,34 +337,10 @@ function updateCP(kids) {
   $('c_ptxt').textContent=`${done} / ${total}명 입력`;
   $('c_ppct').textContent=`${pct}%`;
   $('c_pfill').style.width=pct+'%';
-  $('c_submitBtn').disabled = done<total;
+
 }
 
-window.c_submit = async function() {
-  const btn=$('c_submitBtn');
-  btn.disabled=true; btn.textContent='제출 중...';
-  try {
-    await set(ref(db,`swimming_survey/${TODAY}_${C.cls}`),{
-      inst:C.inst, instName:ROSTER[C.inst].name, cls:C.cls, date:TODAY,
-      children:C.ch, submittedAt:new Date().toISOString()
-    });
-    const sw=Object.values(C.ch).filter(v=>v==='swim').length;
-    const id=Object.values(C.ch).filter(v=>v==='indoor').length;
-    const ab=Object.values(C.ch).filter(v=>v==='absent').length;
-    $('c_doneSub').innerHTML=`<b>${C.cls} · ${TODAY}</b><br>🏊 수영 ${sw}명 · 🏠 원내보육 ${id}명 · ❌ 결석 ${ab}명`;
-    $('c_step2').style.display='none'; $('c_done').style.display='block';
-    window.scrollTo({top:0,behavior:'smooth'});
-  } catch(e){
-    toast('제출 중 오류가 발생했어요.'); btn.disabled=false; btn.textContent='제출하기';
-  }
-};
 
-window.c_reset = function() {
-  C={inst:'A',cls:'',ch:{},grp:''};
-  selInst('A');
-  $('c_done').style.display='none'; $('c_step1').style.display='block';
-  window.scrollTo({top:0,behavior:'smooth'});
-};
 
 // ══════════════════════════════════════════════════════════
 // 교사 입력 (즉시저장)
