@@ -9,7 +9,9 @@
   :root {
     --bg:#f0f8ff;--card:#fff;--border:#d0e8f8;--primary:#3a9bd5;--primary-dark:#2178b0;
     --accent:#a8d8f0;--light:#e8f5fd;--text:#1a3a4a;--sub:#4a7a96;--muted:#8aafc4;
-    --swim:#3a9bd5;--indoor:#f4a85a;--absent:#9e9e9e;--shadow:0 4px 16px rgba(58,155,213,.10);
+    --swim:#3a9bd5;--indoor:#f4a85a;--absent:#9e9e9e;
+    --t-attend:#5cb85c;--t-off:#e87aa3;--t-leave:#f4a85a;
+    --shadow:0 4px 16px rgba(58,155,213,.10);
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
@@ -17,13 +19,19 @@
   header{background:linear-gradient(135deg,#b8dff5,#e0f3fd);padding:28px 24px 48px;position:relative;overflow:hidden;border-bottom:1px solid var(--border);}
   header::before{content:'🏊';position:absolute;top:12px;right:20px;font-size:5rem;opacity:.15;}
   header::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:30px;background:var(--bg);clip-path:ellipse(55% 100% at 50% 100%);}
-  .hdr-inner{max-width:640px;margin:0 auto;position:relative;z-index:1;}
+  .hdr-inner{max-width:680px;margin:0 auto;position:relative;z-index:1;}
   header h1{font-size:1.7rem;font-weight:900;color:#0d3a5c;}
   .hdr-sub{color:var(--primary-dark);font-size:.85rem;margin-top:6px;font-weight:500;}
   .hdr-date{margin-top:10px;display:inline-block;padding:6px 14px;background:rgba(255,255,255,.6);border-radius:20px;font-size:.82rem;color:#0d3a5c;font-weight:700;}
 
-  main{max-width:640px;margin:0 auto;padding:0 16px 100px;}
+  main{max-width:680px;margin:0 auto;padding:0 16px 120px;}
 
+  /* 탭 전환 */
+  .main-tabs{display:flex;gap:0;margin-bottom:20px;background:#fff;border-radius:14px;border:1px solid var(--border);overflow:hidden;box-shadow:var(--shadow);}
+  .main-tab{flex:1;padding:16px;border:none;font-family:inherit;font-size:.9rem;font-weight:800;cursor:pointer;transition:all .15s;background:#fff;color:var(--sub);}
+  .main-tab.active{background:var(--primary);color:#fff;}
+
+  /* 단계 */
   .steps{display:flex;margin-bottom:20px;}
   .step{flex:1;text-align:center;position:relative;}
   .step::after{content:'';position:absolute;top:14px;right:-50%;width:100%;height:2px;background:var(--border);z-index:0;}
@@ -32,7 +40,7 @@
   .step.active .dot{background:var(--primary);border-color:var(--primary);color:#fff;}
   .step.done .dot{background:#5cb85c;border-color:#5cb85c;color:#fff;}
   .step .lbl{font-size:.7rem;color:var(--muted);margin-top:6px;font-weight:600;}
-  .step.active .lbl{color:var(--primary-dark);}
+  .step.active .lbl,.step.done .lbl{color:var(--primary-dark);}
 
   .card{background:var(--card);border-radius:18px;padding:22px 20px;box-shadow:var(--shadow);margin-bottom:14px;border:1px solid var(--border);}
   .card-title{font-size:1rem;font-weight:800;color:var(--text);margin-bottom:4px;}
@@ -49,6 +57,7 @@
   .class-btn:hover{border-color:var(--accent);background:var(--light);}
   .class-btn.sel{background:var(--primary);border-color:var(--primary);color:#fff;}
 
+  /* 아동 목록 */
   .child-list{display:flex;flex-direction:column;gap:10px;}
   .child-row{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--light);border-radius:12px;border:1px solid var(--border);}
   .child-name{font-weight:700;color:var(--text);min-width:54px;font-size:.92rem;}
@@ -61,31 +70,59 @@
   .progress-wrap{margin-bottom:16px;}
   .progress-text{font-size:.78rem;color:var(--sub);margin-bottom:6px;display:flex;justify-content:space-between;}
   .progress-bar{height:8px;background:var(--border);border-radius:99px;overflow:hidden;}
-  .progress-fill{height:100%;background:var(--primary);border-radius:99px;transition:width .3s;}
+  .progress-fill{height:100%;border-radius:99px;transition:width .3s;}
+  .progress-fill.child-fill{background:var(--primary);}
+  .progress-fill.teacher-fill{background:#5cb85c;}
 
   .already-msg{background:linear-gradient(135deg,#fff8e1,#fff3c4);border:1px solid #ffd966;padding:12px 14px;border-radius:11px;margin-bottom:14px;display:none;}
   .already-msg.show{display:block;}
   .already-msg b{color:#7a5a00;font-size:.85rem;}
   .already-msg p{color:#7a5a00;font-size:.76rem;margin-top:3px;}
 
+  /* 교사 목록 */
+  .teacher-group{margin-bottom:18px;}
+  .teacher-group-title{font-size:.8rem;font-weight:800;color:var(--sub);margin-bottom:10px;padding:6px 10px;background:var(--light);border-radius:8px;display:flex;align-items:center;gap:6px;}
+  .teacher-row{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--light);border-radius:12px;border:1px solid var(--border);margin-bottom:8px;}
+  .teacher-name{font-weight:700;color:var(--text);min-width:58px;font-size:.9rem;}
+  .teacher-btns{display:flex;gap:6px;flex:1;}
+  .tb{flex:1;padding:9px 4px;border:1.5px solid var(--border);border-radius:9px;font-family:inherit;font-size:.72rem;font-weight:800;cursor:pointer;background:#fff;color:var(--sub);transition:all .12s;text-align:center;}
+  .tb.attend.sel{background:var(--t-attend);border-color:var(--t-attend);color:#fff;}
+  .tb.off.sel{background:var(--t-off);border-color:var(--t-off);color:#fff;}
+  .tb.leave.sel{background:var(--t-leave);border-color:var(--t-leave);color:#fff;}
+
+  /* 당일휴가 세부 선택 */
+  .leave-detail{margin-top:8px;padding:10px 12px;background:#fff5e0;border:1px dashed var(--t-leave);border-radius:10px;display:none;}
+  .leave-detail.show{display:block;}
+  .leave-detail-label{font-size:.72rem;font-weight:700;color:#c06000;margin-bottom:8px;}
+  .leave-sub-btns{display:flex;gap:6px;}
+  .lsb{flex:1;padding:9px 4px;border:1.5px solid #f4c87a;border-radius:9px;font-family:inherit;font-size:.72rem;font-weight:800;cursor:pointer;background:#fff;color:#c06000;transition:all .12s;text-align:center;}
+  .lsb.sel{background:var(--t-leave);border-color:var(--t-leave);color:#fff;}
+
   .btn{width:100%;padding:16px;border:none;border-radius:13px;font-family:inherit;font-size:.98rem;font-weight:800;cursor:pointer;transition:all .15s;}
   .btn-primary{background:var(--primary);color:#fff;}
   .btn-primary:hover{background:var(--primary-dark);}
   .btn-primary:disabled{background:var(--muted);cursor:not-allowed;}
   .btn-secondary{background:#fff;color:var(--sub);border:1.5px solid var(--border);margin-bottom:8px;}
+  .btn-green{background:#5cb85c;color:#fff;}
+  .btn-green:hover{background:#4a9e4a;}
+  .btn-green:disabled{background:var(--muted);cursor:not-allowed;}
 
   .done-card{text-align:center;padding:36px 22px;background:linear-gradient(135deg,#e8f5fd,#d0ecfa);border:1px solid var(--border);}
   .done-icon{width:70px;height:70px;border-radius:50%;background:#5cb85c;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:2.2rem;color:#fff;}
   .done-title{font-size:1.2rem;font-weight:900;color:var(--text);margin-bottom:8px;}
   .done-sub{color:var(--sub);font-size:.88rem;line-height:1.6;}
 
+  .done-card-t{text-align:center;padding:30px 22px;background:linear-gradient(135deg,#e8f5ea,#d4edda);border:1px solid #b8ddc4;border-radius:18px;margin-bottom:14px;}
+  .done-icon-t{width:60px;height:60px;border-radius:50%;background:#5cb85c;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;color:#fff;}
+
   .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:12px 22px;border-radius:30px;font-size:.86rem;font-weight:600;z-index:9999;opacity:0;transition:opacity .25s;pointer-events:none;}
   .toast.show{opacity:1;}
 
   @media(max-width:480px){
     header h1{font-size:1.45rem;}
-    .child-name{min-width:44px;font-size:.82rem;}
-    .sb{font-size:.65rem;padding:8px 2px;}
+    .child-name,.teacher-name{min-width:44px;font-size:.82rem;}
+    .sb,.tb,.lsb{font-size:.65rem;padding:8px 2px;}
+    .main-tab{font-size:.8rem;padding:14px 8px;}
   }
 </style>
 </head>
@@ -100,47 +137,87 @@
 </header>
 
 <main>
-  <div class="steps">
-    <div class="step active" id="s1"><div class="dot">1</div><div class="lbl">반 선택</div></div>
-    <div class="step" id="s2"><div class="dot">2</div><div class="lbl">아동 입력</div></div>
+  <!-- 메인 탭 -->
+  <div class="main-tabs">
+    <button class="main-tab active" id="mainTabChild" onclick="switchMainTab('child')">🧒 아동 참여 입력</button>
+    <button class="main-tab" id="mainTabTeacher" onclick="switchMainTab('teacher')">👩‍🏫 교사 참여 입력</button>
   </div>
 
-  <!-- STEP 1 -->
-  <div id="step1card" class="card">
-    <div class="card-title">반을 선택해 주세요</div>
-    <div class="card-sub">담당 반을 선택하세요.</div>
-    <div class="inst-tabs">
-      <button class="inst-tab active" id="tab-A" onclick="selectInst('A')">무지개어린이집</button>
-      <button class="inst-tab" id="tab-B" onclick="selectInst('B')">우리무지개어린이집</button>
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- 아동 탭 -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div id="childSection">
+    <div class="steps">
+      <div class="step active" id="cs1"><div class="dot">1</div><div class="lbl">반 선택</div></div>
+      <div class="step" id="cs2"><div class="dot">2</div><div class="lbl">아동 입력</div></div>
     </div>
-    <div id="classWrap"></div>
+
+    <!-- STEP 1: 반 선택 -->
+    <div id="step1card" class="card">
+      <div class="card-title">반을 선택해 주세요</div>
+      <div class="card-sub">담당 반을 선택하세요.</div>
+      <div class="inst-tabs">
+        <button class="inst-tab active" id="tab-A" onclick="selectInst('A')">무지개어린이집</button>
+        <button class="inst-tab" id="tab-B" onclick="selectInst('B')">우리무지개어린이집</button>
+      </div>
+      <div id="classWrap"></div>
+    </div>
+
+    <!-- STEP 2: 아동 입력 -->
+    <div id="step2card" style="display:none;">
+      <div id="alreadyChildMsg" class="already-msg">
+        <b>⚠️ 오늘 이미 제출된 내용이 있어요</b>
+        <p>기존 입력 내용이 표시됩니다. 수정 후 다시 제출하면 덮어쓰기 됩니다.</p>
+      </div>
+      <div class="card">
+        <div class="card-title" id="step2Title"></div>
+        <div class="card-sub" id="step2Sub"></div>
+        <div class="progress-wrap">
+          <div class="progress-text"><span id="childProgressText">0 / 0명 입력</span><span id="childProgressPct">0%</span></div>
+          <div class="progress-bar"><div class="progress-fill child-fill" id="childProgressFill" style="width:0%"></div></div>
+        </div>
+        <div class="child-list" id="childList"></div>
+      </div>
+      <button class="btn btn-secondary" onclick="backToStep1()">⬅ 반 다시 선택</button>
+      <button class="btn btn-primary" id="childSubmitBtn" onclick="submitChildren()" disabled>제출하기</button>
+    </div>
+
+    <!-- 아동 완료 -->
+    <div id="childDoneCard" class="card done-card" style="display:none;">
+      <div class="done-icon">✓</div>
+      <div class="done-title">아동 입력 완료!</div>
+      <div class="done-sub" id="childDoneSub"></div>
+      <button class="btn btn-primary" style="margin-top:20px;" onclick="resetChild()">다른 반 입력</button>
+    </div>
   </div>
 
-  <!-- STEP 2 -->
-  <div id="step2card" style="display:none;">
-    <div id="alreadyMsg" class="already-msg">
-      <b>⚠️ 오늘 이미 제출된 내용이 있어요</b>
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- 교사 탭 -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div id="teacherSection" style="display:none;">
+    <div id="alreadyTeacherMsg" class="already-msg">
+      <b>⚠️ 오늘 이미 제출된 교사 데이터가 있어요</b>
       <p>기존 입력 내용이 표시됩니다. 수정 후 다시 제출하면 덮어쓰기 됩니다.</p>
     </div>
-    <div class="card">
-      <div class="card-title" id="step2Title"></div>
-      <div class="card-sub" id="step2Sub"></div>
-      <div class="progress-wrap">
-        <div class="progress-text"><span id="progressText">0 / 0명 입력</span><span id="progressPct">0%</span></div>
-        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
-      </div>
-      <div class="child-list" id="childList"></div>
-    </div>
-    <button class="btn btn-secondary" onclick="backToStep1()">⬅ 반 다시 선택</button>
-    <button class="btn btn-primary" id="submitBtn" onclick="submitData()" disabled>제출하기</button>
-  </div>
 
-  <!-- 완료 -->
-  <div id="doneCard" class="card done-card" style="display:none;">
-    <div class="done-icon">✓</div>
-    <div class="done-title">제출 완료!</div>
-    <div class="done-sub" id="doneSub"></div>
-    <button class="btn btn-primary" style="margin-top:20px;" onclick="resetAll()">다른 반 입력</button>
+    <div class="card">
+      <div class="card-title">교사 참여 여부</div>
+      <div class="card-sub" id="teacherProgressSub">전체 교사의 참여 여부를 선택해 주세요.</div>
+      <div class="progress-wrap">
+        <div class="progress-text"><span id="teacherProgressText">0 / 0명 입력</span><span id="teacherProgressPct">0%</span></div>
+        <div class="progress-bar"><div class="progress-fill teacher-fill" id="teacherProgressFill" style="width:0%"></div></div>
+      </div>
+      <div id="teacherList"></div>
+    </div>
+
+    <div id="teacherDoneCard" class="done-card-t" style="display:none;">
+      <div class="done-icon-t">✓</div>
+      <div style="font-size:1.1rem;font-weight:900;color:#1a4a2a;margin-bottom:6px;">교사 입력 완료!</div>
+      <div style="color:#3a7a4a;font-size:.86rem;" id="teacherDoneSub"></div>
+      <button class="btn btn-green" style="margin-top:16px;" onclick="resetTeacher()">다시 입력하기</button>
+    </div>
+
+    <button class="btn btn-green" id="teacherSubmitBtn" onclick="submitTeachers()" disabled>교사 참여 제출하기</button>
   </div>
 </main>
 
@@ -162,6 +239,7 @@ const db = getDatabase(app);
 const TODAY_ISO = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
 document.getElementById('todayLabel').textContent = '📅 ' + TODAY_ISO;
 
+// ─── 아동 명단 ─────────────────────────────────────────────────
 const ROSTER = {
   A: {
     name: "무지개어린이집",
@@ -190,19 +268,90 @@ const ROSTER = {
   }
 };
 
-let state = { inst: 'A', cls: '', children: {}, group: '' };
+// ─── 교사 명단 (보조교사 제외 전 교사) ────────────────────────
+const TEACHER_GROUPS = [
+  {
+    title: "🏠 무지개어린이집",
+    teachers: [
+      { name: "우지선",  role: "아기참새" },
+      { name: "정선윤",  role: "초롱이슬" },
+      { name: "채준범",  role: "은빛물결" },
+      { name: "이왕성",  role: "은빛물결" },
+      { name: "서명화",  role: "은빛물결" },
+      { name: "임민주",  role: "은빛물결" },
+      { name: "황경하",  role: "드림(방과후)" },
+      { name: "이승원",  role: "드림(방과후)" },
+      { name: "박정민",  role: "드림(방과후)" },
+      { name: "주은아",  role: "연장반" },
+      { name: "윤혜정",  role: "연장반" },
+      { name: "강수민",  role: "치료사" },
+      { name: "서홍련",  role: "치료사" },
+      { name: "정소윤",  role: "치료사" }
+    ]
+  },
+  {
+    title: "🏠 우리무지개어린이집",
+    teachers: [
+      { name: "강수지",  role: "아침햇살" },
+      { name: "김보라",  role: "아침햇살" },
+      { name: "김하민",  role: "아침햇살" },
+      { name: "박서정",  role: "고운햇살" },
+      { name: "천은주",  role: "고운햇살" },
+      { name: "모정아",  role: "고운햇살" },
+      { name: "박초롱",  role: "들꽃향기" },
+      { name: "이효선",  role: "들꽃향기" },
+      { name: "조현아",  role: "푸른하늘" },
+      { name: "황선하",  role: "푸른하늘" },
+      { name: "임정연",  role: "파도소리" },
+      { name: "조명원",  role: "파도소리" },
+      { name: "백장미",  role: "푸른바다" },
+      { name: "이슬아",  role: "푸른바다" },
+      { name: "유주환",  role: "푸른바다" },
+      { name: "송태헌",  role: "다짐(방과후)" },
+      { name: "마호진",  role: "다짐(방과후)" },
+      { name: "정인애",  role: "모둠(방과후)" },
+      { name: "변아진",  role: "모둠(방과후)" },
+      { name: "윤아름",  role: "모둠(방과후)" },
+      { name: "정다송",  role: "모둠(방과후)" },
+      { name: "이미화",  role: "치료사" },
+      { name: "권다애",  role: "치료사" },
+      { name: "표영민",  role: "치료사" },
+      { name: "전나인",  role: "치료사" },
+      { name: "박규리",  role: "치료사" },
+      { name: "임주현",  role: "치료사" }
+    ]
+  }
+];
 
+const ALL_TEACHER_NAMES = TEACHER_GROUPS.flatMap(g => g.teachers.map(t => t.name));
+
+// ─── 상태 ──────────────────────────────────────────────────────
+let childState = { inst: 'A', cls: '', children: {}, group: '' };
+let teacherStatus = {};  // name → { status: 'attend'|'off'|'leave', leaveType: 'am'|'pm'|'all' }
+
+// ─── 메인 탭 전환 ──────────────────────────────────────────────
+window.switchMainTab = function(tab) {
+  document.getElementById('mainTabChild').classList.toggle('active', tab === 'child');
+  document.getElementById('mainTabTeacher').classList.toggle('active', tab === 'teacher');
+  document.getElementById('childSection').style.display = tab === 'child' ? 'block' : 'none';
+  document.getElementById('teacherSection').style.display = tab === 'teacher' ? 'block' : 'none';
+  if (tab === 'teacher' && Object.keys(teacherStatus).length === 0) initTeachers();
+};
+
+// ════════════════════════════════════════════════════════════════
+// 아동 입력
+// ════════════════════════════════════════════════════════════════
 window.selectInst = function(k) {
-  state.inst = k;
+  childState.inst = k;
   document.getElementById('tab-A').classList.toggle('active', k === 'A');
   document.getElementById('tab-B').classList.toggle('active', k === 'B');
-  state.cls = '';
+  childState.cls = '';
   renderClasses();
 };
 
 function renderClasses() {
   let html = '';
-  ROSTER[state.inst].groups.forEach(g => {
+  ROSTER[childState.inst].groups.forEach(g => {
     html += `<div class="class-group"><div class="class-group-title">${g.title}</div><div class="class-grid">`;
     Object.keys(g.classes).forEach(c => {
       html += `<button class="class-btn" data-cls="${c}" onclick="selectClass('${c}')">${c}</button>`;
@@ -213,34 +362,33 @@ function renderClasses() {
 }
 
 window.selectClass = async function(c) {
-  state.cls = c;
-  state.children = {};
-  ROSTER[state.inst].groups.forEach(g => { if (g.classes[c]) state.group = g.title; });
+  childState.cls = c;
+  childState.children = {};
+  ROSTER[childState.inst].groups.forEach(g => { if (g.classes[c]) childState.group = g.title; });
   document.querySelectorAll('.class-btn').forEach(b => b.classList.toggle('sel', b.dataset.cls === c));
 
   try {
     const snap = await get(ref(db, `swimming_survey/${TODAY_ISO}_${c}`));
     if (snap.exists() && snap.val().children) {
-      state.children = { ...snap.val().children };
-      document.getElementById('alreadyMsg').classList.add('show');
+      childState.children = { ...snap.val().children };
+      document.getElementById('alreadyChildMsg').classList.add('show');
     } else {
-      document.getElementById('alreadyMsg').classList.remove('show');
+      document.getElementById('alreadyChildMsg').classList.remove('show');
     }
   } catch(e) { console.warn(e); }
 
   document.getElementById('step2Title').textContent = `${c} · ${TODAY_ISO}`;
-  document.getElementById('step2Sub').textContent = `${ROSTER[state.inst].name} · ${state.group}`;
+  document.getElementById('step2Sub').textContent = `${ROSTER[childState.inst].name} · ${childState.group}`;
   renderChildren();
-
   document.getElementById('step1card').style.display = 'none';
   document.getElementById('step2card').style.display = 'block';
-  setStep(2);
+  setChildStep(2);
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
-function setStep(n) {
+function setChildStep(n) {
   [1,2].forEach(i => {
-    const el = document.getElementById('s'+i);
+    const el = document.getElementById('cs'+i);
     el.classList.remove('active','done');
     if (i < n) el.classList.add('done');
     if (i === n) el.classList.add('active');
@@ -250,92 +398,240 @@ function setStep(n) {
 window.backToStep1 = function() {
   document.getElementById('step2card').style.display = 'none';
   document.getElementById('step1card').style.display = 'block';
-  setStep(1);
+  setChildStep(1);
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
 function renderChildren() {
   let children = [];
-  ROSTER[state.inst].groups.forEach(g => { if (g.classes[state.cls]) children = g.classes[state.cls]; });
+  ROSTER[childState.inst].groups.forEach(g => { if (g.classes[childState.cls]) children = g.classes[childState.cls]; });
   document.getElementById('childList').innerHTML = children.map(name => {
-    const cur = state.children[name] || '';
-    return `
-      <div class="child-row">
-        <div class="child-name">${name}</div>
-        <div class="status-btns">
-          <button class="sb swim ${cur==='swim'?'sel':''}" onclick="setStatus('${name}','swim')">🏊 수영</button>
-          <button class="sb indoor ${cur==='indoor'?'sel':''}" onclick="setStatus('${name}','indoor')">🏠 원내보육</button>
-          <button class="sb absent ${cur==='absent'?'sel':''}" onclick="setStatus('${name}','absent')">❌ 결석</button>
-        </div>
-      </div>`;
+    const cur = childState.children[name] || '';
+    return `<div class="child-row">
+      <div class="child-name">${name}</div>
+      <div class="status-btns">
+        <button class="sb swim ${cur==='swim'?'sel':''}" onclick="setChildStatus('${name}','swim')">🏊 수영</button>
+        <button class="sb indoor ${cur==='indoor'?'sel':''}" onclick="setChildStatus('${name}','indoor')">🏠 원내보육</button>
+        <button class="sb absent ${cur==='absent'?'sel':''}" onclick="setChildStatus('${name}','absent')">❌ 결석</button>
+      </div>
+    </div>`;
   }).join('');
-  updateProgress(children);
+  updateChildProgress(children);
 }
 
-window.setStatus = function(name, status) {
-  state.children[name] = status;
+window.setChildStatus = function(name, status) {
+  childState.children[name] = status;
   const row = [...document.querySelectorAll('.child-row')].find(r => r.querySelector('.child-name').textContent === name);
   if (row) {
     row.querySelectorAll('.sb').forEach(b => b.classList.remove('sel'));
     row.querySelector(`.sb.${status}`).classList.add('sel');
   }
   let children = [];
-  ROSTER[state.inst].groups.forEach(g => { if (g.classes[state.cls]) children = g.classes[state.cls]; });
-  updateProgress(children);
+  ROSTER[childState.inst].groups.forEach(g => { if (g.classes[childState.cls]) children = g.classes[childState.cls]; });
+  updateChildProgress(children);
 };
 
-function updateProgress(children) {
+function updateChildProgress(children) {
   const total = children.length;
-  const done = children.filter(n => state.children[n]).length;
+  const done = children.filter(n => childState.children[n]).length;
   const pct = total ? Math.round(done/total*100) : 0;
-  document.getElementById('progressText').textContent = `${done} / ${total}명 입력`;
-  document.getElementById('progressPct').textContent = `${pct}%`;
-  document.getElementById('progressFill').style.width = pct + '%';
-  document.getElementById('submitBtn').disabled = done < total;
+  document.getElementById('childProgressText').textContent = `${done} / ${total}명 입력`;
+  document.getElementById('childProgressPct').textContent = `${pct}%`;
+  document.getElementById('childProgressFill').style.width = pct + '%';
+  document.getElementById('childSubmitBtn').disabled = done < total;
 }
 
-window.submitData = async function() {
-  const btn = document.getElementById('submitBtn');
+window.submitChildren = async function() {
+  const btn = document.getElementById('childSubmitBtn');
   btn.disabled = true; btn.textContent = '제출 중...';
   try {
-    await set(ref(db, `swimming_survey/${TODAY_ISO}_${state.cls}`), {
-      inst: state.inst,
-      instName: ROSTER[state.inst].name,
-      cls: state.cls,
-      date: TODAY_ISO,
-      children: state.children,
-      submittedAt: new Date().toISOString()
+    await set(ref(db, `swimming_survey/${TODAY_ISO}_${childState.cls}`), {
+      inst: childState.inst, instName: ROSTER[childState.inst].name,
+      cls: childState.cls, date: TODAY_ISO,
+      children: childState.children, submittedAt: new Date().toISOString()
     });
-    const sw = Object.values(state.children).filter(v=>v==='swim').length;
-    const id = Object.values(state.children).filter(v=>v==='indoor').length;
-    const ab = Object.values(state.children).filter(v=>v==='absent').length;
+    const sw = Object.values(childState.children).filter(v=>v==='swim').length;
+    const id = Object.values(childState.children).filter(v=>v==='indoor').length;
+    const ab = Object.values(childState.children).filter(v=>v==='absent').length;
     document.getElementById('step2card').style.display = 'none';
-    document.getElementById('doneCard').style.display = 'block';
-    document.getElementById('doneSub').innerHTML =
-      `<b>${state.cls} · ${TODAY_ISO}</b><br>🏊 수영 ${sw}명 · 🏠 원내보육 ${id}명 · ❌ 결석 ${ab}명`;
-    [1,2].forEach(i => { document.getElementById('s'+i).classList.remove('active'); document.getElementById('s'+i).classList.add('done'); });
+    document.getElementById('childDoneCard').style.display = 'block';
+    document.getElementById('childDoneSub').innerHTML =
+      `<b>${childState.cls} · ${TODAY_ISO}</b><br>🏊 수영 ${sw}명 · 🏠 원내보육 ${id}명 · ❌ 결석 ${ab}명`;
+    [1,2].forEach(i => { const el = document.getElementById('cs'+i); el.classList.remove('active'); el.classList.add('done'); });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   } catch(e) {
-    toast('제출 중 오류가 발생했어요. 다시 시도해 주세요.');
+    toast('제출 중 오류가 발생했어요.');
     btn.disabled = false; btn.textContent = '제출하기';
   }
 };
 
-window.resetAll = function() {
-  state = { inst: 'A', cls: '', children: {}, group: '' };
+window.resetChild = function() {
+  childState = { inst: 'A', cls: '', children: {}, group: '' };
   selectInst('A');
-  document.getElementById('doneCard').style.display = 'none';
+  document.getElementById('childDoneCard').style.display = 'none';
   document.getElementById('step1card').style.display = 'block';
-  setStep(1);
+  setChildStep(1);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+// ════════════════════════════════════════════════════════════════
+// 교사 입력
+// ════════════════════════════════════════════════════════════════
+async function initTeachers() {
+  ALL_TEACHER_NAMES.forEach(n => { if (!teacherStatus[n]) teacherStatus[n] = { status: '', leaveType: '' }; });
+  try {
+    const snap = await get(ref(db, `swimming_survey/teachers_${TODAY_ISO}`));
+    if (snap.exists() && snap.val().teachers) {
+      Object.assign(teacherStatus, snap.val().teachers);
+      document.getElementById('alreadyTeacherMsg').classList.add('show');
+    }
+  } catch(e) { console.warn(e); }
+  renderTeachers();
+}
+
+function renderTeachers() {
+  const container = document.getElementById('teacherList');
+  container.innerHTML = '';
+
+  TEACHER_GROUPS.forEach(group => {
+    const groupDiv = document.createElement('div');
+    groupDiv.className = 'teacher-group';
+    groupDiv.innerHTML = `<div class="teacher-group-title">${group.title}</div>`;
+
+    group.teachers.forEach(t => {
+      const st = teacherStatus[t.name] || { status: '', leaveType: '' };
+      const row = document.createElement('div');
+      row.className = 'teacher-row';
+      row.id = `trow-${t.name}`;
+      row.innerHTML = `
+        <div>
+          <div class="teacher-name">${t.name}</div>
+          <div style="font-size:.68rem;color:var(--muted);margin-top:2px;">${t.role}</div>
+        </div>
+        <div style="flex:1;">
+          <div class="teacher-btns">
+            <button class="tb attend ${st.status==='attend'?'sel':''}" onclick="setTeacherStatus('${t.name}','attend')">✅ 참여</button>
+            <button class="tb off ${st.status==='off'?'sel':''}" onclick="setTeacherStatus('${t.name}','off')">❌ 불참</button>
+            <button class="tb leave ${st.status==='leave'?'sel':''}" onclick="setTeacherStatus('${t.name}','leave')">🏖️ 당일휴가</button>
+          </div>
+          <div class="leave-detail ${st.status==='leave'?'show':''}" id="ld-${t.name}">
+            <div class="leave-detail-label">휴가 유형을 선택하세요</div>
+            <div class="leave-sub-btns">
+              <button class="lsb ${st.leaveType==='am'?'sel':''}" onclick="setLeaveType('${t.name}','am')">🌅 오전반차</button>
+              <button class="lsb ${st.leaveType==='pm'?'sel':''}" onclick="setLeaveType('${t.name}','pm')">🌇 오후반차</button>
+              <button class="lsb ${st.leaveType==='all'?'sel':''}" onclick="setLeaveType('${t.name}','all')">☀️ 종일휴가</button>
+            </div>
+          </div>
+        </div>`;
+      groupDiv.appendChild(row);
+    });
+    container.appendChild(groupDiv);
+  });
+  updateTeacherProgress();
+}
+
+window.setTeacherStatus = function(name, status) {
+  if (!teacherStatus[name]) teacherStatus[name] = { status: '', leaveType: '' };
+  teacherStatus[name].status = status;
+  if (status !== 'leave') teacherStatus[name].leaveType = '';
+
+  // 버튼 갱신
+  const row = document.getElementById(`trow-${name}`);
+  if (row) {
+    row.querySelectorAll('.tb').forEach(b => b.classList.remove('sel'));
+    const btn = row.querySelector(`.tb.${status}`);
+    if (btn) btn.classList.add('sel');
+    const ld = document.getElementById(`ld-${name}`);
+    if (ld) {
+      ld.classList.toggle('show', status === 'leave');
+      if (status !== 'leave') ld.querySelectorAll('.lsb').forEach(b => b.classList.remove('sel'));
+    }
+  }
+  updateTeacherProgress();
+};
+
+window.setLeaveType = function(name, type) {
+  if (!teacherStatus[name]) teacherStatus[name] = { status: 'leave', leaveType: '' };
+  teacherStatus[name].leaveType = type;
+
+  const ld = document.getElementById(`ld-${name}`);
+  if (ld) {
+    ld.querySelectorAll('.lsb').forEach(b => b.classList.remove('sel'));
+    const btn = ld.querySelector(`.lsb:nth-child(${type==='am'?1:type==='pm'?2:3})`);
+    if (btn) btn.classList.add('sel');
+  }
+  updateTeacherProgress();
+};
+
+function updateTeacherProgress() {
+  const total = ALL_TEACHER_NAMES.length;
+  const done = ALL_TEACHER_NAMES.filter(n => {
+    const st = teacherStatus[n];
+    if (!st || !st.status) return false;
+    if (st.status === 'leave') return !!st.leaveType; // 당일휴가는 세부선택까지 완료해야 카운트
+    return true;
+  }).length;
+  const pct = Math.round(done/total*100);
+  document.getElementById('teacherProgressText').textContent = `${done} / ${total}명 입력`;
+  document.getElementById('teacherProgressPct').textContent = `${pct}%`;
+  document.getElementById('teacherProgressFill').style.width = pct + '%';
+  document.getElementById('teacherSubmitBtn').disabled = done < total;
+}
+
+window.submitTeachers = async function() {
+  // 당일휴가인데 세부 미선택 체크
+  const missing = ALL_TEACHER_NAMES.filter(n => {
+    const st = teacherStatus[n];
+    return st && st.status === 'leave' && !st.leaveType;
+  });
+  if (missing.length) {
+    toast(`${missing.join(', ')}: 휴가 유형을 선택해 주세요`);
+    return;
+  }
+
+  const btn = document.getElementById('teacherSubmitBtn');
+  btn.disabled = true; btn.textContent = '제출 중...';
+
+  try {
+    await set(ref(db, `swimming_survey/teachers_${TODAY_ISO}`), {
+      date: TODAY_ISO,
+      teachers: teacherStatus,
+      submittedAt: new Date().toISOString()
+    });
+
+    const attend = ALL_TEACHER_NAMES.filter(n => teacherStatus[n]?.status === 'attend').length;
+    const off    = ALL_TEACHER_NAMES.filter(n => teacherStatus[n]?.status === 'off').length;
+    const leave  = ALL_TEACHER_NAMES.filter(n => teacherStatus[n]?.status === 'leave').length;
+
+    document.getElementById('teacherDoneCard').style.display = 'block';
+    document.getElementById('teacherDoneSub').innerHTML =
+      `✅ 참여 ${attend}명 · ❌ 불참 ${off}명 · 🏖️ 당일휴가 ${leave}명`;
+    btn.style.display = 'none';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    toast('교사 참여 현황이 제출됐어요!');
+  } catch(e) {
+    toast('제출 중 오류가 발생했어요.');
+    btn.disabled = false; btn.textContent = '교사 참여 제출하기';
+  }
+};
+
+window.resetTeacher = function() {
+  teacherStatus = {};
+  document.getElementById('teacherDoneCard').style.display = 'none';
+  document.getElementById('teacherSubmitBtn').style.display = 'block';
+  document.getElementById('teacherSubmitBtn').disabled = true;
+  document.getElementById('alreadyTeacherMsg').classList.remove('show');
+  initTeachers();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
 function toast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2200);
+  setTimeout(() => t.classList.remove('show'), 2800);
 }
 
+// 초기화
 selectInst('A');
 </script>
 </body>

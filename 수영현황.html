@@ -89,6 +89,26 @@
   .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:12px 22px;border-radius:30px;font-size:.86rem;font-weight:600;z-index:9999;opacity:0;transition:opacity .25s;pointer-events:none;}
   .toast.show{opacity:1;}
 
+
+  /* 메인 섹션 탭 */
+  .main-tabs{display:flex;gap:0;margin-bottom:20px;background:#fff;border-radius:14px;border:1px solid var(--border);overflow:hidden;box-shadow:var(--shadow);}
+  .main-tab{flex:1;padding:15px;border:none;font-family:inherit;font-size:.88rem;font-weight:800;cursor:pointer;background:#fff;color:var(--sub);transition:all .15s;}
+  .main-tab.active{background:var(--primary);color:#fff;}
+  /* 교사 현황 */
+  .t-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:18px;}
+  .ts-card{background:var(--card);padding:14px;border-radius:14px;border:1px solid var(--border);box-shadow:var(--shadow);text-align:center;}
+  .ts-card.attend-c{background:linear-gradient(135deg,#e8f5e9,#d4edda);}
+  .ts-card.off-c{background:linear-gradient(135deg,#fde8ef,#fad0df);}
+  .ts-card.leave-c{background:linear-gradient(135deg,#fff5e8,#ffe8cc);}
+  .ts-card.none-c{background:linear-gradient(135deg,#f5f5f5,#e8e8e8);}
+  .ts-num{font-size:1.7rem;font-weight:900;color:var(--text);}
+  .ts-lbl{font-size:.73rem;color:var(--sub);margin-top:4px;font-weight:600;}
+  .pill.t-attend{background:#d4edda;color:#1a6630;}
+  .pill.t-off{background:#fde8ef;color:#a01050;}
+  .pill.t-leave-am{background:#fff0cc;color:#c06000;}
+  .pill.t-leave-pm{background:#ffe0cc;color:#c04000;}
+  .pill.t-leave-all{background:#ffd0b0;color:#a03000;}
+  .pill.t-none{background:#f0f0f0;color:#888;}
   @media(max-width:600px){
     .summary-grid{grid-template-columns:repeat(2,1fr);}
     th,td{padding:8px 5px;font-size:.75rem;}
@@ -124,6 +144,14 @@
 </header>
 
 <main>
+  <!-- 메인 탭 -->
+  <div class="main-tabs">
+    <button class="main-tab active" id="mainTabChild" onclick="switchMainSection('child')">🧒 아동 현황</button>
+    <button class="main-tab" id="mainTabTeacher" onclick="switchMainSection('teacher')">👩‍🏫 교사 현황</button>
+  </div>
+
+  <!-- 아동 섹션 -->
+  <div id="childSection">
   <div class="filter-bar">
     <span class="filter-label">📅 날짜</span>
     <input type="date" class="filter-date" id="filterDate">
@@ -150,6 +178,25 @@
   </div>
 
   <div id="contentArea"><div class="empty">날짜를 선택하거나 전체 데이터를 불러오세요.</div></div>
+  </div><!-- /childSection -->
+
+  <!-- 교사 섹션 -->
+  <div id="teacherSection" style="display:none;">
+    <div class="filter-bar">
+      <span class="filter-label">📅 날짜</span>
+      <input type="date" class="filter-date" id="teacherFilterDate">
+      <button class="filter-btn" onclick="applyTeacherFilter()">조회</button>
+      <button class="hdr-btn" onclick="clearTeacherFilter()">전체 보기</button>
+    </div>
+    <div class="t-summary-grid">
+      <div class="ts-card attend-c"><div class="ts-num" id="ts-attend">-</div><div class="ts-lbl">✅ 참여</div></div>
+      <div class="ts-card off-c"><div class="ts-num" id="ts-off">-</div><div class="ts-lbl">❌ 불참</div></div>
+      <div class="ts-card leave-c"><div class="ts-num" id="ts-leave">-</div><div class="ts-lbl">🏖️ 당일휴가</div></div>
+      <div class="ts-card none-c"><div class="ts-num" id="ts-none">-</div><div class="ts-lbl">⬜ 미제출</div></div>
+    </div>
+    <div id="teacherContentArea"><div class="empty">날짜를 선택해 주세요.</div></div>
+  </div><!-- /teacherSection -->
+
 </main>
 
 <div class="toast" id="toast"></div>
@@ -230,6 +277,7 @@ window.loadData = async function() {
     const snap = await get(ref(db, 'swimming_survey'));
     allData = snap.exists() ? snap.val() : {};
     if (currentDate) { updateSummary(); renderCurrentTab(); checkPending(); }
+    if (teacherDate) renderTeacherSection();
     else { updateSummary(); renderCurrentTab(); }
     toast('데이터를 불러왔어요');
   } catch(e) { toast('불러오기 실패'); }
@@ -407,9 +455,155 @@ window.exportExcel = function() {
   XLSX.utils.book_append_sheet(wb, mkSheet(indoorData,[{wch:18},{wch:10},{wch:10},{wch:12}]), '원내보육 명단');
   XLSX.utils.book_append_sheet(wb, mkSheet(absentData,[{wch:18},{wch:10},{wch:10},{wch:12}]), '결석 명단');
 
+
+  // 교사 시트
+  const teacherData = [['이름','담당','참여여부','휴가유형','날짜']];
+  const td2 = teacherDate ? allData['teachers_' + teacherDate] : null;
+  const tTeachers = td2 ? (td2.teachers || {}) : {};
+  ALL_TEACHER_NAMES.forEach(n => {
+    const tInfo = TEACHER_GROUPS.flatMap(g=>g.teachers).find(t=>t.name===n);
+    const st = tTeachers[n];
+    const status = !st?.status ? '미제출' : st.status === 'attend' ? '참여' : st.status === 'off' ? '불참' : '당일휴가';
+    const leaveType = st?.leaveType === 'am' ? '오전반차' : st?.leaveType === 'pm' ? '오후반차' : st?.leaveType === 'all' ? '종일휴가' : '';
+    teacherData.push([n, tInfo?.role||'', status, leaveType, td2?.date||'']);
+  });
+  XLSX.utils.book_append_sheet(wb, mkSheet(teacherData,[{wch:10},{wch:14},{wch:10},{wch:10},{wch:12}]), '교사 현황');
   XLSX.writeFile(wb, `수영참여현황_${currentDate||new Date().toISOString().slice(0,10)}.xlsx`);
   toast('엑셀 파일이 다운로드되었어요');
 };
+
+
+// ════════════════════════════════════════════════════════════════
+// 교사 명단
+// ════════════════════════════════════════════════════════════════
+const TEACHER_GROUPS = [
+  { title: "무지개어린이집", teachers: [
+    { name:"우지선", role:"아기참새" }, { name:"정선윤", role:"초롱이슬" },
+    { name:"채준범", role:"은빛물결" }, { name:"이왕성", role:"은빛물결" },
+    { name:"서명화", role:"은빛물결" }, { name:"임민주", role:"은빛물결" },
+    { name:"황경하", role:"드림(방과후)" }, { name:"이승원", role:"드림(방과후)" }, { name:"박정민", role:"드림(방과후)" },
+    { name:"주은아", role:"연장반" }, { name:"윤혜정", role:"연장반" },
+    { name:"강수민", role:"치료사" }, { name:"서홍련", role:"치료사" }, { name:"정소윤", role:"치료사" }
+  ]},
+  { title: "우리무지개어린이집", teachers: [
+    { name:"강수지", role:"아침햇살" }, { name:"김보라", role:"아침햇살" }, { name:"김하민", role:"아침햇살" },
+    { name:"박서정", role:"고운햇살" }, { name:"천은주", role:"고운햇살" }, { name:"모정아", role:"고운햇살" },
+    { name:"박초롱", role:"들꽃향기" }, { name:"이효선", role:"들꽃향기" },
+    { name:"조현아", role:"푸른하늘" }, { name:"황선하", role:"푸른하늘" },
+    { name:"임정연", role:"파도소리" }, { name:"조명원", role:"파도소리" },
+    { name:"백장미", role:"푸른바다" }, { name:"이슬아", role:"푸른바다" }, { name:"유주환", role:"푸른바다" },
+    { name:"송태헌", role:"다짐(방과후)" }, { name:"마호진", role:"다짐(방과후)" },
+    { name:"정인애", role:"모둠(방과후)" }, { name:"변아진", role:"모둠(방과후)" },
+    { name:"윤아름", role:"모둠(방과후)" }, { name:"정다송", role:"모둠(방과후)" },
+    { name:"이미화", role:"치료사" }, { name:"권다애", role:"치료사" }, { name:"표영민", role:"치료사" },
+    { name:"전나인", role:"치료사" }, { name:"박규리", role:"치료사" }, { name:"임주현", role:"치료사" }
+  ]}
+];
+const ALL_TEACHER_NAMES = TEACHER_GROUPS.flatMap(g => g.teachers.map(t => t.name));
+
+// 메인 섹션 탭 전환
+window.switchMainSection = function(section) {
+  document.getElementById('mainTabChild').classList.toggle('active', section === 'child');
+  document.getElementById('mainTabTeacher').classList.toggle('active', section === 'teacher');
+  document.getElementById('childSection').style.display = section === 'child' ? 'block' : 'none';
+  document.getElementById('teacherSection').style.display = section === 'teacher' ? 'block' : 'none';
+  if (section === 'teacher') {
+    // 현재 날짜 필터 동기화
+    const fd = document.getElementById('filterDate').value;
+    if (fd) document.getElementById('teacherFilterDate').value = fd;
+    renderTeacherSection();
+  }
+};
+
+// 교사 날짜 필터
+let teacherDate = '';
+window.applyTeacherFilter = function() {
+  teacherDate = document.getElementById('teacherFilterDate').value;
+  if (!teacherDate) { toast('날짜를 선택해 주세요'); return; }
+  renderTeacherSection();
+};
+window.clearTeacherFilter = function() {
+  teacherDate = '';
+  document.getElementById('teacherFilterDate').value = '';
+  renderTeacherSection();
+};
+
+function getTeacherData() {
+  if (!teacherDate) return null;
+  return allData['teachers_' + teacherDate] || null;
+}
+
+function teacherPill(st) {
+  if (!st || !st.status) return '<span class="pill t-none">미제출</span>';
+  if (st.status === 'attend') return '<span class="pill t-attend">✅ 참여</span>';
+  if (st.status === 'off')    return '<span class="pill t-off">❌ 불참</span>';
+  if (st.status === 'leave') {
+    const lbl = st.leaveType === 'am' ? '🌅 오전반차' : st.leaveType === 'pm' ? '🌇 오후반차' : '☀️ 종일휴가';
+    const cls = st.leaveType === 'am' ? 't-leave-am' : st.leaveType === 'pm' ? 't-leave-pm' : 't-leave-all';
+    return `<span class="pill ${cls}">🏖️ ${lbl}</span>`;
+  }
+  return '<span class="pill t-none">미제출</span>';
+}
+
+function renderTeacherSection() {
+  const td = getTeacherData();
+  const teachers = td ? td.teachers || {} : {};
+
+  // 요약
+  let attend=0, off=0, leave=0, none=0;
+  ALL_TEACHER_NAMES.forEach(n => {
+    const st = teachers[n];
+    if (!st || !st.status) none++;
+    else if (st.status === 'attend') attend++;
+    else if (st.status === 'off') off++;
+    else if (st.status === 'leave') leave++;
+  });
+  document.getElementById('ts-attend').textContent = attend;
+  document.getElementById('ts-off').textContent = off;
+  document.getElementById('ts-leave').textContent = leave;
+  document.getElementById('ts-none').textContent = none;
+
+  // 테이블
+  let html = '';
+  TEACHER_GROUPS.forEach(g => {
+    const gAttend = g.teachers.filter(t => teachers[t.name]?.status === 'attend').length;
+    const gOff    = g.teachers.filter(t => teachers[t.name]?.status === 'off').length;
+    const gLeave  = g.teachers.filter(t => teachers[t.name]?.status === 'leave').length;
+
+    html += `<div class="class-section">
+      <div class="class-header">
+        <div class="class-name">${g.title}</div>
+        <div class="class-stat">✅ <strong>${gAttend}</strong> · ❌ <strong>${gOff}</strong> · 🏖️ <strong>${gLeave}</strong></div>
+      </div>
+      <div class="card" style="padding:0;overflow:auto;"><table>
+        <thead><tr><th>이름</th><th>담당</th><th class="center">참여 여부</th>${!teacherDate?'<th>날짜</th>':''}</tr></thead>
+        <tbody>`;
+
+    g.teachers.forEach(t => {
+      let st = teachers[t.name], dateStr = td ? (td.date || '-') : '-';
+      if (!teacherDate) {
+        // 날짜 미선택 시 최근 데이터 탐색
+        const keys = Object.keys(allData).filter(k => k.startsWith('teachers_')).sort().reverse();
+        if (keys.length && allData[keys[0]].teachers) {
+          st = allData[keys[0]].teachers[t.name];
+          dateStr = allData[keys[0]].date || '-';
+        }
+      }
+      html += `<tr>
+        <td><strong>${t.name}</strong></td>
+        <td style="color:var(--muted);font-size:.78rem;">${t.role}</td>
+        <td class="center">${teacherPill(st)}</td>
+        ${!teacherDate ? `<td style="color:var(--muted);font-size:.78rem;">${dateStr}</td>` : ''}
+      </tr>`;
+    });
+    html += `</tbody></table></div></div>`;
+  });
+
+  if (!teacherDate && Object.keys(teachers).length === 0) {
+    html = '<div class="empty">날짜를 선택하거나 데이터를 조회하세요.</div>';
+  }
+  document.getElementById('teacherContentArea').innerHTML = html;
+}
 
 function toast(msg) {
   const t=document.getElementById('toast');
