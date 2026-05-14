@@ -289,8 +289,59 @@
       <h1>🌿 2026년 아토피·천식 안심학교 알레르기질환 조사 관리</h1>
       <div class="deadline">광주광역시 남구보건소 | 조사기간 2026.4.24 ~ 5.29</div>
     </div>
-    <button onclick="logout()" style="padding:8px 16px; background:rgba(255,255,255,0.2); color:#fff; border:1px solid rgba(255,255,255,0.3); border-radius:6px; cursor:pointer;">로그아웃</button>
+    <div style="display:flex; gap:8px;">
+      <button onclick="openResetModal()" style="padding:8px 16px; background:rgba(244,67,54,0.9); color:#fff; border:1px solid rgba(255,255,255,0.3); border-radius:6px; cursor:pointer; font-weight:bold;">🗑️ 데이터 리셋</button>
+      <button onclick="logout()" style="padding:8px 16px; background:rgba(255,255,255,0.2); color:#fff; border:1px solid rgba(255,255,255,0.3); border-radius:6px; cursor:pointer;">로그아웃</button>
+    </div>
   </header>
+
+  <!-- 리셋 모달 -->
+  <div id="resetModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center; padding:20px;">
+    <div style="background:#fff; border-radius:12px; padding:24px; max-width:480px; width:100%; box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+      <h2 style="color:#c62828; margin-bottom:14px;">⚠️ 데이터 리셋</h2>
+      <p style="color:#333; line-height:1.6; margin-bottom:12px;">
+        이 작업은 <strong style="color:#c62828;">모든 설문 응답 데이터를 영구적으로 삭제</strong>합니다.<br>
+        삭제된 데이터는 복구할 수 없습니다.
+      </p>
+      <div id="resetStats" style="background:#ffebee; padding:12px; border-radius:8px; margin-bottom:14px; font-size:14px;">
+        현재 저장된 응답: <strong id="resetCount">0</strong>건
+      </div>
+
+      <!-- 1단계: 옵션 선택 -->
+      <div id="resetStep1">
+        <label style="display:block; margin-bottom:8px; font-weight:bold;">삭제 범위 선택:</label>
+        <div style="margin-bottom:14px;">
+          <label style="display:flex; align-items:center; padding:10px; background:#f5f5f5; border-radius:6px; margin-bottom:6px; cursor:pointer;">
+            <input type="radio" name="resetScope" value="all" checked style="margin-right:8px;">
+            <span><strong>전체 삭제</strong> — 모든 응답 데이터 삭제</span>
+          </label>
+          <label style="display:flex; align-items:center; padding:10px; background:#f5f5f5; border-radius:6px; cursor:pointer;">
+            <input type="radio" name="resetScope" value="center" style="margin-right:8px;">
+            <span><strong>기관별 삭제</strong> —
+              <select id="resetCenterSel" style="margin-left:6px; padding:4px;">
+                <option value="무지개어린이집">무지개어린이집</option>
+                <option value="우리무지개어린이집">우리무지개어린이집</option>
+              </select>
+            </span>
+          </label>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button onclick="closeResetModal()" style="flex:1; padding:12px; background:#e0e0e0; color:#333; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">취소</button>
+          <button onclick="goResetStep2()" style="flex:1; padding:12px; background:#c62828; color:#fff; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">다음 →</button>
+        </div>
+      </div>
+
+      <!-- 2단계: 확인 문구 입력 -->
+      <div id="resetStep2" style="display:none;">
+        <p style="margin-bottom:10px; font-size:14px;">정말 삭제하시려면 아래에 <strong style="color:#c62828;">"삭제확인"</strong>을 입력하세요:</p>
+        <input type="text" id="resetConfirmInput" placeholder="삭제확인" style="width:100%; padding:12px; border:2px solid #e0e0e0; border-radius:8px; font-size:15px; margin-bottom:14px; text-align:center;">
+        <div style="display:flex; gap:10px;">
+          <button onclick="backToResetStep1()" style="flex:1; padding:12px; background:#e0e0e0; color:#333; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">← 이전</button>
+          <button onclick="executeReset()" id="executeResetBtn" style="flex:1; padding:12px; background:#c62828; color:#fff; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">삭제 실행</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- 요약 통계 -->
   <div class="card">
@@ -369,7 +420,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, get, child, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDojXJ_9pOnla8uG240APwo3Ik9gBddMw4",
@@ -840,6 +891,72 @@ window.downloadFormExcel = function() {
   rows.push(["합계","", `${totT}/${totalAll}`, totAst+totAto+totRhi+totFood+totAna, totAst, totAto, totRhi, totFood, totAna]);
 
   downloadCSV(`알레르기조사표_${center}_${new Date().toISOString().slice(0,10)}.csv`, rows);
+};
+
+// ── 데이터 리셋 ────────────────────────────────────────
+window.openResetModal = function() {
+  document.getElementById("resetCount").textContent = Object.keys(allResponses).length;
+  document.getElementById("resetStep1").style.display = "block";
+  document.getElementById("resetStep2").style.display = "none";
+  document.getElementById("resetConfirmInput").value = "";
+  document.getElementById("resetModal").style.display = "flex";
+};
+
+window.closeResetModal = function() {
+  document.getElementById("resetModal").style.display = "none";
+};
+
+window.goResetStep2 = function() {
+  document.getElementById("resetStep1").style.display = "none";
+  document.getElementById("resetStep2").style.display = "block";
+  document.getElementById("resetConfirmInput").focus();
+};
+
+window.backToResetStep1 = function() {
+  document.getElementById("resetStep1").style.display = "block";
+  document.getElementById("resetStep2").style.display = "none";
+};
+
+window.executeReset = async function() {
+  const confirmText = document.getElementById("resetConfirmInput").value.trim();
+  if (confirmText !== "삭제확인") {
+    alert('"삭제확인"을 정확히 입력해주세요.');
+    return;
+  }
+  const scope = document.querySelector('input[name="resetScope"]:checked').value;
+  const btn = document.getElementById("executeResetBtn");
+  btn.disabled = true;
+  btn.textContent = "삭제 중...";
+  try {
+    if (scope === "all") {
+      // 전체 삭제
+      await remove(ref(db, "allergy/responses"));
+      alert("✅ 모든 응답 데이터가 삭제되었습니다.");
+    } else {
+      // 기관별 삭제
+      const targetCenter = document.getElementById("resetCenterSel").value;
+      const targetKeys = Object.entries(allResponses)
+        .filter(([k, v]) => v.center === targetCenter)
+        .map(([k, v]) => k);
+      if (targetKeys.length === 0) {
+        alert(`${targetCenter}에는 삭제할 데이터가 없습니다.`);
+        btn.disabled = false;
+        btn.textContent = "삭제 실행";
+        return;
+      }
+      // 각 키 개별 삭제
+      await Promise.all(targetKeys.map(k => remove(ref(db, `allergy/responses/${k}`))));
+      alert(`✅ ${targetCenter}의 ${targetKeys.length}건 데이터가 삭제되었습니다.`);
+    }
+    closeResetModal();
+    await loadData();
+  } catch (e) {
+    console.error(e);
+    alert("삭제 중 오류 발생: " + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "삭제 실행";
+  }
 };
 </script>
 </body>
