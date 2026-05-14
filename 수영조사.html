@@ -4,556 +4,563 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🏊 수영참여 조사</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+<!-- Firebase compat (전역 firebase 객체 사용 - module 아님) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
-  :root {
-    --bg:#f0f8ff;--card:#fff;--border:#d0e8f8;--primary:#3a9bd5;--primary-dark:#2178b0;
-    --accent:#a8d8f0;--light:#e8f5fd;--text:#1a3a4a;--sub:#4a7a96;--muted:#8aafc4;
-    --swim:#3a9bd5;--indoor:#f4a85a;--absent:#9e9e9e;
-    --t-attend:#5cb85c;--t-off:#e87aa3;--t-leave:#f4a85a;
-    --shadow:0 4px 16px rgba(58,155,213,.10);
-  }
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
-  header{background:linear-gradient(135deg,#b8dff5,#e0f3fd);padding:28px 24px 48px;position:relative;overflow:hidden;border-bottom:1px solid var(--border);}
-  header::before{content:'🏊';position:absolute;top:12px;right:20px;font-size:5rem;opacity:.15;}
-  header::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:30px;background:var(--bg);clip-path:ellipse(55% 100% at 50% 100%);}
-  .hdr-inner{max-width:680px;margin:0 auto;position:relative;z-index:1;}
-  header h1{font-size:1.7rem;font-weight:900;color:#0d3a5c;}
-  .hdr-sub{color:var(--primary-dark);font-size:.85rem;margin-top:6px;font-weight:500;}
-  .hdr-date{margin-top:10px;display:inline-block;padding:6px 14px;background:rgba(255,255,255,.6);border-radius:20px;font-size:.82rem;color:#0d3a5c;font-weight:700;}
-  main{max-width:680px;margin:0 auto;padding:0 16px 120px;}
-  .main-tabs{display:flex;margin-bottom:20px;background:#fff;border-radius:14px;border:1px solid var(--border);overflow:hidden;box-shadow:var(--shadow);}
-  .main-tab{flex:1;padding:16px;border:none;font-family:inherit;font-size:.9rem;font-weight:800;cursor:pointer;background:#fff;color:var(--sub);transition:all .15s;}
-  .main-tab.active{background:var(--primary);color:#fff;}
-  .steps{display:flex;margin-bottom:20px;}
-  .step{flex:1;text-align:center;position:relative;}
-  .step::after{content:'';position:absolute;top:14px;right:-50%;width:100%;height:2px;background:var(--border);z-index:0;}
-  .step:last-child::after{display:none;}
-  .step .dot{width:30px;height:30px;border-radius:50%;background:#fff;border:2px solid var(--border);display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:.78rem;color:var(--muted);position:relative;z-index:1;}
-  .step.active .dot{background:var(--primary);border-color:var(--primary);color:#fff;}
-  .step.done .dot{background:#5cb85c;border-color:#5cb85c;color:#fff;}
-  .step .lbl{font-size:.7rem;color:var(--muted);margin-top:6px;font-weight:600;}
-  .step.active .lbl,.step.done .lbl{color:var(--primary-dark);}
-  .card{background:var(--card);border-radius:18px;padding:22px 20px;box-shadow:var(--shadow);margin-bottom:14px;border:1px solid var(--border);}
-  .card-title{font-size:1rem;font-weight:800;color:var(--text);margin-bottom:4px;}
-  .card-sub{font-size:.78rem;color:var(--sub);margin-bottom:16px;}
-  .inst-tabs{display:flex;gap:8px;margin-bottom:14px;}
-  .inst-tab{flex:1;padding:11px;background:#fff;border:1.5px solid var(--border);border-radius:11px;font-family:inherit;font-size:.82rem;font-weight:700;color:var(--sub);cursor:pointer;transition:all .15s;}
-  .inst-tab.active{background:var(--primary);border-color:var(--primary);color:#fff;}
-  .class-group{margin-bottom:12px;}
-  .class-group-title{font-size:.72rem;font-weight:700;color:var(--muted);letter-spacing:.8px;margin-bottom:8px;padding-left:4px;}
-  .class-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:8px;}
-  .class-btn{padding:12px 8px;background:#fff;border:1.5px solid var(--border);border-radius:11px;font-family:inherit;font-size:.85rem;font-weight:700;color:var(--text);cursor:pointer;transition:all .15s;text-align:center;}
-  .class-btn:hover{border-color:var(--accent);background:var(--light);}
-  .class-btn.sel{background:var(--primary);border-color:var(--primary);color:#fff;}
-  .child-list{display:flex;flex-direction:column;gap:10px;}
-  .child-row{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--light);border-radius:12px;border:1px solid var(--border);}
-  .child-name{font-weight:700;color:var(--text);min-width:54px;font-size:.92rem;}
-  .status-btns{display:flex;gap:6px;flex:1;}
-  .sb{flex:1;padding:9px 4px;border:1.5px solid var(--border);border-radius:9px;font-family:inherit;font-size:.72rem;font-weight:800;cursor:pointer;background:#fff;color:var(--sub);transition:all .12s;text-align:center;}
-  .sb.swim.sel{background:var(--swim);border-color:var(--swim);color:#fff;}
-  .sb.indoor.sel{background:var(--indoor);border-color:var(--indoor);color:#fff;}
-  .sb.absent.sel{background:var(--absent);border-color:var(--absent);color:#fff;}
-  .progress-wrap{margin-bottom:16px;}
-  .progress-text{font-size:.78rem;color:var(--sub);margin-bottom:6px;display:flex;justify-content:space-between;}
-  .progress-bar{height:8px;background:var(--border);border-radius:99px;overflow:hidden;}
-  .progress-fill{height:100%;border-radius:99px;transition:width .3s;}
-  .child-fill{background:var(--primary);}
-  .teacher-fill{background:#5cb85c;}
-  .already-msg{background:linear-gradient(135deg,#fff8e1,#fff3c4);border:1px solid #ffd966;padding:12px 14px;border-radius:11px;margin-bottom:14px;display:none;}
-  .already-msg.show{display:block;}
-  .already-msg b{color:#7a5a00;font-size:.85rem;}
-  .already-msg p{color:#7a5a00;font-size:.76rem;margin-top:3px;}
-  /* 교사 */
-  .teacher-group{margin-bottom:18px;}
-  .teacher-group-title{font-size:.8rem;font-weight:800;color:var(--sub);margin-bottom:10px;padding:6px 10px;background:var(--light);border-radius:8px;}
-  .teacher-row{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;background:var(--light);border-radius:12px;border:1px solid var(--border);margin-bottom:8px;}
-  .teacher-info{min-width:62px;}
-  .teacher-name{font-weight:700;color:var(--text);font-size:.9rem;}
-  .teacher-role{font-size:.68rem;color:var(--muted);margin-top:2px;}
-  .teacher-btns-wrap{flex:1;}
-  .teacher-btns{display:flex;gap:6px;margin-bottom:0;}
-  .tb{flex:1;padding:9px 4px;border:1.5px solid var(--border);border-radius:9px;font-family:inherit;font-size:.72rem;font-weight:800;cursor:pointer;background:#fff;color:var(--sub);transition:all .12s;text-align:center;}
-  .tb.attend.sel{background:var(--t-attend);border-color:var(--t-attend);color:#fff;}
-  .tb.off.sel{background:var(--t-off);border-color:var(--t-off);color:#fff;}
-  .tb.leave.sel{background:var(--t-leave);border-color:var(--t-leave);color:#fff;}
-  .leave-detail{margin-top:8px;padding:10px 12px;background:#fff5e0;border:1px dashed var(--t-leave);border-radius:10px;display:none;}
-  .leave-detail.show{display:block;}
-  .leave-detail-label{font-size:.72rem;font-weight:700;color:#c06000;margin-bottom:8px;}
-  .leave-sub-btns{display:flex;gap:6px;}
-  .lsb{flex:1;padding:9px 4px;border:1.5px solid #f4c87a;border-radius:9px;font-family:inherit;font-size:.7rem;font-weight:800;cursor:pointer;background:#fff;color:#c06000;transition:all .12s;text-align:center;}
-  .lsb.sel{background:var(--t-leave);border-color:var(--t-leave);color:#fff;}
-  .btn{width:100%;padding:16px;border:none;border-radius:13px;font-family:inherit;font-size:.98rem;font-weight:800;cursor:pointer;transition:all .15s;}
-  .btn-primary{background:var(--primary);color:#fff;}
-  .btn-primary:hover{background:var(--primary-dark);}
-  .btn-primary:disabled{background:var(--muted);cursor:not-allowed;}
-  .btn-secondary{background:#fff;color:var(--sub);border:1.5px solid var(--border);margin-bottom:8px;}
-  .btn-green{background:#5cb85c;color:#fff;}
-  .btn-green:hover{background:#4a9e4a;}
-  .btn-green:disabled{background:var(--muted);cursor:not-allowed;}
-  .done-card{text-align:center;padding:36px 22px;background:linear-gradient(135deg,#e8f5fd,#d0ecfa);border:1px solid var(--border);}
-  .done-icon{width:70px;height:70px;border-radius:50%;background:#5cb85c;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:2.2rem;color:#fff;}
-  .done-title{font-size:1.2rem;font-weight:900;color:var(--text);margin-bottom:8px;}
-  .done-sub{color:var(--sub);font-size:.88rem;line-height:1.6;}
-  .done-card-t{text-align:center;padding:30px 22px;background:linear-gradient(135deg,#e8f5ea,#d4edda);border:1px solid #b8ddc4;border-radius:18px;margin-bottom:14px;}
-  .done-icon-t{width:60px;height:60px;border-radius:50%;background:#5cb85c;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;color:#fff;}
-  .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:12px 22px;border-radius:30px;font-size:.86rem;font-weight:600;z-index:9999;opacity:0;transition:opacity .25s;pointer-events:none;}
-  .toast.show{opacity:1;}
-  @media(max-width:480px){
-    header h1{font-size:1.45rem;}
-    .child-name,.teacher-name{font-size:.82rem;}
-    .sb,.tb,.lsb{font-size:.63rem;padding:8px 2px;}
-    .main-tab{font-size:.8rem;padding:14px 6px;}
-  }
+:root{
+  --bg:#f0f8ff;--card:#fff;--border:#d0e8f8;
+  --pri:#3a9bd5;--dark:#2178b0;--light:#e8f5fd;
+  --text:#1a3a4a;--sub:#4a7a96;--muted:#8aafc4;
+  --swim:#3a9bd5;--indoor:#f4a85a;--absent:#9e9e9e;
+  --attend:#5cb85c;--off:#e87aa3;--leave:#f4a85a;
+  --sh:0 4px 16px rgba(58,155,213,.10);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+header{background:linear-gradient(135deg,#b8dff5,#e0f3fd);padding:26px 20px 44px;position:relative;overflow:hidden;border-bottom:1px solid var(--border);}
+header::before{content:'🏊';position:absolute;top:10px;right:18px;font-size:5rem;opacity:.13;}
+header::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:28px;background:var(--bg);clip-path:ellipse(55% 100% at 50% 100%);}
+.hi{max-width:640px;margin:0 auto;position:relative;z-index:1;}
+h1{font-size:1.6rem;font-weight:900;color:#0d3a5c;}
+.hsub{color:var(--dark);font-size:.84rem;margin-top:5px;}
+.hdate{margin-top:10px;display:inline-block;padding:5px 14px;background:rgba(255,255,255,.6);border-radius:20px;font-size:.8rem;color:#0d3a5c;font-weight:700;}
+main{max-width:640px;margin:0 auto;padding:0 14px 100px;}
+
+/* 메인 탭 */
+.mtabs{display:flex;margin-bottom:18px;background:#fff;border-radius:14px;border:1px solid var(--border);overflow:hidden;box-shadow:var(--sh);}
+.mtab{flex:1;padding:15px 8px;border:none;font-family:inherit;font-size:.88rem;font-weight:800;cursor:pointer;background:#fff;color:var(--sub);transition:background .15s,color .15s;}
+.mtab.on{background:var(--pri);color:#fff;}
+
+/* 카드 */
+.card{background:var(--card);border-radius:16px;padding:20px 18px;box-shadow:var(--sh);margin-bottom:13px;border:1px solid var(--border);}
+.ctitle{font-size:.96rem;font-weight:800;color:var(--text);margin-bottom:3px;}
+.csub{font-size:.76rem;color:var(--sub);margin-bottom:14px;}
+
+/* 기관 탭 */
+.itabs{display:flex;gap:7px;margin-bottom:13px;}
+.itab{flex:1;padding:10px;background:#fff;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:.8rem;font-weight:700;color:var(--sub);cursor:pointer;transition:all .13s;}
+.itab.on{background:var(--pri);border-color:var(--pri);color:#fff;}
+
+/* 반 그리드 */
+.cgroup{margin-bottom:11px;}
+.cgtitle{font-size:.7rem;font-weight:700;color:var(--muted);letter-spacing:.7px;margin-bottom:7px;padding-left:3px;}
+.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:7px;}
+.cbtn{padding:11px 6px;background:#fff;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:.83rem;font-weight:700;color:var(--text);cursor:pointer;text-align:center;transition:all .13s;}
+.cbtn:hover{border-color:var(--pri);background:var(--light);}
+.cbtn.on{background:var(--pri);border-color:var(--pri);color:#fff;}
+
+/* 진행바 */
+.pbar-wrap{margin-bottom:14px;}
+.pbar-txt{font-size:.76rem;color:var(--sub);margin-bottom:5px;display:flex;justify-content:space-between;}
+.pbar{height:8px;background:var(--border);border-radius:99px;overflow:hidden;}
+.pfill{height:100%;border-radius:99px;transition:width .3s;}
+.pfill.blue{background:var(--pri);}
+.pfill.green{background:var(--attend);}
+
+/* 아동 행 */
+.clist{display:flex;flex-direction:column;gap:9px;}
+.crow{display:flex;align-items:center;gap:9px;padding:11px 13px;background:var(--light);border-radius:11px;border:1px solid var(--border);}
+.cname{font-weight:700;min-width:50px;font-size:.9rem;}
+.sbtns{display:flex;gap:5px;flex:1;}
+.sb{flex:1;padding:9px 3px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.7rem;font-weight:800;cursor:pointer;background:#fff;color:var(--sub);text-align:center;transition:all .12s;}
+.sb.sw.on{background:var(--swim);border-color:var(--swim);color:#fff;}
+.sb.id.on{background:var(--indoor);border-color:var(--indoor);color:#fff;}
+.sb.ab.on{background:var(--absent);border-color:var(--absent);color:#fff;}
+
+/* 교사 행 */
+.tgroup{margin-bottom:16px;}
+.tgtitle{font-size:.78rem;font-weight:800;color:var(--sub);padding:6px 10px;background:var(--light);border-radius:8px;margin-bottom:9px;}
+.trow{display:flex;align-items:flex-start;gap:9px;padding:10px 13px;background:var(--light);border-radius:11px;border:1px solid var(--border);margin-bottom:7px;}
+.tinfo{min-width:60px;}
+.tname{font-weight:700;font-size:.88rem;}
+.trole{font-size:.66rem;color:var(--muted);margin-top:1px;}
+.twrap{flex:1;}
+.tbtns{display:flex;gap:5px;}
+.tb{flex:1;padding:9px 3px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.7rem;font-weight:800;cursor:pointer;background:#fff;color:var(--sub);text-align:center;transition:all .12s;}
+.tb.at.on{background:var(--attend);border-color:var(--attend);color:#fff;}
+.tb.of.on{background:var(--off);border-color:var(--off);color:#fff;}
+.tb.lv.on{background:var(--leave);border-color:var(--leave);color:#fff;}
+.ldet{margin-top:7px;padding:9px 11px;background:#fff5e0;border:1px dashed var(--leave);border-radius:9px;display:none;}
+.ldet.show{display:block;}
+.ldlbl{font-size:.7rem;font-weight:700;color:#c06000;margin-bottom:7px;}
+.lsubs{display:flex;gap:5px;}
+.lsb{flex:1;padding:8px 3px;border:1.5px solid #f4c87a;border-radius:8px;font-family:inherit;font-size:.68rem;font-weight:800;cursor:pointer;background:#fff;color:#c06000;text-align:center;transition:all .12s;}
+.lsb.on{background:var(--leave);border-color:var(--leave);color:#fff;}
+
+/* 버튼 */
+.btn{width:100%;padding:15px;border:none;border-radius:12px;font-family:inherit;font-size:.96rem;font-weight:800;cursor:pointer;transition:all .14s;margin-top:4px;}
+.btn-pri{background:var(--pri);color:#fff;}
+.btn-pri:hover{background:var(--dark);}
+.btn-pri:disabled{background:var(--muted);cursor:not-allowed;}
+.btn-sec{background:#fff;color:var(--sub);border:1.5px solid var(--border);margin-bottom:7px;}
+.btn-grn{background:var(--attend);color:#fff;}
+.btn-grn:hover{background:#4a9e4a;}
+.btn-grn:disabled{background:var(--muted);cursor:not-allowed;}
+
+/* 알림 */
+.amsg{background:linear-gradient(135deg,#fff8e1,#fff3c4);border:1px solid #ffd966;padding:11px 13px;border-radius:10px;margin-bottom:12px;display:none;}
+.amsg.show{display:block;}
+.amsg b{color:#7a5a00;font-size:.83rem;}
+.amsg p{color:#7a5a00;font-size:.74rem;margin-top:2px;}
+
+/* 완료 */
+.done{text-align:center;padding:34px 20px;background:linear-gradient(135deg,#e8f5fd,#d0ecfa);border:1px solid var(--border);}
+.dicon{width:66px;height:66px;border-radius:50%;background:#5cb85c;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#fff;}
+.dtitle{font-size:1.15rem;font-weight:900;margin-bottom:7px;}
+.dsub{color:var(--sub);font-size:.86rem;line-height:1.6;}
+.done-t{text-align:center;padding:26px 18px;background:linear-gradient(135deg,#e8f5e9,#d4edda);border:1px solid #b8ddc4;border-radius:16px;margin-bottom:13px;}
+.dicon-t{width:56px;height:56px;border-radius:50%;background:#5cb85c;margin:0 auto 11px;display:flex;align-items:center;justify-content:center;font-size:1.7rem;color:#fff;}
+
+/* 토스트 */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:11px 20px;border-radius:28px;font-size:.84rem;font-weight:600;z-index:9999;opacity:0;transition:opacity .25s;pointer-events:none;}
+.toast.show{opacity:1;}
+
+@media(max-width:460px){
+  h1{font-size:1.38rem;}
+  .cname,.tname{font-size:.8rem;}
+  .sb,.tb,.lsb{font-size:.62rem;padding:8px 2px;}
+  .mtab{font-size:.8rem;padding:13px 5px;}
+}
 </style>
 </head>
 <body>
 
 <header>
-  <div class="hdr-inner">
+  <div class="hi">
     <h1>🏊 수영참여 조사</h1>
-    <p class="hdr-sub">무지개어린이집 · 우리무지개어린이집 Funday 수영</p>
-    <div class="hdr-date" id="todayLabel"></div>
+    <p class="hsub">무지개어린이집 · 우리무지개어린이집 Funday 수영</p>
+    <div class="hdate" id="todayLbl"></div>
   </div>
 </header>
 
 <main>
-  <div class="main-tabs">
-    <button class="main-tab active" id="mainTabChild" onclick="App.switchTab('child')">🧒 아동 참여 입력</button>
-    <button class="main-tab" id="mainTabTeacher" onclick="App.switchTab('teacher')">👩‍🏫 교사 참여 입력</button>
+  <!-- 메인 탭 -->
+  <div class="mtabs">
+    <button class="mtab on" id="tabC" onclick="showTab('child')">🧒 아동 참여</button>
+    <button class="mtab"    id="tabT" onclick="showTab('teacher')">👩‍🏫 교사 참여</button>
   </div>
 
-  <!-- ── 아동 섹션 ── -->
-  <div id="childSection">
-    <div class="steps">
-      <div class="step active" id="cs1"><div class="dot">1</div><div class="lbl">반 선택</div></div>
-      <div class="step" id="cs2"><div class="dot">2</div><div class="lbl">아동 입력</div></div>
-    </div>
-    <div id="step1card" class="card">
-      <div class="card-title">반을 선택해 주세요</div>
-      <div class="card-sub">담당 반을 선택하세요.</div>
-      <div class="inst-tabs">
-        <button class="inst-tab active" id="tab-A" onclick="App.selectInst('A')">무지개어린이집</button>
-        <button class="inst-tab" id="tab-B" onclick="App.selectInst('B')">우리무지개어린이집</button>
+  <!-- ══════════════ 아동 섹션 ══════════════ -->
+  <div id="secChild">
+    <!-- 반 선택 -->
+    <div id="c_step1" class="card">
+      <div class="ctitle">반을 선택해 주세요</div>
+      <div class="csub">담당 반을 선택하세요.</div>
+      <div class="itabs">
+        <button class="itab on" id="iA" onclick="selInst('A')">무지개어린이집</button>
+        <button class="itab"    id="iB" onclick="selInst('B')">우리무지개어린이집</button>
       </div>
       <div id="classWrap"></div>
     </div>
-    <div id="step2card" style="display:none;">
-      <div id="alreadyChildMsg" class="already-msg">
+
+    <!-- 아동 입력 -->
+    <div id="c_step2" style="display:none;">
+      <div id="c_already" class="amsg">
         <b>⚠️ 오늘 이미 제출된 내용이 있어요</b>
-        <p>기존 입력 내용이 표시됩니다. 수정 후 다시 제출하면 덮어쓰기 됩니다.</p>
+        <p>기존 입력이 표시됩니다. 수정 후 재제출하면 덮어쓰기됩니다.</p>
       </div>
       <div class="card">
-        <div class="card-title" id="step2Title"></div>
-        <div class="card-sub" id="step2Sub"></div>
-        <div class="progress-wrap">
-          <div class="progress-text"><span id="childProgressText">0 / 0명 입력</span><span id="childProgressPct">0%</span></div>
-          <div class="progress-bar"><div class="progress-fill child-fill" id="childProgressFill" style="width:0%"></div></div>
+        <div class="ctitle" id="c_title"></div>
+        <div class="csub"   id="c_sub"></div>
+        <div class="pbar-wrap">
+          <div class="pbar-txt"><span id="c_ptxt">0 / 0명</span><span id="c_ppct">0%</span></div>
+          <div class="pbar"><div class="pfill blue" id="c_pfill" style="width:0%"></div></div>
         </div>
-        <div class="child-list" id="childList"></div>
+        <div class="clist" id="childList"></div>
       </div>
-      <button class="btn btn-secondary" onclick="App.backToStep1()">⬅ 반 다시 선택</button>
-      <button class="btn btn-primary" id="childSubmitBtn" onclick="App.submitChildren()" disabled>제출하기</button>
+      <button class="btn btn-sec" onclick="c_back()">⬅ 반 다시 선택</button>
+      <button class="btn btn-pri" id="c_submitBtn" onclick="c_submit()" disabled>제출하기</button>
     </div>
-    <div id="childDoneCard" class="card done-card" style="display:none;">
-      <div class="done-icon">✓</div>
-      <div class="done-title">아동 입력 완료!</div>
-      <div class="done-sub" id="childDoneSub"></div>
-      <button class="btn btn-primary" style="margin-top:20px;" onclick="App.resetChild()">다른 반 입력</button>
+
+    <!-- 아동 완료 -->
+    <div id="c_done" class="card done" style="display:none;">
+      <div class="dicon">✓</div>
+      <div class="dtitle">아동 입력 완료!</div>
+      <div class="dsub" id="c_doneSub"></div>
+      <button class="btn btn-pri" style="margin-top:18px;" onclick="c_reset()">다른 반 입력</button>
     </div>
   </div>
 
-  <!-- ── 교사 섹션 ── -->
-  <div id="teacherSection" style="display:none;">
-    <div id="alreadyTeacherMsg" class="already-msg">
+  <!-- ══════════════ 교사 섹션 ══════════════ -->
+  <div id="secTeacher" style="display:none;">
+    <div id="t_already" class="amsg">
       <b>⚠️ 오늘 이미 제출된 교사 데이터가 있어요</b>
-      <p>기존 입력 내용이 표시됩니다. 수정 후 다시 제출하면 덮어쓰기 됩니다.</p>
+      <p>기존 입력이 표시됩니다. 수정 후 재제출하면 덮어쓰기됩니다.</p>
     </div>
-    <div class="card">
-      <div class="card-title">교사 참여 여부</div>
-      <div class="card-sub">전체 교사의 참여 여부를 선택해 주세요.</div>
-      <div class="progress-wrap">
-        <div class="progress-text"><span id="teacherProgressText">0 / 0명 입력</span><span id="teacherProgressPct">0%</span></div>
-        <div class="progress-bar"><div class="progress-fill teacher-fill" id="teacherProgressFill" style="width:0%"></div></div>
+    <div id="t_formWrap">
+      <div class="card">
+        <div class="ctitle">교사 참여 여부</div>
+        <div class="csub">전체 교사의 참여 여부를 선택해 주세요.</div>
+        <div class="pbar-wrap">
+          <div class="pbar-txt"><span id="t_ptxt">0 / 0명</span><span id="t_ppct">0%</span></div>
+          <div class="pbar"><div class="pfill green" id="t_pfill" style="width:0%"></div></div>
+        </div>
+        <div id="teacherList"></div>
       </div>
-      <div id="teacherList"></div>
+      <button class="btn btn-grn" id="t_submitBtn" onclick="t_submit()" disabled>교사 참여 제출하기</button>
     </div>
-    <div id="teacherDoneCard" class="done-card-t" style="display:none;">
-      <div class="done-icon-t">✓</div>
-      <div style="font-size:1.1rem;font-weight:900;color:#1a4a2a;margin-bottom:6px;">교사 입력 완료!</div>
-      <div style="color:#3a7a4a;font-size:.86rem;" id="teacherDoneSub"></div>
-      <button class="btn btn-green" style="margin-top:16px;" onclick="App.resetTeacher()">다시 입력하기</button>
+
+    <!-- 교사 완료 -->
+    <div id="t_done" class="done-t" style="display:none;">
+      <div class="dicon-t">✓</div>
+      <div style="font-size:1.05rem;font-weight:900;color:#1a4a2a;margin-bottom:5px;">교사 입력 완료!</div>
+      <div style="color:#3a7a4a;font-size:.84rem;" id="t_doneSub"></div>
+      <button class="btn btn-grn" style="margin-top:14px;" onclick="t_reset()">다시 입력하기</button>
     </div>
-    <button class="btn btn-green" id="teacherSubmitBtn" onclick="App.submitTeachers()" disabled>교사 참여 제출하기</button>
   </div>
 </main>
 
 <div class="toast" id="toast"></div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-
-const firebaseConfig = {
+<!-- ▼▼▼ 일반 스크립트 (module 아님) ▼▼▼ -->
+<script>
+// ── Firebase 초기화 ──────────────────────────────────────────
+firebase.initializeApp({
   apiKey: "AIzaSyDojXJ_9pOnla8uG240APwo3Ik9gBddMw4",
   authDomain: "mujigae-swimming.firebaseapp.com",
   databaseURL: "https://mujigae-swimming-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "mujigae-swimming"
-};
-const fbApp = initializeApp(firebaseConfig);
-const db = getDatabase(fbApp);
+});
+var db = firebase.database();
 
-const TODAY_ISO = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
-document.getElementById('todayLabel').textContent = '📅 ' + TODAY_ISO;
+// ── 오늘 날짜 ────────────────────────────────────────────────
+var TODAY = new Date().toLocaleDateString('sv-SE', {timeZone:'Asia/Seoul'});
+document.getElementById('todayLbl').textContent = '📅 ' + TODAY;
 
-// ── 아동 명단 ──────────────────────────────────────────────────
-const ROSTER = {
-  A: { name: "무지개어린이집", groups: [
-    { title: "영아반", classes: {
-      "아기참새": ["박범준","정윤하","정다엘","고이솔","조은준"],
-      "초롱이슬": ["전유주","양선우","박하엘","박유하","정이안","정이준"]
+// ── 아동 명단 ─────────────────────────────────────────────────
+var ROSTER = {
+  A: { name:"무지개어린이집", groups:[
+    { title:"영아반", classes:{
+      "아기참새":["박범준","정윤하","정다엘","고이솔","조은준"],
+      "초롱이슬":["전유주","양선우","박하엘","박유하","정이안","정이준"]
     }},
-    { title: "유아반", classes: {
-      "은빛물결": ["이재헌","박수현","김성원","정하준","송지우","박승빈","김정후","주현우","신승혁","김수호","정연우","최보민","한다윤"]
+    { title:"유아반", classes:{
+      "은빛물결":["이재헌","박수현","김성원","정하준","송지우","박승빈","김정후","주현우","신승혁","김수호","정연우","최보민","한다윤"]
     }}
   ]},
-  B: { name: "우리무지개어린이집", groups: [
-    { title: "유아반", classes: {
-      "아침햇살": ["정태호","고은호","김이안","전수호","위단우","서현우","김윤우","김지안"],
-      "들꽃향기": ["한지후","박은진","곽시안","박찬율","설재은","류시환","강은호","박다엘","김사랑","손리완","이로아","이소민","방서윤","김인우","이은우","임서우","이하린"],
-      "고운햇살": ["박재희","박지유","김민준","곽나율","김은서","홍하루","김동휘","임라희"],
-      "푸른하늘": ["김아린","김강준","박진우","한서후","윤태언","김서우","백민지","이하민","강태희","곽다온","박준","김세윤","김지민","이채민"],
-      "파도소리": ["윤지아","김수겸","돌란샤나","권민서","최도윤","장시영"],
-      "푸른바다": ["김평온","김별리","양준우","강지호","김도우","백이엘","이태헌","오주원","서연석","임하라","김태유","조믿음","유이서","윤예나","윤예지","조가온","곽시후","이소민"]
+  B: { name:"우리무지개어린이집", groups:[
+    { title:"유아반", classes:{
+      "아침햇살":["정태호","고은호","김이안","전수호","위단우","서현우","김윤우","김지안"],
+      "들꽃향기":["한지후","박은진","곽시안","박찬율","설재은","류시환","강은호","박다엘","김사랑","손리완","이로아","이소민","방서윤","김인우","이은우","임서우","이하린"],
+      "고운햇살":["박재희","박지유","김민준","곽나율","김은서","홍하루","김동휘","임라희"],
+      "푸른하늘":["김아린","김강준","박진우","한서후","윤태언","김서우","백민지","이하민","강태희","곽다온","박준","김세윤","김지민","이채민"],
+      "파도소리":["윤지아","김수겸","돌란샤나","권민서","최도윤","장시영"],
+      "푸른바다":["김평온","김별리","양준우","강지호","김도우","백이엘","이태헌","오주원","서연석","임하라","김태유","조믿음","유이서","윤예나","윤예지","조가온","곽시후","이소민"]
     }}
   ]}
 };
 
-// ── 교사 명단 ──────────────────────────────────────────────────
-const TEACHER_GROUPS = [
-  { title: "🏠 무지개어린이집", teachers: [
-    {name:"우지선",role:"아기참새"},{name:"정선윤",role:"초롱이슬"},
-    {name:"채준범",role:"은빛물결"},{name:"이왕성",role:"은빛물결"},{name:"서명화",role:"은빛물결"},{name:"임민주",role:"은빛물결"},
-    {name:"황경하",role:"드림(방과후)"},{name:"이승원",role:"드림(방과후)"},{name:"박정민",role:"드림(방과후)"},
-    {name:"주은아",role:"연장반"},{name:"윤혜정",role:"연장반"},
-    {name:"강수민",role:"치료사"},{name:"서홍련",role:"치료사"},{name:"정소윤",role:"치료사"}
+// ── 교사 명단 ─────────────────────────────────────────────────
+var TGROUPS = [
+  { title:"🏠 무지개어린이집", list:[
+    {n:"우지선",r:"아기참새"},{n:"정선윤",r:"초롱이슬"},
+    {n:"채준범",r:"은빛물결"},{n:"이왕성",r:"은빛물결"},{n:"서명화",r:"은빛물결"},{n:"임민주",r:"은빛물결"},
+    {n:"황경하",r:"드림(방과후)"},{n:"이승원",r:"드림(방과후)"},{n:"박정민",r:"드림(방과후)"},
+    {n:"주은아",r:"연장반"},{n:"윤혜정",r:"연장반"},
+    {n:"강수민",r:"치료사"},{n:"서홍련",r:"치료사"},{n:"정소윤",r:"치료사"}
   ]},
-  { title: "🏠 우리무지개어린이집", teachers: [
-    {name:"강수지",role:"아침햇살"},{name:"김보라",role:"아침햇살"},{name:"김하민",role:"아침햇살"},
-    {name:"박서정",role:"고운햇살"},{name:"천은주",role:"고운햇살"},{name:"모정아",role:"고운햇살"},
-    {name:"박초롱",role:"들꽃향기"},{name:"이효선",role:"들꽃향기"},
-    {name:"조현아",role:"푸른하늘"},{name:"황선하",role:"푸른하늘"},
-    {name:"임정연",role:"파도소리"},{name:"조명원",role:"파도소리"},
-    {name:"백장미",role:"푸른바다"},{name:"이슬아",role:"푸른바다"},{name:"유주환",role:"푸른바다"},
-    {name:"송태헌",role:"다짐(방과후)"},{name:"마호진",role:"다짐(방과후)"},
-    {name:"정인애",role:"모둠(방과후)"},{name:"변아진",role:"모둠(방과후)"},{name:"윤아름",role:"모둠(방과후)"},{name:"정다송",role:"모둠(방과후)"},
-    {name:"이미화",role:"치료사"},{name:"권다애",role:"치료사"},{name:"표영민",role:"치료사"},
-    {name:"전나인",role:"치료사"},{name:"박규리",role:"치료사"},{name:"임주현",role:"치료사"}
+  { title:"🏠 우리무지개어린이집", list:[
+    {n:"강수지",r:"아침햇살"},{n:"김보라",r:"아침햇살"},{n:"김하민",r:"아침햇살"},
+    {n:"박서정",r:"고운햇살"},{n:"천은주",r:"고운햇살"},{n:"모정아",r:"고운햇살"},
+    {n:"박초롱",r:"들꽃향기"},{n:"이효선",r:"들꽃향기"},
+    {n:"조현아",r:"푸른하늘"},{n:"황선하",r:"푸른하늘"},
+    {n:"임정연",r:"파도소리"},{n:"조명원",r:"파도소리"},
+    {n:"백장미",r:"푸른바다"},{n:"이슬아",r:"푸른바다"},{n:"유주환",r:"푸른바다"},
+    {n:"송태헌",r:"다짐(방과후)"},{n:"마호진",r:"다짐(방과후)"},
+    {n:"정인애",r:"모둠(방과후)"},{n:"변아진",r:"모둠(방과후)"},{n:"윤아름",r:"모둠(방과후)"},{n:"정다송",r:"모둠(방과후)"},
+    {n:"이미화",r:"치료사"},{n:"권다애",r:"치료사"},{n:"표영민",r:"치료사"},
+    {n:"전나인",r:"치료사"},{n:"박규리",r:"치료사"},{n:"임주현",r:"치료사"}
   ]}
 ];
-const ALL_TEACHERS = TEACHER_GROUPS.flatMap(g => g.teachers);
-const ALL_TEACHER_NAMES = ALL_TEACHERS.map(t => t.name);
+var ALL_T = TGROUPS.reduce(function(a,g){return a.concat(g.list);},[]);
 
 // ── 상태 ──────────────────────────────────────────────────────
-let childState = { inst:'A', cls:'', children:{}, group:'' };
-let teacherStatus = {};   // { 이름: { status:'attend'|'off'|'leave', leaveType:'am'|'pm'|'all' } }
-let teacherInited = false;
+var C = {inst:'A', cls:'', ch:{}, grp:''};  // 아동
+var TS = {};                                  // 교사: {이름:{s:'attend'|'off'|'leave', lt:'am'|'pm'|'all'}}
+var tInited = false;
 
 // ── 유틸 ──────────────────────────────────────────────────────
-function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2800);
+function $$(id){return document.getElementById(id);}
+function show(id){$$(id).style.display='block';}
+function hide(id){$$(id).style.display='none';}
+function toast(msg){
+  var t=$$('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},2600);
 }
 
-function $id(id) { return document.getElementById(id); }
-
-// ── 탭 전환 ──────────────────────────────────────────────────
-function switchTab(tab) {
-  $id('mainTabChild').classList.toggle('active', tab === 'child');
-  $id('mainTabTeacher').classList.toggle('active', tab === 'teacher');
-  $id('childSection').style.display   = tab === 'child'   ? 'block' : 'none';
-  $id('teacherSection').style.display = tab === 'teacher' ? 'block' : 'none';
-  if (tab === 'teacher' && !teacherInited) initTeachers();
+// ── 메인 탭 ──────────────────────────────────────────────────
+function showTab(tab){
+  $$('tabC').classList.toggle('on', tab==='child');
+  $$('tabT').classList.toggle('on', tab==='teacher');
+  $$('secChild').style.display   = tab==='child'   ? 'block' : 'none';
+  $$('secTeacher').style.display = tab==='teacher' ? 'block' : 'none';
+  if(tab==='teacher' && !tInited) t_init();
 }
 
-// ════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
 // 아동 입력
-// ════════════════════════════════════════════════════════════
-function selectInst(k) {
-  childState.inst = k; childState.cls = '';
-  $id('tab-A').classList.toggle('active', k === 'A');
-  $id('tab-B').classList.toggle('active', k === 'B');
+// ══════════════════════════════════════════════════════════════
+function selInst(k){
+  C.inst=k; C.cls='';
+  $$('iA').classList.toggle('on',k==='A');
+  $$('iB').classList.toggle('on',k==='B');
   renderClasses();
 }
 
-function renderClasses() {
-  let html = '';
-  ROSTER[childState.inst].groups.forEach(g => {
-    html += `<div class="class-group"><div class="class-group-title">${g.title}</div><div class="class-grid">`;
-    Object.keys(g.classes).forEach(c => {
-      html += `<button class="class-btn" data-cls="${c}" onclick="App.selectClass('${c}')">${c}</button>`;
+function renderClasses(){
+  var html='';
+  ROSTER[C.inst].groups.forEach(function(g){
+    html+='<div class="cgroup"><div class="cgtitle">'+g.title+'</div><div class="cgrid">';
+    Object.keys(g.classes).forEach(function(c){
+      html+='<button class="cbtn" onclick="selClass(\''+c+'\')">'+c+'</button>';
     });
-    html += `</div></div>`;
+    html+='</div></div>';
   });
-  $id('classWrap').innerHTML = html;
+  $$('classWrap').innerHTML=html;
 }
 
-async function selectClass(c) {
-  childState.cls = c; childState.children = {};
-  ROSTER[childState.inst].groups.forEach(g => { if (g.classes[c]) childState.group = g.title; });
-  document.querySelectorAll('.class-btn').forEach(b => b.classList.toggle('sel', b.dataset.cls === c));
-  try {
-    const snap = await get(ref(db, `swimming_survey/${TODAY_ISO}_${c}`));
-    if (snap.exists() && snap.val().children) {
-      childState.children = {...snap.val().children};
-      $id('alreadyChildMsg').classList.add('show');
-    } else { $id('alreadyChildMsg').classList.remove('show'); }
-  } catch(e) {}
-  $id('step2Title').textContent = `${c} · ${TODAY_ISO}`;
-  $id('step2Sub').textContent   = `${ROSTER[childState.inst].name} · ${childState.group}`;
-  renderChildren();
-  $id('step1card').style.display = 'none';
-  $id('step2card').style.display = 'block';
-  setChildStep(2);
-  window.scrollTo({top:0,behavior:'smooth'});
-}
-
-function setChildStep(n) {
-  [1,2].forEach(i => {
-    const el = $id('cs'+i);
-    el.classList.remove('active','done');
-    if (i < n) el.classList.add('done');
-    if (i === n) el.classList.add('active');
+function selClass(c){
+  C.cls=c; C.ch={};
+  ROSTER[C.inst].groups.forEach(function(g){if(g.classes[c])C.grp=g.title;});
+  // 버튼 표시
+  document.querySelectorAll('.cbtn').forEach(function(b){
+    b.classList.toggle('on', b.textContent===c);
   });
-}
-
-function backToStep1() {
-  $id('step2card').style.display = 'none';
-  $id('step1card').style.display = 'block';
-  setChildStep(1);
-  window.scrollTo({top:0,behavior:'smooth'});
-}
-
-function renderChildren() {
-  let children = [];
-  ROSTER[childState.inst].groups.forEach(g => { if (g.classes[childState.cls]) children = g.classes[childState.cls]; });
-  $id('childList').innerHTML = children.map(name => {
-    const cur = childState.children[name] || '';
-    return `<div class="child-row">
-      <div class="child-name">${name}</div>
-      <div class="status-btns">
-        <button class="sb swim ${cur==='swim'?'sel':''}" onclick="App.setChildStatus('${name}','swim')">🏊 수영</button>
-        <button class="sb indoor ${cur==='indoor'?'sel':''}" onclick="App.setChildStatus('${name}','indoor')">🏠 원내보육</button>
-        <button class="sb absent ${cur==='absent'?'sel':''}" onclick="App.setChildStatus('${name}','absent')">❌ 결석</button>
-      </div>
-    </div>`;
-  }).join('');
-  updateChildProgress(children);
-}
-
-function setChildStatus(name, status) {
-  childState.children[name] = status;
-  const row = [...document.querySelectorAll('.child-row')].find(r => r.querySelector('.child-name').textContent === name);
-  if (row) {
-    row.querySelectorAll('.sb').forEach(b => b.classList.remove('sel'));
-    row.querySelector(`.sb.${status}`).classList.add('sel');
-  }
-  let children = [];
-  ROSTER[childState.inst].groups.forEach(g => { if (g.classes[childState.cls]) children = g.classes[childState.cls]; });
-  updateChildProgress(children);
-}
-
-function updateChildProgress(children) {
-  const total = children.length;
-  const done  = children.filter(n => childState.children[n]).length;
-  const pct   = total ? Math.round(done/total*100) : 0;
-  $id('childProgressText').textContent = `${done} / ${total}명 입력`;
-  $id('childProgressPct').textContent  = `${pct}%`;
-  $id('childProgressFill').style.width = pct + '%';
-  $id('childSubmitBtn').disabled = done < total;
-}
-
-async function submitChildren() {
-  const btn = $id('childSubmitBtn');
-  btn.disabled = true; btn.textContent = '제출 중...';
-  try {
-    await set(ref(db, `swimming_survey/${TODAY_ISO}_${childState.cls}`), {
-      inst: childState.inst, instName: ROSTER[childState.inst].name,
-      cls: childState.cls, date: TODAY_ISO,
-      children: childState.children, submittedAt: new Date().toISOString()
-    });
-    const sw = Object.values(childState.children).filter(v=>v==='swim').length;
-    const id = Object.values(childState.children).filter(v=>v==='indoor').length;
-    const ab = Object.values(childState.children).filter(v=>v==='absent').length;
-    $id('step2card').style.display   = 'none';
-    $id('childDoneCard').style.display = 'block';
-    $id('childDoneSub').innerHTML = `<b>${childState.cls} · ${TODAY_ISO}</b><br>🏊 수영 ${sw}명 · 🏠 원내보육 ${id}명 · ❌ 결석 ${ab}명`;
-    [1,2].forEach(i => { $id('cs'+i).classList.remove('active'); $id('cs'+i).classList.add('done'); });
+  // Firebase 기제출 확인
+  db.ref('swimming_survey/'+TODAY+'_'+c).once('value').then(function(snap){
+    if(snap.exists() && snap.val().children){
+      C.ch = snap.val().children;
+      $$('c_already').classList.add('show');
+    } else {
+      $$('c_already').classList.remove('show');
+    }
+    $$('c_title').textContent = c+' · '+TODAY;
+    $$('c_sub').textContent   = ROSTER[C.inst].name+' · '+C.grp;
+    renderChildren();
+    hide('c_step1'); show('c_step2');
     window.scrollTo({top:0,behavior:'smooth'});
-  } catch(e) {
-    toast('제출 중 오류가 발생했어요.');
-    btn.disabled = false; btn.textContent = '제출하기';
-  }
+  }).catch(function(){
+    $$('c_already').classList.remove('show');
+    $$('c_title').textContent = c+' · '+TODAY;
+    $$('c_sub').textContent   = ROSTER[C.inst].name+' · '+C.grp;
+    renderChildren();
+    hide('c_step1'); show('c_step2');
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
 }
 
-function resetChild() {
-  childState = {inst:'A', cls:'', children:{}, group:''};
-  selectInst('A');
-  $id('childDoneCard').style.display = 'none';
-  $id('step1card').style.display = 'block';
-  setChildStep(1);
+function c_back(){
+  hide('c_step2'); show('c_step1');
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-// ════════════════════════════════════════════════════════════
-// 교사 입력
-// ════════════════════════════════════════════════════════════
-async function initTeachers() {
-  teacherInited = true;
-  ALL_TEACHER_NAMES.forEach(n => { teacherStatus[n] = {status:'', leaveType:''}; });
-  try {
-    const snap = await get(ref(db, `swimming_survey/teachers_${TODAY_ISO}`));
-    if (snap.exists() && snap.val().teachers) {
-      const saved = snap.val().teachers;
-      ALL_TEACHER_NAMES.forEach(n => { if (saved[n]) teacherStatus[n] = {...saved[n]}; });
-      $id('alreadyTeacherMsg').classList.add('show');
-    }
-  } catch(e) {}
-  renderTeachers();
-}
-
-function renderTeachers() {
-  const container = $id('teacherList');
-  container.innerHTML = '';
-  TEACHER_GROUPS.forEach(group => {
-    const groupDiv = document.createElement('div');
-    groupDiv.className = 'teacher-group';
-    groupDiv.innerHTML = `<div class="teacher-group-title">${group.title}</div>`;
-    group.teachers.forEach(t => {
-      const st = teacherStatus[t.name] || {status:'', leaveType:''};
-      const div = document.createElement('div');
-      div.className = 'teacher-row';
-      div.id = `trow-${t.name}`;
-      div.innerHTML = `
-        <div class="teacher-info">
-          <div class="teacher-name">${t.name}</div>
-          <div class="teacher-role">${t.role}</div>
-        </div>
-        <div class="teacher-btns-wrap">
-          <div class="teacher-btns">
-            <button class="tb attend ${st.status==='attend'?'sel':''}" onclick="App.setTeacherStatus('${t.name}','attend')">✅ 참여</button>
-            <button class="tb off ${st.status==='off'?'sel':''}" onclick="App.setTeacherStatus('${t.name}','off')">❌ 불참</button>
-            <button class="tb leave ${st.status==='leave'?'sel':''}" onclick="App.setTeacherStatus('${t.name}','leave')">🏖️ 당일휴가</button>
-          </div>
-          <div class="leave-detail ${st.status==='leave'?'show':''}" id="ld-${t.name}">
-            <div class="leave-detail-label">휴가 유형을 선택하세요</div>
-            <div class="leave-sub-btns">
-              <button class="lsb ${st.leaveType==='am'?'sel':''}"  onclick="App.setLeaveType('${t.name}','am')">🌅 오전반차</button>
-              <button class="lsb ${st.leaveType==='pm'?'sel':''}"  onclick="App.setLeaveType('${t.name}','pm')">🌇 오후반차</button>
-              <button class="lsb ${st.leaveType==='all'?'sel':''}" onclick="App.setLeaveType('${t.name}','all')">☀️ 종일휴가</button>
-            </div>
-          </div>
-        </div>`;
-      groupDiv.appendChild(div);
-    });
-    container.appendChild(groupDiv);
+function renderChildren(){
+  var kids=[];
+  ROSTER[C.inst].groups.forEach(function(g){if(g.classes[C.cls])kids=g.classes[C.cls];});
+  var html='';
+  kids.forEach(function(nm){
+    var cur=C.ch[nm]||'';
+    html+='<div class="crow">'
+      +'<div class="cname">'+nm+'</div>'
+      +'<div class="sbtns">'
+      +'<button class="sb sw'+(cur==='swim'?' on':'')+'" onclick="setCS(\''+nm+'\',\'swim\')">🏊 수영</button>'
+      +'<button class="sb id'+(cur==='indoor'?' on':'')+'" onclick="setCS(\''+nm+'\',\'indoor\')">🏠 원내보육</button>'
+      +'<button class="sb ab'+(cur==='absent'?' on':'')+'" onclick="setCS(\''+nm+'\',\'absent\')">❌ 결석</button>'
+      +'</div></div>';
   });
-  updateTeacherProgress();
+  $$('childList').innerHTML=html;
+  updateCP(kids);
 }
 
-function setTeacherStatus(name, status) {
-  if (!teacherStatus[name]) teacherStatus[name] = {status:'', leaveType:''};
-  teacherStatus[name].status = status;
-  if (status !== 'leave') teacherStatus[name].leaveType = '';
+function setCS(nm, st){
+  C.ch[nm]=st;
+  var rows=document.querySelectorAll('.crow');
+  rows.forEach(function(row){
+    if(row.querySelector('.cname').textContent===nm){
+      row.querySelectorAll('.sb').forEach(function(b){b.classList.remove('on');});
+      if(st==='swim') row.querySelector('.sb.sw').classList.add('on');
+      if(st==='indoor') row.querySelector('.sb.id').classList.add('on');
+      if(st==='absent') row.querySelector('.sb.ab').classList.add('on');
+    }
+  });
+  var kids=[];
+  ROSTER[C.inst].groups.forEach(function(g){if(g.classes[C.cls])kids=g.classes[C.cls];});
+  updateCP(kids);
+}
 
-  const row = $id(`trow-${name}`);
-  if (row) {
-    row.querySelectorAll('.tb').forEach(b => b.classList.remove('sel'));
-    const btn = row.querySelector(`.tb.${status}`);
-    if (btn) btn.classList.add('sel');
-    const ld = $id(`ld-${name}`);
-    if (ld) {
-      ld.classList.toggle('show', status === 'leave');
-      if (status !== 'leave') ld.querySelectorAll('.lsb').forEach(b => b.classList.remove('sel'));
+function updateCP(kids){
+  var total=kids.length;
+  var done=kids.filter(function(n){return !!C.ch[n];}).length;
+  var pct=total?Math.round(done/total*100):0;
+  $$('c_ptxt').textContent=done+' / '+total+'명 입력';
+  $$('c_ppct').textContent=pct+'%';
+  $$('c_pfill').style.width=pct+'%';
+  $$('c_submitBtn').disabled = done < total;
+}
+
+function c_submit(){
+  var btn=$$('c_submitBtn');
+  btn.disabled=true; btn.textContent='제출 중...';
+  db.ref('swimming_survey/'+TODAY+'_'+C.cls).set({
+    inst:C.inst, instName:ROSTER[C.inst].name,
+    cls:C.cls, date:TODAY,
+    children:C.ch, submittedAt:new Date().toISOString()
+  }).then(function(){
+    var sw=Object.values(C.ch).filter(function(v){return v==='swim';}).length;
+    var id=Object.values(C.ch).filter(function(v){return v==='indoor';}).length;
+    var ab=Object.values(C.ch).filter(function(v){return v==='absent';}).length;
+    $$('c_doneSub').innerHTML='<b>'+C.cls+' · '+TODAY+'</b><br>🏊 수영 '+sw+'명 · 🏠 원내보육 '+id+'명 · ❌ 결석 '+ab+'명';
+    hide('c_step2'); show('c_done');
+    window.scrollTo({top:0,behavior:'smooth'});
+  }).catch(function(){
+    toast('제출 중 오류가 발생했어요.');
+    btn.disabled=false; btn.textContent='제출하기';
+  });
+}
+
+function c_reset(){
+  C={inst:'A',cls:'',ch:{},grp:''};
+  selInst('A');
+  hide('c_done'); show('c_step1');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ══════════════════════════════════════════════════════════════
+// 교사 입력
+// ══════════════════════════════════════════════════════════════
+function t_init(){
+  tInited=true;
+  ALL_T.forEach(function(t){ TS[t.n]={s:'',lt:''}; });
+  db.ref('swimming_survey/teachers_'+TODAY).once('value').then(function(snap){
+    if(snap.exists() && snap.val().teachers){
+      var saved=snap.val().teachers;
+      ALL_T.forEach(function(t){ if(saved[t.n]) TS[t.n]={s:saved[t.n].s||'',lt:saved[t.n].lt||''}; });
+      $$('t_already').classList.add('show');
+    }
+    renderTeachers();
+  }).catch(function(){ renderTeachers(); });
+}
+
+function renderTeachers(){
+  var container=$$('teacherList');
+  container.innerHTML='';
+  TGROUPS.forEach(function(g){
+    var gDiv=document.createElement('div');
+    gDiv.className='tgroup';
+    var gTitle=document.createElement('div');
+    gTitle.className='tgtitle';
+    gTitle.textContent=g.title;
+    gDiv.appendChild(gTitle);
+    g.list.forEach(function(t){
+      var st=TS[t.n]||{s:'',lt:''};
+      var row=document.createElement('div');
+      row.className='trow';
+      row.id='tr_'+t.n;
+      row.innerHTML=
+        '<div class="tinfo"><div class="tname">'+t.n+'</div><div class="trole">'+t.r+'</div></div>'
+        +'<div class="twrap">'
+        +'<div class="tbtns">'
+        +'<button class="tb at'+(st.s==='attend'?' on':'')+'" onclick="setTS(\''+t.n+'\',\'attend\')">✅ 참여</button>'
+        +'<button class="tb of'+(st.s==='off'?' on':'')+'" onclick="setTS(\''+t.n+'\',\'off\')">❌ 불참</button>'
+        +'<button class="tb lv'+(st.s==='leave'?' on':'')+'" onclick="setTS(\''+t.n+'\',\'leave\')">🏖️ 당일휴가</button>'
+        +'</div>'
+        +'<div class="ldet'+(st.s==='leave'?' show':'') +'" id="ld_'+t.n+'">'
+        +'<div class="ldlbl">휴가 유형을 선택하세요</div>'
+        +'<div class="lsubs">'
+        +'<button class="lsb'+(st.lt==='am'?' on':'')+'" onclick="setLT(\''+t.n+'\',\'am\')">🌅 오전반차</button>'
+        +'<button class="lsb'+(st.lt==='pm'?' on':'')+'" onclick="setLT(\''+t.n+'\',\'pm\')">🌇 오후반차</button>'
+        +'<button class="lsb'+(st.lt==='all'?' on':'')+'" onclick="setLT(\''+t.n+'\',\'all\')">☀️ 종일휴가</button>'
+        +'</div></div>'
+        +'</div>';
+      gDiv.appendChild(row);
+    });
+    container.appendChild(gDiv);
+  });
+  updateTP();
+}
+
+function setTS(nm, st){
+  if(!TS[nm]) TS[nm]={s:'',lt:''};
+  TS[nm].s=st;
+  if(st!=='leave') TS[nm].lt='';
+  var row=$$('tr_'+nm);
+  if(row){
+    row.querySelectorAll('.tb').forEach(function(b){b.classList.remove('on');});
+    if(st==='attend') row.querySelector('.tb.at').classList.add('on');
+    if(st==='off')    row.querySelector('.tb.of').classList.add('on');
+    if(st==='leave')  row.querySelector('.tb.lv').classList.add('on');
+    var ld=$$('ld_'+nm);
+    if(ld){
+      if(st==='leave'){ ld.classList.add('show'); }
+      else { ld.classList.remove('show'); ld.querySelectorAll('.lsb').forEach(function(b){b.classList.remove('on');}); }
     }
   }
-  updateTeacherProgress();
+  updateTP();
 }
 
-function setLeaveType(name, type) {
-  if (!teacherStatus[name]) teacherStatus[name] = {status:'leave', leaveType:''};
-  teacherStatus[name].leaveType = type;
-
-  const ld = $id(`ld-${name}`);
-  if (ld) {
-    ld.querySelectorAll('.lsb').forEach(b => b.classList.remove('sel'));
-    // data-type 속성 방식으로 정확히 선택
-    ld.querySelectorAll('.lsb').forEach(b => {
-      if (b.getAttribute('onclick').includes(`,'${type}'`)) b.classList.add('sel');
-    });
+function setLT(nm, lt){
+  if(!TS[nm]) TS[nm]={s:'leave',lt:''};
+  TS[nm].lt=lt;
+  var ld=$$('ld_'+nm);
+  if(ld){
+    ld.querySelectorAll('.lsb').forEach(function(b){b.classList.remove('on');});
+    var btns=ld.querySelectorAll('.lsb');
+    if(lt==='am'&&btns[0])  btns[0].classList.add('on');
+    if(lt==='pm'&&btns[1])  btns[1].classList.add('on');
+    if(lt==='all'&&btns[2]) btns[2].classList.add('on');
   }
-  updateTeacherProgress();
+  updateTP();
 }
 
-function updateTeacherProgress() {
-  const total = ALL_TEACHER_NAMES.length;
-  const done = ALL_TEACHER_NAMES.filter(n => {
-    const st = teacherStatus[n];
-    if (!st || !st.status) return false;
-    if (st.status === 'leave') return !!st.leaveType;
+function updateTP(){
+  var total=ALL_T.length;
+  var done=ALL_T.filter(function(t){
+    var st=TS[t.n];
+    if(!st||!st.s) return false;
+    if(st.s==='leave') return !!st.lt;
     return true;
   }).length;
-  const pct = Math.round(done/total*100);
-  $id('teacherProgressText').textContent = `${done} / ${total}명 입력`;
-  $id('teacherProgressPct').textContent  = `${pct}%`;
-  $id('teacherProgressFill').style.width = pct + '%';
-  $id('teacherSubmitBtn').disabled = done < total;
+  var pct=Math.round(done/total*100);
+  $$('t_ptxt').textContent=done+' / '+total+'명 입력';
+  $$('t_ppct').textContent=pct+'%';
+  $$('t_pfill').style.width=pct+'%';
+  $$('t_submitBtn').disabled = done < total;
 }
 
-async function submitTeachers() {
-  const btn = $id('teacherSubmitBtn');
-  btn.disabled = true; btn.textContent = '제출 중...';
-  try {
-    await set(ref(db, `swimming_survey/teachers_${TODAY_ISO}`), {
-      date: TODAY_ISO,
-      teachers: teacherStatus,
-      submittedAt: new Date().toISOString()
-    });
-    const attend = ALL_TEACHER_NAMES.filter(n => teacherStatus[n]?.status === 'attend').length;
-    const off    = ALL_TEACHER_NAMES.filter(n => teacherStatus[n]?.status === 'off').length;
-    const leave  = ALL_TEACHER_NAMES.filter(n => teacherStatus[n]?.status === 'leave').length;
-    $id('teacherDoneCard').style.display = 'block';
-    $id('teacherDoneSub').innerHTML = `✅ 참여 ${attend}명 · ❌ 불참 ${off}명 · 🏖️ 당일휴가 ${leave}명`;
-    btn.style.display = 'none';
+function t_submit(){
+  var btn=$$('t_submitBtn');
+  btn.disabled=true; btn.textContent='제출 중...';
+  // Firebase 저장용 데이터 (함수 제거한 순수 객체)
+  var saveData={};
+  ALL_T.forEach(function(t){ saveData[t.n]={s:TS[t.n].s, lt:TS[t.n].lt}; });
+  db.ref('swimming_survey/teachers_'+TODAY).set({
+    date:TODAY, teachers:saveData, submittedAt:new Date().toISOString()
+  }).then(function(){
+    var att=ALL_T.filter(function(t){return TS[t.n]&&TS[t.n].s==='attend';}).length;
+    var off=ALL_T.filter(function(t){return TS[t.n]&&TS[t.n].s==='off';}).length;
+    var lv =ALL_T.filter(function(t){return TS[t.n]&&TS[t.n].s==='leave';}).length;
+    $$('t_doneSub').innerHTML='✅ 참여 '+att+'명 · ❌ 불참 '+off+'명 · 🏖️ 당일휴가 '+lv+'명';
+    hide('t_formWrap'); show('t_done');
     window.scrollTo({top:0,behavior:'smooth'});
     toast('교사 참여 현황이 제출됐어요!');
-  } catch(e) {
+  }).catch(function(){
     toast('제출 중 오류가 발생했어요.');
-    btn.disabled = false; btn.textContent = '교사 참여 제출하기';
-  }
+    btn.disabled=false; btn.textContent='교사 참여 제출하기';
+  });
 }
 
-function resetTeacher() {
-  teacherInited = false;
-  teacherStatus = {};
-  $id('teacherDoneCard').style.display = 'none';
-  $id('teacherSubmitBtn').style.display = 'block';
-  $id('alreadyTeacherMsg').classList.remove('show');
-  initTeachers();
+function t_reset(){
+  tInited=false; TS={};
+  hide('t_done'); show('t_formWrap');
+  $$('t_already').classList.remove('show');
+  t_init();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-// ── 전역 노출 (onclick에서 호출되므로 반드시 필요) ────────────
-window.App = {
-  switchTab, selectInst, selectClass, backToStep1,
-  setChildStatus, submitChildren, resetChild,
-  setTeacherStatus, setLeaveType, submitTeachers, resetTeacher
-};
-
 // 초기화
-selectInst('A');
+selInst('A');
 </script>
 </body>
 </html>
