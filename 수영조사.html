@@ -3,208 +3,228 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🏊 수영장 참여 조사</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>🏊 수영참여 조사</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #f0f8ff;
     --card: #ffffff;
     --border: #d0e8f8;
-    --primary: #0077b6;
-    --accent: #00b4d8;
-    --light: #e0f4ff;
-    --text: #03045e;
-    --sub: #4a7a9b;
-    --muted: #8aaec0;
-    --swim: #0077b6;
-    --indoor: #f59e0b;
-    --absent: #6b7280;
+    --primary: #3a9bd5;
+    --primary-dark: #2178b0;
+    --accent: #a8d8f0;
+    --light: #e8f5fd;
+    --text: #1a3a4a;
+    --sub: #4a7a96;
+    --muted: #8aafc4;
+    --swim: #3a9bd5;
+    --indoor: #f4a85a;
+    --absent: #c5c5c5;
+    --shadow: 0 4px 16px rgba(58,155,213,0.10);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
   header {
-    background: linear-gradient(135deg, #03045e 0%, #0077b6 100%);
-    padding: 32px 24px 52px; position: relative; overflow: hidden;
+    background: linear-gradient(135deg, #b8dff5 0%, #e0f3fd 100%);
+    padding: 28px 24px 48px; position: relative; overflow: hidden;
+    border-bottom: 1px solid var(--border);
   }
-  header::before {
-    content: '🌊'; position: absolute; right: 24px; top: 20px;
-    font-size: 5rem; opacity: 0.1;
-  }
+  header::before { content: '🏊'; position: absolute; top: 12px; right: 20px; font-size: 5rem; opacity: 0.15; }
   header::after {
-    content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 28px;
+    content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 30px;
     background: var(--bg); clip-path: ellipse(55% 100% at 50% 100%);
   }
-  .hdr-inner { max-width: 680px; margin: 0 auto; }
-  header h1 { font-size: 1.7rem; font-weight: 900; color: #fff; letter-spacing: -0.5px; }
-  .hdr-sub { color: #90e0ef; font-size: 0.85rem; margin-top: 6px; }
-  .event-badge {
-    display: inline-flex; align-items: center; gap: 8px; margin-top: 14px;
-    padding: 8px 16px; background: rgba(255,255,255,0.15);
-    border: 1px solid rgba(255,255,255,0.25); border-radius: 30px;
-    font-size: 0.83rem; font-weight: 700; color: #fff;
-  }
+  .hdr-inner { max-width: 640px; margin: 0 auto; position: relative; z-index: 1; }
+  header h1 { font-size: 1.7rem; font-weight: 900; color: #0d3a5c; }
+  .hdr-sub { color: var(--primary-dark); font-size: 0.85rem; margin-top: 6px; font-weight: 500; }
 
-  main { max-width: 680px; margin: 0 auto; padding: 0 16px 80px; }
+  main { max-width: 640px; margin: 0 auto; padding: 0 16px 100px; }
 
   /* 단계 */
-  .steps { display: flex; margin-bottom: 20px; }
-  .step { flex: 1; text-align: center; padding: 10px 4px; font-size: 0.75rem; font-weight: 600; color: var(--muted); border-bottom: 3px solid var(--border); transition: all 0.2s; }
-  .step.active { color: var(--primary); border-color: var(--accent); }
-  .step.done { color: var(--accent); border-color: var(--accent); }
-  .step-num { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: var(--border); color: var(--muted); font-size: 0.7rem; font-weight: 700; margin-bottom: 4px; }
-  .step.active .step-num { background: var(--primary); color: #fff; }
-  .step.done .step-num { background: var(--accent); color: #fff; }
+  .steps { display: flex; gap: 0; margin-bottom: 20px; }
+  .step { flex: 1; text-align: center; position: relative; }
+  .step::after {
+    content: ''; position: absolute; top: 14px; right: -50%; width: 100%; height: 2px;
+    background: var(--border); z-index: 0;
+  }
+  .step:last-child::after { display: none; }
+  .step .dot {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: #fff; border: 2px solid var(--border);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 0.78rem; color: var(--muted);
+    position: relative; z-index: 1;
+  }
+  .step.active .dot { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .step.done .dot { background: #5cb85c; border-color: #5cb85c; color: #fff; }
+  .step .lbl { font-size: 0.7rem; color: var(--muted); margin-top: 6px; font-weight: 600; }
+  .step.active .lbl { color: var(--primary-dark); }
 
-  /* 카드 */
-  .card { background: var(--card); border-radius: 18px; box-shadow: 0 2px 16px rgba(0,119,182,0.08); padding: 24px; margin-bottom: 14px; border: 1.5px solid var(--border); }
-  .card-title { font-size: 0.88rem; font-weight: 700; color: var(--primary); margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
-  .card-title::before { content: ''; display: block; width: 4px; height: 18px; border-radius: 2px; background: linear-gradient(var(--primary), var(--accent)); }
+  .card {
+    background: var(--card); border-radius: 18px; padding: 22px 20px;
+    box-shadow: var(--shadow); margin-bottom: 14px;
+    border: 1px solid var(--border);
+  }
+  .card-title { font-size: 1rem; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+  .card-sub { font-size: 0.78rem; color: var(--sub); margin-bottom: 16px; }
 
-  /* 반 버튼 */
-  .inst-label { font-size: 0.7rem; font-weight: 700; color: var(--muted); letter-spacing: 0.8px; margin: 12px 0 7px; }
-  .class-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-  .cls-btn { padding: 10px 20px; border: 1.5px solid var(--border); border-radius: 30px; background: #fff; font-family: inherit; font-size: 0.86rem; font-weight: 600; cursor: pointer; transition: all 0.18s; color: var(--sub); }
-  .cls-btn:hover { border-color: var(--primary); color: var(--primary); }
-  .cls-btn.sel { border-color: var(--primary); background: var(--primary); color: #fff; }
+  /* 기관 탭 */
+  .inst-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+  .inst-tab {
+    flex: 1; padding: 11px; background: #fff; border: 1.5px solid var(--border);
+    border-radius: 11px; font-family: inherit; font-size: 0.82rem; font-weight: 700;
+    color: var(--sub); cursor: pointer; transition: all 0.15s;
+  }
+  .inst-tab.active { background: var(--primary); border-color: var(--primary); color: #fff; }
 
-  /* 이미 제출 안내 */
-  .already-box { background: #e0fff0; border: 1px solid #6ee7b7; border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; font-size: 0.84rem; color: #065f46; display: none; }
+  .class-group { margin-bottom: 12px; }
+  .class-group-title { font-size: 0.72rem; font-weight: 700; color: var(--muted); letter-spacing: 0.8px; margin-bottom: 8px; padding-left: 4px; }
+  .class-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 8px; }
+  .class-btn {
+    padding: 12px 8px; background: #fff; border: 1.5px solid var(--border);
+    border-radius: 11px; font-family: inherit; font-size: 0.85rem; font-weight: 700;
+    color: var(--text); cursor: pointer; transition: all 0.15s; text-align: center;
+  }
+  .class-btn:hover { border-color: var(--accent); background: var(--light); }
+  .class-btn.sel { background: var(--primary); border-color: var(--primary); color: #fff; }
 
-  /* 전체 설정 버튼 */
-  .bulk-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-  .bulk-btn { padding: 7px 14px; border-radius: 8px; border: 1.5px solid var(--border); background: #fff; font-family: inherit; font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: all 0.15s; }
-  .bulk-swim { color: var(--swim); border-color: var(--swim); }
-  .bulk-swim:hover { background: var(--swim); color: #fff; }
-  .bulk-indoor { color: var(--indoor); border-color: var(--indoor); }
-  .bulk-indoor:hover { background: var(--indoor); color: #fff; }
-  .bulk-absent { color: var(--absent); border-color: var(--absent); }
-  .bulk-absent:hover { background: var(--absent); color: #fff; }
+  /* 날짜 선택 */
+  .date-input {
+    width: 100%; padding: 13px 14px; border: 1.5px solid var(--border);
+    border-radius: 11px; font-family: inherit; font-size: 0.95rem;
+    background: #fff; color: var(--text); outline: none;
+  }
+  .date-input:focus { border-color: var(--primary); }
 
-  /* 아동 리스트 */
-  .child-list { display: flex; flex-direction: column; gap: 8px; }
+  /* 아동 목록 */
+  .child-list { display: flex; flex-direction: column; gap: 10px; }
   .child-row {
     display: flex; align-items: center; gap: 10px;
-    padding: 12px 14px; background: #f8fbff; border-radius: 12px;
-    border: 1.5px solid var(--border); transition: all 0.15s;
+    padding: 12px 14px; background: var(--light); border-radius: 12px;
+    border: 1px solid var(--border);
   }
-  .child-name { font-weight: 700; font-size: 0.9rem; min-width: 64px; color: var(--text); }
+  .child-name { font-weight: 700; color: var(--text); min-width: 54px; font-size: 0.92rem; }
   .status-btns { display: flex; gap: 6px; flex: 1; }
-  .status-btn {
-    flex: 1; padding: 8px 4px; border-radius: 8px; border: 1.5px solid var(--border);
-    background: #fff; font-family: inherit; font-size: 0.75rem; font-weight: 700;
-    cursor: pointer; transition: all 0.15s; color: var(--muted); text-align: center;
+  .sb {
+    flex: 1; padding: 9px 4px; border: 1.5px solid var(--border); border-radius: 9px;
+    font-family: inherit; font-size: 0.75rem; font-weight: 800; cursor: pointer;
+    background: #fff; color: var(--sub); transition: all 0.12s; text-align: center;
   }
-  .status-btn.swim.sel { background: var(--swim); border-color: var(--swim); color: #fff; }
-  .status-btn.indoor.sel { background: var(--indoor); border-color: var(--indoor); color: #fff; }
-  .status-btn.absent.sel { background: var(--absent); border-color: var(--absent); color: #fff; }
-  .status-btn:hover:not(.sel) { border-color: var(--accent); }
+  .sb.swim.sel { background: var(--swim); border-color: var(--swim); color: #fff; }
+  .sb.indoor.sel { background: var(--indoor); border-color: var(--indoor); color: #fff; }
+  .sb.absent.sel { background: var(--absent); border-color: var(--absent); color: #fff; }
 
-  /* 요약 바 */
-  .summary-bar { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
-  .sum-item { display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 30px; font-size: 0.82rem; font-weight: 700; }
-  .sum-swim { background: #dbeafe; color: var(--swim); }
-  .sum-indoor { background: #fef3c7; color: #b45309; }
-  .sum-absent { background: #f3f4f6; color: var(--absent); }
-  .sum-num { font-family: 'DM Mono', monospace; font-size: 1rem; font-weight: 900; }
+  /* 진행 바 */
+  .progress-wrap { margin-bottom: 16px; }
+  .progress-text { font-size: 0.78rem; color: var(--sub); margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .progress-bar { height: 8px; background: var(--border); border-radius: 99px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--primary); border-radius: 99px; transition: width 0.3s; }
 
-  /* 제출 버튼 */
-  .submit-btn { width: 100%; margin-top: 20px; padding: 16px; border: none; border-radius: 14px; background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; font-family: inherit; font-size: 1rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 20px rgba(0,119,182,0.3); transition: all 0.2s; }
-  .submit-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 7px 24px rgba(0,119,182,0.4); }
-  .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  /* 기제출 */
+  .already-msg {
+    background: linear-gradient(135deg, #fff8e1, #fff3c4);
+    border: 1px solid #ffd966; padding: 12px 14px; border-radius: 11px;
+    margin-bottom: 14px; display: none;
+  }
+  .already-msg.show { display: block; }
+  .already-msg b { color: #7a5a00; font-size: 0.85rem; }
+  .already-msg p { color: #7a5a00; font-size: 0.76rem; margin-top: 3px; }
+
+  .btn {
+    width: 100%; padding: 16px; border: none; border-radius: 13px;
+    font-family: inherit; font-size: 0.98rem; font-weight: 800; cursor: pointer; transition: all 0.15s;
+  }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-primary:disabled { background: var(--muted); cursor: not-allowed; }
+  .btn-secondary { background: #fff; color: var(--sub); border: 1.5px solid var(--border); margin-bottom: 8px; }
 
   /* 완료 */
-  .done-card { text-align: center; padding: 48px 24px; background: var(--card); border-radius: 18px; border: 1.5px solid var(--border); box-shadow: 0 2px 16px rgba(0,119,182,0.08); display: none; }
-  .done-icon { font-size: 3.5rem; margin-bottom: 16px; }
-  .done-card h2 { font-size: 1.4rem; font-weight: 900; color: var(--primary); margin-bottom: 8px; }
-  .done-card p { color: var(--sub); font-size: 0.9rem; line-height: 1.8; }
-  .done-summary { background: var(--light); border-radius: 12px; padding: 16px 20px; margin: 20px 0; text-align: left; font-size: 0.88rem; line-height: 2.2; }
-  .done-summary span { font-weight: 700; color: var(--primary); }
-  .back-btn { margin-top: 16px; padding: 12px 28px; border: 1.5px solid var(--border); border-radius: 30px; background: transparent; font-family: inherit; font-size: 0.88rem; font-weight: 700; color: var(--sub); cursor: pointer; transition: all 0.2s; }
-  .back-btn:hover { border-color: var(--primary); color: var(--primary); }
+  .done-card { text-align: center; padding: 36px 22px; background: linear-gradient(135deg, #e8f5fd, #d0ecfa); border: 1px solid var(--border); }
+  .done-icon { width: 70px; height: 70px; border-radius: 50%; background: #5cb85c; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; color: #fff; }
+  .done-title { font-size: 1.2rem; font-weight: 900; color: var(--text); margin-bottom: 8px; }
+  .done-sub { color: var(--sub); font-size: 0.88rem; line-height: 1.6; }
 
-  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(70px); background: var(--primary); color: #fff; padding: 12px 22px; border-radius: 30px; font-size: 0.88rem; font-weight: 600; box-shadow: 0 5px 20px rgba(0,119,182,0.3); transition: transform 0.3s cubic-bezier(.34,1.56,.64,1); z-index: 999; white-space: nowrap; }
-  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+    background: var(--text); color: #fff; padding: 12px 22px; border-radius: 30px;
+    font-size: 0.86rem; font-weight: 600; z-index: 9999; opacity: 0;
+    transition: opacity 0.25s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
 
-  #step2card, #doneCard { display: none; }
-  .status-btn.available.sel { background:#0077b6; border-color:#0077b6; color:#fff; }
-  .status-btn.unavailable.sel { background:#dc2626; border-color:#dc2626; color:#fff; }
-  .sum-absent { background:#f3f4f6; color:#6b7280; }
+  @media (max-width: 480px) {
+    header h1 { font-size: 1.45rem; }
+    .child-name { min-width: 46px; font-size: 0.85rem; }
+    .sb { font-size: 0.7rem; padding: 8px 2px; }
+  }
 </style>
 </head>
 <body>
 
 <header>
   <div class="hdr-inner">
-    <h1>🏊 수영장 참여 조사</h1>
-    <div class="hdr-sub">무지개어린이집 · 아동별 참여 여부 입력</div>
-    <div class="event-badge">📅 2026년 4월 24일 (금)</div>
+    <h1>🏊 수영참여 조사</h1>
+    <p class="hdr-sub">무지개어린이집 · 우리무지개어린이집 Funday 수영</p>
   </div>
 </header>
 
 <main>
   <div class="steps">
-    <div class="step active" id="st1"><div class="step-num">1</div><br>반 선택</div>
-    <div class="step" id="st2"><div class="step-num">2</div><br>아동별 입력</div>
+    <div class="step active" id="s1"><div class="dot">1</div><div class="lbl">반 선택</div></div>
+    <div class="step" id="s2"><div class="dot">2</div><div class="lbl">날짜 선택</div></div>
+    <div class="step" id="s3"><div class="dot">3</div><div class="lbl">아동 입력</div></div>
   </div>
 
-  <!-- STEP 1 -->
-  <div class="card" id="step1card">
-    <div class="card-title">🏫 담당 반 선택</div>
-    <div class="inst-label">무지개어린이집</div>
-    <div class="class-grid" id="g-무지개"></div>
-    <div class="inst-label">우리무지개어린이집</div>
-    <div class="class-grid" id="g-우리무지개"></div>
+  <!-- STEP 1: 반 선택 -->
+  <div id="step1card" class="card">
+    <div class="card-title">반을 선택해 주세요</div>
+    <div class="card-sub">담당 반을 선택하세요.</div>
+
+    <div class="inst-tabs">
+      <button class="inst-tab active" id="tab-A" onclick="selectInst('A')">무지개어린이집</button>
+      <button class="inst-tab" id="tab-B" onclick="selectInst('B')">우리무지개어린이집</button>
+    </div>
+    <div id="classWrap"></div>
   </div>
 
-  <!-- 교사 참석 여부 -->
-  <div class="card" id="teacherCard">
-    <div class="card-title">👩‍🏫 교사 수영장 참석 여부</div>
-    <div id="teacherAlready" style="display:none;background:#e0fff0;border:1px solid #6ee7b7;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:0.82rem;color:#065f46;">✅ 이미 제출한 내역이 있어요. 수정 후 다시 제출할 수 있어요.</div>
-    <div id="teacherListWrap"></div>
-    <div class="summary-bar" style="margin-top:14px;">
-      <div class="sum-item sum-swim">✅ 가능 <span class="sum-num" id="cnt-t-avail">0</span>명</div>
-      <div class="sum-item sum-absent">❌ 불가 <span class="sum-num" id="cnt-t-unavail">0</span>명</div>
-      <div class="sum-item" style="background:#f3f4f6;color:#6b7280;">⏳ 미선택 <span class="sum-num" id="cnt-t-none">0</span>명</div>
+  <!-- STEP 2: 날짜 선택 -->
+  <div id="step2card" style="display:none;" class="card">
+    <div class="card-title">수영 날짜를 선택해 주세요</div>
+    <div class="card-sub">해당 회차의 날짜를 선택하세요.</div>
+    <input type="date" class="date-input" id="dateInput">
+    <div style="margin-top:12px; display:flex; gap:8px;">
+      <button class="btn btn-secondary" style="margin:0;" onclick="backToStep1()">⬅ 이전</button>
+      <button class="btn btn-primary" style="width:auto;flex:2;" onclick="goStep3()">다음</button>
     </div>
-    <button class="submit-btn" id="teacherSubmitBtn" onclick="submitTeacher()" style="margin-top:14px;" disabled>✅ 교사 현황 제출</button>
   </div>
 
-  <!-- STEP 2 -->
-  <div class="card" id="step2card">
-    <div class="card-title" id="step2title">👶 아동별 참여 여부</div>
-
-    <div class="already-box" id="alreadyBox">
-      ✅ 이미 제출한 내역이 있어요. 수정 후 다시 제출하면 덮어써져요.
+  <!-- STEP 3: 아동 입력 -->
+  <div id="step3card" style="display:none;">
+    <div id="alreadyMsg" class="already-msg">
+      <b>⚠️ 이미 제출된 내용이 있어요</b>
+      <p>기존 입력 내용이 표시됩니다. 수정 후 다시 제출하면 덮어쓰기 됩니다.</p>
     </div>
-
-    <!-- 전체 일괄 설정 -->
-    <div class="bulk-row">
-      <span style="font-size:0.78rem;color:var(--muted);align-self:center;">전체:</span>
-      <button class="bulk-btn bulk-swim" onclick="setAll('swim')">🏊 전원 수영장</button>
-      <button class="bulk-btn bulk-indoor" onclick="setAll('indoor')">🏠 전원 원내보육</button>
-      <button class="bulk-btn bulk-absent" onclick="setAll('absent')">❌ 전원 결석</button>
+    <div class="card">
+      <div class="card-title" id="step3Title">아동 참여 여부</div>
+      <div class="card-sub" id="step3Sub"></div>
+      <div class="progress-wrap">
+        <div class="progress-text"><span id="progressText">0 / 0명 입력</span><span id="progressPct">0%</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      </div>
+      <div class="child-list" id="childList"></div>
     </div>
-
-    <div class="child-list" id="childList"></div>
-
-    <!-- 요약 -->
-    <div class="summary-bar">
-      <div class="sum-item sum-swim">🏊 수영장 <span class="sum-num" id="cnt-swim">0</span>명</div>
-      <div class="sum-item sum-indoor">🏠 원내보육 <span class="sum-num" id="cnt-indoor">0</span>명</div>
-      <div class="sum-item sum-absent">❌ 결석 <span class="sum-num" id="cnt-absent">0</span>명</div>
-    </div>
-
-    <button class="submit-btn" id="submitBtn" onclick="submit()" disabled>✅ 제출하기</button>
+    <button class="btn btn-secondary" onclick="backToStep2()">⬅ 날짜 변경</button>
+    <button class="btn btn-primary" id="submitBtn" onclick="submitData()" disabled>제출하기</button>
   </div>
 
   <!-- 완료 -->
-  <div class="done-card" id="doneCard">
-    <div class="done-icon">🏊</div>
-    <h2>제출 완료!</h2>
-    <p>참여 현황이 저장됐어요.<br>감사합니다 😊</p>
-    <div class="done-summary" id="doneSummary"></div>
-    <button class="back-btn" onclick="resetForm()">↩ 다른 반 입력하기</button>
+  <div id="doneCard" class="card done-card" style="display:none;">
+    <div class="done-icon">✓</div>
+    <div class="done-title">제출 완료!</div>
+    <div class="done-sub" id="doneSub"></div>
+    <button class="btn btn-primary" style="margin-top:20px;" onclick="resetAll()">다른 반 입력</button>
   </div>
 </main>
 
@@ -212,329 +232,247 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDojXJ_9pOnla8uG240APwo3Ik9gBddMw4",
   authDomain: "mujigae-swimming.firebaseapp.com",
   databaseURL: "https://mujigae-swimming-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "mujigae-swimming",
-  storageBucket: "mujigae-swimming.firebasestorage.app",
-  messagingSenderId: "279953220805",
-  appId: "1:279953220805:web:b24cbe70f8556416c0bcac"
+  projectId: "mujigae-swimming"
 };
-
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+// ─── 최신 명단 (2026년 5월 기준) ───────────────────────────────
 const ROSTER = {
-  "무지개": {
-    "은빛물결": ["이재헌","박수현","김성원","정하준","송유담","박승빈","김정후","주현우","신승혁","김수호","정연우","최보민","한다윤"],
-    "초롱이슬": ["전유주","박유준","양선우","박하엘","박유하","정이안","정이준"]
+  A: {
+    name: "무지개어린이집",
+    groups: [
+      { title: "영아반", classes: {
+        "아기참새": ["박범준","정윤하","정다엘","고이솔","조은준"],
+        "초롱이슬": ["전유주","양선우","박하엘","박유하","정이안","정이준"]
+      }},
+      { title: "유아반", classes: {
+        "은빛물결": ["이재헌","박수현","김성원","정하준","송지우","박승빈","김정후","주현우","신승혁","김수호","정연우","최보민","한다윤"]
+      }},
+      { title: "방과후반", classes: {
+        "드림": ["정하율","권민재","심유혁","안하람","박준하","서준우","강건영","박상현","구가율","김도원"]
+      }}
+    ]
   },
-  "우리무지개": {
-    "아침햇살": ["정태호","고은호","김이안","전수호","위단우","서현우","김윤우","김지안"],
-    "고운햇살": ["박재희","박지유","김민준","곽나율","김은서","장태양","홍하루","김동휘","임라희"],
-    "들꽃향기": ["한지후","박은진","곽시안","박찬율","설재은","류시환","강은호","박다엘","김사랑","손리완","이로아","이소민","방서윤","김인우","이은우","임서우","이하린","김세윤"],
-    "푸른하늘": ["김아린","김강준","박진우","한서후","윤태언","김서우","백민지","이하민","강태희","곽다온","박준","김세윤","김지민"],
-    "파도소리": ["윤지아","김수겸","돌란샤나","권민서","최도윤","장시영"],
-    "푸른바다": ["김평온","김별리","양준우","강지호","김도우","백이엘","이태헌","오주원","서연석","임하라","김태유","조믿음","유이서","윤예나","윤예지","조가온","곽시후","이소민2"]
+  B: {
+    name: "우리무지개어린이집",
+    groups: [
+      { title: "유아반", classes: {
+        "아침햇살": ["정태호","고은호","김이안","전수호","위단우","서현우","김윤우","김지안"],
+        "들꽃향기": ["한지후","박은진","곽시안","박찬율","설재은","류시환","강은호","박다엘","김사랑","손리완","이로아","이소민","방서윤","김인우","이은우","임서우","이하린"],
+        "고운햇살": ["박재희","박지유","김민준","곽나율","김은서","홍하루","김동휘","임라희"],
+        "푸른하늘": ["김아린","김강준","박진우","한서후","윤태언","김서우","백민지","이하민","강태희","곽다온","박준","김세윤","김지민","이채민"],
+        "파도소리": ["윤지아","김수겸","돌란샤나","권민서","최도윤","장시영"],
+        "푸른바다": ["김평온","김별리","양준우","강지호","김도우","백이엘","이태헌","오주원","서연석","임하라","김태유","조믿음","유이서","윤예나","윤예지","조가온","곽시후","이소민"]
+      }},
+      { title: "방과후반", classes: {
+        "다짐": ["김중원","이아윤","강남준","문시후","문휘경","이안","이하준"],
+        "모둠": ["김가온","한시혁","강승아","이승호","박도윤","최미소","정서진","김리윤","박수현","송아린","박건우","조하준","조혜윤"]
+      }}
+    ]
   }
 };
 
-const EVENT_DATE = "2026-04-24";
-let selectedClass = null;
-// { 아동명: 'swim'|'indoor'|'absent'|null }
-let childStatus = {};
+let state = { inst: 'A', cls: '', date: '', children: {}, group: '' };
 
-// ── 반 버튼 생성 ──────────────────────────────────────────
-Object.entries(ROSTER).forEach(([inst, classes]) => {
-  const grid = document.getElementById('g-' + inst);
-  Object.keys(classes).forEach(cls => {
-    const btn = document.createElement('button');
-    btn.className = 'cls-btn';
-    btn.textContent = cls + '반';
-    btn.onclick = () => selectClass(cls, btn);
-    grid.appendChild(btn);
-  });
-});
+// ─── 반 선택 ───────────────────────────────────────────────────
+window.selectInst = function(k) {
+  state.inst = k;
+  document.getElementById('tab-A').classList.toggle('active', k === 'A');
+  document.getElementById('tab-B').classList.toggle('active', k === 'B');
+  state.cls = '';
+  renderClasses();
+};
 
-function selectClass(cls, btn) {
-  document.querySelectorAll('.cls-btn').forEach(b => b.classList.remove('sel'));
-  btn.classList.add('sel');
-  selectedClass = cls;
-  childStatus = {};
-  loadClass(cls);
-}
-
-async function loadClass(cls) {
-  const children = ROSTER["무지개"][cls] || ROSTER["우리무지개"][cls] || [];
-
-  // 기존 제출 불러오기
-  const key = EVENT_DATE + '_' + cls;
-  let existing = null;
-  try {
-    const snap = await get(ref(db, 'swimming_survey/' + key));
-    existing = snap.val();
-  } catch(e) {}
-
-  const alreadyBox = document.getElementById('alreadyBox');
-  if (existing && existing.children) {
-    alreadyBox.style.display = 'block';
-    childStatus = Object.assign({}, existing.children);
-  } else {
-    alreadyBox.style.display = 'none';
-    children.forEach(n => { childStatus[n] = null; });
-  }
-
-  renderChildList(children);
-  document.getElementById('step2title').textContent = cls + '반 · 아동별 참여 여부';
-  document.getElementById('step2card').style.display = 'block';
-  document.getElementById('doneCard').style.display = 'none';
-  setStep(2);
-  updateSummary();
-  document.getElementById('step2card').scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-function renderChildList(children) {
-  const list = document.getElementById('childList');
-  list.innerHTML = '';
-  children.forEach(name => {
-    const row = document.createElement('div');
-    row.className = 'child-row';
-    row.id = 'row-' + name;
-    row.innerHTML =
-      '<span class="child-name">' + name + '</span>' +
-      '<div class="status-btns">' +
-        '<button class="status-btn swim ' + (childStatus[name]==='swim'?'sel':'') + '" onclick="setStatus(\'' + name + '\',\'swim\')">🏊 수영장</button>' +
-        '<button class="status-btn indoor ' + (childStatus[name]==='indoor'?'sel':'') + '" onclick="setStatus(\'' + name + '\',\'indoor\')">🏠 원내보육</button>' +
-        '<button class="status-btn absent ' + (childStatus[name]==='absent'?'sel':'') + '" onclick="setStatus(\'' + name + '\',\'absent\')">❌ 결석</button>' +
-      '</div>';
-    list.appendChild(row);
-  });
-}
-
-function setStatus(name, status) {
-  // 같은 버튼 재클릭 시 해제
-  childStatus[name] = (childStatus[name] === status) ? null : status;
-  // 버튼 스타일 갱신
-  const row = document.getElementById('row-' + name);
-  row.querySelectorAll('.status-btn').forEach(b => b.classList.remove('sel'));
-  if (childStatus[name]) {
-    row.querySelector('.' + childStatus[name]).classList.add('sel');
-  }
-  updateSummary();
-}
-
-function setAll(status) {
-  const children = ROSTER["무지개"][selectedClass] || ROSTER["우리무지개"][selectedClass] || [];
-  children.forEach(name => { childStatus[name] = status; });
-  renderChildList(children);
-  updateSummary();
-}
-
-function updateSummary() {
-  const vals = Object.values(childStatus);
-  document.getElementById('cnt-swim').textContent = vals.filter(v => v === 'swim').length;
-  document.getElementById('cnt-indoor').textContent = vals.filter(v => v === 'indoor').length;
-  document.getElementById('cnt-absent').textContent = vals.filter(v => v === 'absent').length;
-  // 전원 선택됐으면 제출 가능
-  const allSelected = vals.length > 0 && vals.every(v => v !== null);
-  document.getElementById('submitBtn').disabled = !allSelected;
-}
-
-async function submit() {
-  if (!selectedClass) return;
-  const btn = document.getElementById('submitBtn');
-  btn.disabled = true;
-  btn.textContent = '저장 중...';
-
-  try {
-    const key = EVENT_DATE + '_' + selectedClass;
-    const swimList = Object.entries(childStatus).filter(([,v]) => v==='swim').map(([k]) => k);
-    const indoorList = Object.entries(childStatus).filter(([,v]) => v==='indoor').map(([k]) => k);
-    const absentList = Object.entries(childStatus).filter(([,v]) => v==='absent').map(([k]) => k);
-
-    await set(ref(db, 'swimming_survey/' + key), {
-      cls: selectedClass,
-      date: EVENT_DATE,
-      children: childStatus,
-      counts: { swim: swimList.length, indoor: indoorList.length, absent: absentList.length },
-      savedAt: new Date().toISOString()
+function renderClasses() {
+  const wrap = document.getElementById('classWrap');
+  const inst = ROSTER[state.inst];
+  let html = '';
+  inst.groups.forEach(g => {
+    html += `<div class="class-group"><div class="class-group-title">${g.title}</div><div class="class-grid">`;
+    Object.keys(g.classes).forEach(c => {
+      html += `<button class="class-btn" data-cls="${c}" onclick="selectClass('${c}')">${c}</button>`;
     });
-
-    document.getElementById('doneSummary').innerHTML =
-      '<span>반</span> ' + selectedClass + '반<br>' +
-      '<span>🏊 수영장</span> ' + swimList.length + '명 · ' + (swimList.join(', ') || '없음') + '<br>' +
-      '<span>🏠 원내보육</span> ' + indoorList.length + '명 · ' + (indoorList.join(', ') || '없음') + '<br>' +
-      '<span>❌ 결석</span> ' + absentList.length + '명 · ' + (absentList.join(', ') || '없음');
-
-    document.getElementById('step1card').style.display = 'none';
-    document.getElementById('step2card').style.display = 'none';
-    document.getElementById('doneCard').style.display = 'block';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    // 텔레그램 알림
-    await sendTelegram(
-      '🏊 <b>수영장 참여 조사 제출</b>\n' +
-      '📅 ' + EVENT_DATE + '\n' +
-      '🏫 ' + selectedClass + '반\n' +
-      '🏊 수영장: ' + swimList.length + '명' + (swimList.length ? ' (' + swimList.join(', ') + ')' : '') + '\n' +
-      '🏠 원내보육: ' + indoorList.length + '명' + (indoorList.length ? ' (' + indoorList.join(', ') + ')' : '') + '\n' +
-      '❌ 결석: ' + absentList.length + '명' + (absentList.length ? ' (' + absentList.join(', ') + ')' : '')
-    );
-
-  } catch(e) {
-    showToast('❌ 저장 실패: ' + e.message);
-    btn.disabled = false;
-    btn.textContent = '✅ 제출하기';
-  }
+    html += `</div></div>`;
+  });
+  wrap.innerHTML = html;
 }
 
-function resetForm() {
-  selectedClass = null;
-  childStatus = {};
-  document.querySelectorAll('.cls-btn').forEach(b => b.classList.remove('sel'));
-  document.getElementById('step1card').style.display = 'block';
-  document.getElementById('step2card').style.display = 'none';
-  document.getElementById('doneCard').style.display = 'none';
-  setStep(1);
+window.selectClass = function(c) {
+  state.cls = c;
+  // 그룹 찾기
+  ROSTER[state.inst].groups.forEach(g => { if (g.classes[c]) state.group = g.title; });
+  document.querySelectorAll('.class-btn').forEach(b => b.classList.toggle('sel', b.dataset.cls === c));
+  goStep2();
+};
+
+// ─── 단계 전환 ─────────────────────────────────────────────────
+function setStep(n) {
+  [1,2,3].forEach(i => {
+    const el = document.getElementById('s'+i);
+    el.classList.remove('active','done');
+    if (i < n) el.classList.add('done');
+    if (i === n) el.classList.add('active');
+  });
+}
+
+function goStep2() {
+  document.getElementById('step1card').style.display = 'none';
+  document.getElementById('step2card').style.display = 'block';
+  // 오늘 날짜 기본값
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('dateInput').value = today;
+  setStep(2);
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function setStep(n) {
-  [1,2].forEach(i => {
-    const el = document.getElementById('st' + i);
-    el.className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
-  });
+window.backToStep1 = function() {
+  document.getElementById('step2card').style.display = 'none';
+  document.getElementById('step1card').style.display = 'block';
+  setStep(1);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+window.goStep3 = async function() {
+  const d = document.getElementById('dateInput').value;
+  if (!d) { toast('날짜를 선택해 주세요'); return; }
+  state.date = d;
+  state.children = {};
+
+  document.getElementById('step3Title').textContent = `${state.cls} · ${state.date}`;
+  document.getElementById('step3Sub').textContent = `${ROSTER[state.inst].name} · ${state.group}`;
+
+  // 기제출 확인
+  const key = `swimming_survey/${state.date}_${state.cls}`;
+  try {
+    const snap = await get(ref(db, key));
+    if (snap.exists() && snap.val().children) {
+      state.children = { ...snap.val().children };
+      document.getElementById('alreadyMsg').classList.add('show');
+    } else {
+      document.getElementById('alreadyMsg').classList.remove('show');
+    }
+  } catch(e) { console.warn(e); }
+
+  renderChildren();
+  document.getElementById('step2card').style.display = 'none';
+  document.getElementById('step3card').style.display = 'block';
+  setStep(3);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+window.backToStep2 = function() {
+  document.getElementById('step3card').style.display = 'none';
+  document.getElementById('step2card').style.display = 'block';
+  setStep(2);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+// ─── 아동 렌더링 ───────────────────────────────────────────────
+function renderChildren() {
+  let children = [];
+  ROSTER[state.inst].groups.forEach(g => { if (g.classes[state.cls]) children = g.classes[state.cls]; });
+
+  const list = document.getElementById('childList');
+  list.innerHTML = children.map(name => {
+    const cur = state.children[name] || '';
+    return `
+      <div class="child-row">
+        <div class="child-name">${name}</div>
+        <div class="status-btns">
+          <button class="sb swim ${cur==='swim'?'sel':''}" onclick="setStatus('${name}','swim')">🏊 수영</button>
+          <button class="sb indoor ${cur==='indoor'?'sel':''}" onclick="setStatus('${name}','indoor')">🏠 실내</button>
+          <button class="sb absent ${cur==='absent'?'sel':''}" onclick="setStatus('${name}','absent')">❌ 결석</button>
+        </div>
+      </div>`;
+  }).join('');
+  updateProgress(children);
 }
 
-function showToast(msg) {
+window.setStatus = function(name, status) {
+  state.children[name] = status;
+  // 버튼 업데이트
+  const row = [...document.querySelectorAll('.child-row')].find(r => r.querySelector('.child-name').textContent === name);
+  if (row) {
+    row.querySelectorAll('.sb').forEach(b => b.classList.remove('sel'));
+    row.querySelector(`.sb.${status}`).classList.add('sel');
+  }
+  let children = [];
+  ROSTER[state.inst].groups.forEach(g => { if (g.classes[state.cls]) children = g.classes[state.cls]; });
+  updateProgress(children);
+};
+
+function updateProgress(children) {
+  const total = children.length;
+  const done = children.filter(n => state.children[n]).length;
+  const pct = total ? Math.round(done/total*100) : 0;
+  document.getElementById('progressText').textContent = `${done} / ${total}명 입력`;
+  document.getElementById('progressPct').textContent = `${pct}%`;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('submitBtn').disabled = done < total;
+}
+
+// ─── 제출 ──────────────────────────────────────────────────────
+window.submitData = async function() {
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.textContent = '제출 중...';
+
+  const payload = {
+    inst: state.inst,
+    instName: ROSTER[state.inst].name,
+    cls: state.cls,
+    date: state.date,
+    children: state.children,
+    submittedAt: new Date().toISOString()
+  };
+
+  try {
+    const key = `swimming_survey/${state.date}_${state.cls}`;
+    await set(ref(db, key), payload);
+
+    const swimCnt = Object.values(state.children).filter(v=>v==='swim').length;
+    const indoorCnt = Object.values(state.children).filter(v=>v==='indoor').length;
+    const absentCnt = Object.values(state.children).filter(v=>v==='absent').length;
+
+    document.getElementById('step3card').style.display = 'none';
+    document.getElementById('doneCard').style.display = 'block';
+    document.getElementById('doneSub').innerHTML =
+      `<b>${state.cls} · ${state.date}</b><br>🏊 수영 ${swimCnt}명 · 🏠 실내 ${indoorCnt}명 · ❌ 결석 ${absentCnt}명`;
+    ['s1','s2','s3'].forEach(id => {
+      document.getElementById(id).classList.remove('active');
+      document.getElementById(id).classList.add('done');
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } catch(e) {
+    console.error(e);
+    toast('제출 중 오류가 발생했어요. 다시 시도해 주세요.');
+    btn.disabled = false; btn.textContent = '제출하기';
+  }
+};
+
+window.resetAll = function() {
+  state = { inst: 'A', cls: '', date: '', children: {}, group: '' };
+  selectInst('A');
+  document.getElementById('doneCard').style.display = 'none';
+  document.getElementById('step1card').style.display = 'block';
+  setStep(1);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+function toast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2800);
+  setTimeout(() => t.classList.remove('show'), 2200);
 }
 
-window.setStatus = setStatus;
-window.setAll = setAll;
-window.submit = submit;
-window.resetForm = resetForm;
-
-// ── 텔레그램 알림 ─────────────────────────────────────────
-const TG_TOKEN = '8705840306:AAFawx4brSyIxE7q94BIsHubqGB7x1FXyTw';
-const TG_CHAT  = '8226355915';
-
-async function sendTelegram(msg) {
-  try {
-    await fetch('https://api.telegram.org/bot' + TG_TOKEN + '/sendMessage', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: TG_CHAT, text: msg, parse_mode: 'HTML' })
-    });
-  } catch(e) { console.warn('텔레그램 알림 실패:', e); }
-}
-
-// ── 교사 참석 조사 ────────────────────────────────────────
-const TEACHER_GROUPS = {
-  "무지개 영아반": ["정선윤"],
-  "무지개 유아반": ["채준범","이왕성","서명화","임민주"],
-  "우리무지개 유아반": ["강수지","김보라","김하민","박서정","천은주","모정아","박초롱","이효선","조현아","황선하","임정연","조명원","백장미","이슬아","유주환"],
-  "방과후반": ["황경하","이승원","박정민","송태헌","마호진","정인애","변아진","윤아름","정다송"],
-  "연장반": ["주은아","윤혜정"],
-  "치료사 (무지개)": ["서홍련","정소윤","강수민"],
-  "치료사 (우리무지개)": ["이미화","권다애","표영민","전나인","박규리","임주현"]
-};
-const ALL_TEACHERS = Object.values(TEACHER_GROUPS).flat();
-let teacherStatus = {};
-
-function renderTeacherList() {
-  const wrap = document.getElementById('teacherListWrap');
-  if (!wrap) return;
-  wrap.innerHTML = '';
-  Object.entries(TEACHER_GROUPS).forEach(([group, teachers]) => {
-    const lbl = document.createElement('div');
-    lbl.style.cssText = 'font-size:0.7rem;font-weight:700;color:var(--muted);letter-spacing:0.8px;margin:14px 0 6px;';
-    lbl.textContent = group;
-    wrap.appendChild(lbl);
-    teachers.forEach(name => {
-      const s = teacherStatus[name] || '';
-      const row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f8fbff;border-radius:10px;border:1.5px solid var(--border);margin-bottom:6px;';
-      row.id = 'trow-' + name;
-      row.innerHTML =
-        '<span style="font-weight:700;font-size:0.88rem;min-width:60px;color:var(--text);">' + name + '</span>' +
-        '<div class="status-btns">' +
-          '<button class="status-btn available ' + (s==='available'?'sel':'') + '" onclick="setTeacher(\'' + name + '\',\'available\')">✅ 수영장 가능</button>' +
-          '<button class="status-btn unavailable ' + (s==='unavailable'?'sel':'') + '" onclick="setTeacher(\'' + name + '\',\'unavailable\')">❌ 불가능</button>' +
-        '</div>';
-      wrap.appendChild(row);
-    });
-  });
-  updateTeacherSummary();
-}
-
-function setTeacher(name, status) {
-  teacherStatus[name] = (teacherStatus[name] === status) ? null : status;
-  const row = document.getElementById('trow-' + name);
-  row.querySelectorAll('.status-btn').forEach(b => b.classList.remove('sel'));
-  if (teacherStatus[name]) row.querySelector('.' + teacherStatus[name]).classList.add('sel');
-  updateTeacherSummary();
-}
-
-function updateTeacherSummary() {
-  const vals = Object.values(teacherStatus);
-  document.getElementById('cnt-t-avail').textContent = vals.filter(v => v==='available').length;
-  document.getElementById('cnt-t-unavail').textContent = vals.filter(v => v==='unavailable').length;
-  document.getElementById('cnt-t-none').textContent = ALL_TEACHERS.filter(n => !teacherStatus[n]).length;
-  document.getElementById('teacherSubmitBtn').disabled = !vals.some(v => v);
-}
-
-async function submitTeacher() {
-  const btn = document.getElementById('teacherSubmitBtn');
-  btn.disabled = true; btn.textContent = '저장 중...';
-  try {
-    const availList = ALL_TEACHERS.filter(n => teacherStatus[n]==='available');
-    const unavailList = ALL_TEACHERS.filter(n => teacherStatus[n]==='unavailable');
-    await set(ref(db, 'swimming_survey/teachers_' + EVENT_DATE), {
-      date: EVENT_DATE, teachers: teacherStatus,
-      counts: { available: availList.length, unavailable: unavailList.length },
-      savedAt: new Date().toISOString()
-    });
-
-    // 텔레그램 알림
-    await sendTelegram(
-      '👩‍🏫 <b>교사 수영장 참석 조사 제출</b>\n' +
-      '📅 ' + EVENT_DATE + '\n' +
-      '✅ 가능: ' + availList.length + '명' + (availList.length ? '\n   ' + availList.join(', ') : '') + '\n' +
-      '❌ 불가: ' + unavailList.length + '명' + (unavailList.length ? '\n   ' + unavailList.join(', ') : '')
-    );
-
-    showToast('✅ 교사 현황이 저장됐어요!');
-    btn.textContent = '✅ 교사 현황 제출 완료';
-    btn.disabled = false;
-  } catch(e) {
-    showToast('❌ 저장 실패: ' + e.message);
-    btn.disabled = false; btn.textContent = '✅ 교사 현황 제출';
-  }
-}
-
-window.setTeacher = setTeacher;
-window.submitTeacher = submitTeacher;
-
-// 페이지 로드 시 교사 기존 데이터 불러오기
-(async function() {
-  ALL_TEACHERS.forEach(n => { teacherStatus[n] = null; });
-  try {
-    const snap = await get(ref(db, 'swimming_survey/teachers_' + EVENT_DATE));
-    const existing = snap.val();
-    if (existing && existing.teachers) {
-      Object.assign(teacherStatus, existing.teachers);
-      const alreadyEl = document.getElementById('teacherAlready');
-      if (alreadyEl) alreadyEl.style.display = 'block';
-    }
-  } catch(e) {}
-  renderTeacherList();
-})();
+// 초기 렌더링
+selectInst('A');
 </script>
 </body>
 </html>
