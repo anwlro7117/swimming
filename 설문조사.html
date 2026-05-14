@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026년 아토피·천식 안심학교 알레르기질환 조사</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+    background: linear-gradient(135deg, #a8e6cf 0%, #88d8c0 100%);
+    min-height: 100vh;
+    padding: 20px;
+    color: #333;
+  }
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    overflow: hidden;
+  }
+  header {
+    background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+    color: #fff;
+    padding: 24px;
+    text-align: center;
+  }
+  header h1 { font-size: 22px; margin-bottom: 6px; }
+  header p { font-size: 14px; opacity: 0.95; }
+  .content { padding: 24px; }
+
+  /* 안내문 */
+  .notice {
+    background: #f1f8e9;
+    border-left: 4px solid #4caf50;
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .notice h3 { color: #2e7d32; margin-bottom: 10px; font-size: 16px; }
+  .notice ul { margin-left: 20px; margin-top: 6px; }
+  .notice .deadline {
+    background: #fff3cd;
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin-top: 10px;
+    color: #856404;
+    font-weight: bold;
+  }
+
+  /* 단계 표시 */
+  .steps {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    position: relative;
+  }
+  .steps::before {
+    content: '';
+    position: absolute;
+    top: 16px;
+    left: 12%;
+    right: 12%;
+    height: 2px;
+    background: #ddd;
+    z-index: 0;
+  }
+  .step {
+    flex: 1;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+  }
+  .step .circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #ddd;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 6px;
+    font-weight: bold;
+    font-size: 14px;
+    transition: all 0.3s;
+  }
+  .step.active .circle { background: #4caf50; }
+  .step.done .circle { background: #2e7d32; }
+  .step .label { font-size: 12px; color: #666; }
+  .step.active .label { color: #2e7d32; font-weight: bold; }
+
+  /* 폼 영역 */
+  .form-section { display: none; }
+  .form-section.active { display: block; }
+
+  .form-section h2 {
+    font-size: 18px;
+    color: #2e7d32;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #c8e6c9;
+  }
+
+  label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: #424242;
+    font-size: 14px;
+  }
+  select, input[type="text"] {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 15px;
+    margin-bottom: 14px;
+    background: #fafafa;
+    transition: all 0.2s;
+  }
+  select:focus, input[type="text"]:focus {
+    outline: none;
+    border-color: #4caf50;
+    background: #fff;
+  }
+
+  /* 라디오/체크박스 */
+  .radio-group {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .radio-group label {
+    flex: 1;
+    min-width: 80px;
+    margin: 0;
+    padding: 10px;
+    background: #f5f5f5;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    text-align: center;
+    cursor: pointer;
+    font-weight: normal;
+    transition: all 0.2s;
+  }
+  .radio-group label:has(input:checked) {
+    background: #c8e6c9;
+    border-color: #4caf50;
+    font-weight: bold;
+    color: #2e7d32;
+  }
+  .radio-group input { display: none; }
+
+  /* 질환 표 */
+  .disease-list {
+    background: #fafafa;
+    padding: 14px;
+    border-radius: 8px;
+    margin-bottom: 14px;
+  }
+  .disease-item {
+    background: #fff;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #e0e0e0;
+  }
+  .disease-item:last-child { margin-bottom: 0; }
+  .disease-name {
+    font-weight: bold;
+    color: #2e7d32;
+    margin-bottom: 8px;
+    font-size: 15px;
+  }
+  .disease-options {
+    display: flex;
+    gap: 6px;
+  }
+  .disease-options label {
+    flex: 1;
+    margin: 0;
+    padding: 8px;
+    background: #f5f5f5;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    text-align: center;
+    cursor: pointer;
+    font-weight: normal;
+    font-size: 13px;
+    transition: all 0.2s;
+  }
+  .disease-options label:has(input:checked) {
+    background: #c8e6c9;
+    border-color: #4caf50;
+    font-weight: bold;
+    color: #2e7d32;
+  }
+  .disease-options input { display: none; }
+
+  /* 버튼 */
+  .btn-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  button {
+    flex: 1;
+    padding: 14px;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+    color: #fff;
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(76,175,80,0.3); }
+  .btn-primary:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+  .btn-secondary {
+    background: #f5f5f5;
+    color: #666;
+  }
+
+  /* 완료 화면 */
+  .complete {
+    text-align: center;
+    padding: 40px 20px;
+  }
+  .complete .icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+  }
+  .complete h2 {
+    color: #2e7d32;
+    margin-bottom: 12px;
+    border: none;
+  }
+  .complete p {
+    color: #666;
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
+
+  /* 정보 박스 */
+  .info-box {
+    background: #e3f2fd;
+    border-left: 4px solid #2196f3;
+    padding: 12px 14px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: #1565c0;
+    line-height: 1.6;
+  }
+
+  /* 모바일 */
+  @media (max-width: 480px) {
+    body { padding: 10px; }
+    header h1 { font-size: 18px; }
+    .content { padding: 16px; }
+    .step .label { font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>🌿 2026년 아토피·천식 안심학교</h1>
+    <p>알레르기질환 조사 설문지</p>
+  </header>
+  <div class="content">
+
+    <!-- 안내문 -->
+    <div class="notice">
+      <h3>📋 조사 안내</h3>
+      광주광역시 남구보건소에서 안심학교 내 알레르기질환 환아 파악을 위해 조사를 실시합니다. 학부모님께서는 자녀의 알레르기질환 정보를 입력해 주시기 바랍니다.
+      <ul>
+        <li><strong>조사기간:</strong> 2026. 4. 24.(금) ~ 5. 29.(금)</li>
+        <li><strong>조사내용:</strong> 천식, 아토피피부염, 알레르기비염, 식품알레르기, 아나필락시스</li>
+        <li><strong>기록 기준:</strong> <span style="color:#d32f2f;">반드시 의사로부터 진단받은 경우만 표기</span></li>
+        <li>2개 이상의 알레르기질환이 복합된 경우 각각 표기</li>
+      </ul>
+      <div class="deadline">⏰ 제출마감: 2026. 5. 29.(금)</div>
+    </div>
+
+    <!-- 단계 표시 -->
+    <div class="steps">
+      <div class="step active" data-step="1"><div class="circle">1</div><div class="label">기관·반·아동</div></div>
+      <div class="step" data-step="2"><div class="circle">2</div><div class="label">원아 정보</div></div>
+      <div class="step" data-step="3"><div class="circle">3</div><div class="label">질환 조사</div></div>
+      <div class="step" data-step="4"><div class="circle">4</div><div class="label">제출 완료</div></div>
+    </div>
+
+    <!-- 1단계: 기관·반·아동 선택 -->
+    <div class="form-section active" id="section1">
+      <h2>1단계. 기관 · 반 · 아동 선택</h2>
+      <label>어린이집 선택</label>
+      <select id="centerSelect">
+        <option value="">기관을 선택하세요</option>
+        <option value="무지개어린이집">무지개어린이집</option>
+        <option value="우리무지개어린이집">우리무지개어린이집</option>
+      </select>
+
+      <label>반 선택</label>
+      <select id="classSelect" disabled>
+        <option value="">먼저 기관을 선택하세요</option>
+      </select>
+
+      <label>아동 선택</label>
+      <select id="childSelect" disabled>
+        <option value="">먼저 반을 선택하세요</option>
+      </select>
+
+      <div class="info-box" id="duplicateInfo" style="display:none;">
+        ⚠️ 이 아동은 이미 설문이 제출되었습니다. 다시 제출하시면 기존 내용이 덮어쓰기 됩니다.
+      </div>
+
+      <div class="btn-group">
+        <button class="btn-primary" id="nextBtn1" disabled>다음 →</button>
+      </div>
+    </div>
+
+    <!-- 2단계: 원아 정보 -->
+    <div class="form-section" id="section2">
+      <h2>2단계. 원아 정보</h2>
+
+      <label>성별</label>
+      <div class="radio-group">
+        <label><input type="radio" name="gender" value="남">남</label>
+        <label><input type="radio" name="gender" value="여">여</label>
+      </div>
+
+      <label>연령 구분</label>
+      <div class="info-box">자녀의 만 나이(개월수)에 해당하는 구분을 선택해 주세요.</div>
+      <div class="radio-group" style="flex-direction:column;">
+        <label><input type="radio" name="ageGroup" value="12개월 미만">12개월 미만</label>
+        <label><input type="radio" name="ageGroup" value="12~24개월 미만">12~24개월 미만</label>
+        <label><input type="radio" name="ageGroup" value="24~36개월 미만">24~36개월 미만</label>
+        <label><input type="radio" name="ageGroup" value="36~48개월 미만">36~48개월 미만</label>
+        <label><input type="radio" name="ageGroup" value="48~60개월 미만">48~60개월 미만</label>
+        <label><input type="radio" name="ageGroup" value="60개월 이상">60개월 이상</label>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn-secondary" onclick="goStep(1)">← 이전</button>
+        <button class="btn-primary" id="nextBtn2" disabled>다음 →</button>
+      </div>
+    </div>
+
+    <!-- 3단계: 질환 조사 -->
+    <div class="form-section" id="section3">
+      <h2>3단계. 알레르기질환 진단 여부</h2>
+      <div class="info-box">
+        해당 자녀가 태어나서부터 지금까지 다음 질환을 <strong>의사로부터 진단</strong>을 받은 적이 있습니까?
+      </div>
+
+      <div class="disease-list">
+        <div class="disease-item">
+          <div class="disease-name">1. 천식</div>
+          <div class="disease-options">
+            <label><input type="radio" name="d1" value="예">예</label>
+            <label><input type="radio" name="d1" value="아니오">아니오</label>
+            <label><input type="radio" name="d1" value="모름">모름</label>
+          </div>
+        </div>
+        <div class="disease-item">
+          <div class="disease-name">2. 아토피피부염</div>
+          <div class="disease-options">
+            <label><input type="radio" name="d2" value="예">예</label>
+            <label><input type="radio" name="d2" value="아니오">아니오</label>
+            <label><input type="radio" name="d2" value="모름">모름</label>
+          </div>
+        </div>
+        <div class="disease-item">
+          <div class="disease-name">3. 알레르기비염</div>
+          <div class="disease-options">
+            <label><input type="radio" name="d3" value="예">예</label>
+            <label><input type="radio" name="d3" value="아니오">아니오</label>
+            <label><input type="radio" name="d3" value="모름">모름</label>
+          </div>
+        </div>
+        <div class="disease-item">
+          <div class="disease-name">4. 식품알레르기</div>
+          <div class="disease-options">
+            <label><input type="radio" name="d4" value="예">예</label>
+            <label><input type="radio" name="d4" value="아니오">아니오</label>
+            <label><input type="radio" name="d4" value="모름">모름</label>
+          </div>
+        </div>
+        <div class="disease-item">
+          <div class="disease-name">5. 아나필락시스(알레르기 쇼크)</div>
+          <div class="disease-options">
+            <label><input type="radio" name="d5" value="예">예</label>
+            <label><input type="radio" name="d5" value="아니오">아니오</label>
+            <label><input type="radio" name="d5" value="모름">모름</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn-secondary" onclick="goStep(2)">← 이전</button>
+        <button class="btn-primary" id="submitBtn" disabled>제출하기</button>
+      </div>
+    </div>
+
+    <!-- 4단계: 완료 -->
+    <div class="form-section" id="section4">
+      <div class="complete">
+        <div class="icon">✅</div>
+        <h2>제출이 완료되었습니다</h2>
+        <p>설문조사에 참여해 주셔서 감사합니다.<br>입력해 주신 내용은 보건소로 안전하게 전달됩니다.</p>
+        <button class="btn-primary" onclick="location.reload()">처음으로</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDojXJ_9pOnla8uG240APwo3Ik9gBddMw4",
+  authDomain: "mujigae-swimming.firebaseapp.com",
+  databaseURL: "https://mujigae-swimming-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "mujigae-swimming",
+  storageBucket: "mujigae-swimming.firebasestorage.app",
+  messagingSenderId: "279953220805",
+  appId: "1:279953220805:web:b24cbe70f8556416c0bcac"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// 반 편성 명부 (드림반, 모둠반, 다짐반 제외)
+const roster = {
+  "무지개어린이집": {
+    "아기참새": ["박범준","정윤하","정다엘","고이솔","조은준"],
+    "초롱이슬": ["전유주","양선우","박하엘","박유하","정이안","정이준"],
+    "은빛물결": ["이재헌","박수현","김성원","정하준","송지우","박승빈","김정후","주현우","신승혁","김수호","정연우","최보민","한다윤"]
+  },
+  "우리무지개어린이집": {
+    "들꽃향기": ["한지후","박은진","곽시안","박찬율","설재은","류시환","강은호","박다엘","김사랑","손리완","이로아","이소민","방서윤","김인우","이은우","임서우","이하린"],
+    "푸른하늘": ["김아린","김강준","박진우","한서후","윤태언","김서우","백민지","이하민","강태희","곽다온","박준","김세윤","김지민","이채민"],
+    "푸른바다": ["김평온","김별리","양준우","강지호","김도우","백이엘","이태헌","오주원","서연석","임하라","김태유","조믿음","유이서","윤예나","윤예지","조가온","곽시후","이소민"],
+    "아침햇살": ["정태호","고은호","김이안","전수호","위단우","서현우","김윤우","김지안"],
+    "고운햇살": ["박재희","박지유","김민준","곽나율","김은서","홍하루","김동휘","임라희"],
+    "파도소리": ["윤지아","김수겸","돌란샤나","권민서","최도윤","장시영"]
+  }
+};
+
+// DOM
+const centerSelect = document.getElementById("centerSelect");
+const classSelect = document.getElementById("classSelect");
+const childSelect = document.getElementById("childSelect");
+const duplicateInfo = document.getElementById("duplicateInfo");
+const nextBtn1 = document.getElementById("nextBtn1");
+const nextBtn2 = document.getElementById("nextBtn2");
+const submitBtn = document.getElementById("submitBtn");
+
+// 기관 → 반
+centerSelect.addEventListener("change", () => {
+  const c = centerSelect.value;
+  classSelect.innerHTML = '<option value="">반을 선택하세요</option>';
+  childSelect.innerHTML = '<option value="">먼저 반을 선택하세요</option>';
+  childSelect.disabled = true;
+  duplicateInfo.style.display = "none";
+  if (c) {
+    Object.keys(roster[c]).forEach(cls => {
+      classSelect.innerHTML += `<option value="${cls}">${cls}</option>`;
+    });
+    classSelect.disabled = false;
+  } else {
+    classSelect.disabled = true;
+  }
+  checkStep1();
+});
+
+// 반 → 아동
+classSelect.addEventListener("change", () => {
+  const c = centerSelect.value;
+  const cls = classSelect.value;
+  childSelect.innerHTML = '<option value="">아동을 선택하세요</option>';
+  duplicateInfo.style.display = "none";
+  if (cls) {
+    roster[c][cls].forEach(name => {
+      childSelect.innerHTML += `<option value="${name}">${name}</option>`;
+    });
+    childSelect.disabled = false;
+  } else {
+    childSelect.disabled = true;
+  }
+  checkStep1();
+});
+
+childSelect.addEventListener("change", async () => {
+  const c = centerSelect.value;
+  const cls = classSelect.value;
+  const name = childSelect.value;
+  duplicateInfo.style.display = "none";
+  // 먼저 버튼 활성화 (Firebase 응답과 무관)
+  checkStep1();
+  // 중복 제출 확인 (실패해도 다음 진행 가능)
+  if (c && cls && name) {
+    try {
+      const key = makeKey(c, cls, name);
+      const snap = await get(child(ref(db), `allergy/responses/${key}`));
+      if (snap.exists()) duplicateInfo.style.display = "block";
+    } catch (e) { console.error("중복 확인 실패:", e); }
+  }
+});
+
+function checkStep1() {
+  nextBtn1.disabled = !(centerSelect.value && classSelect.value && childSelect.value);
+}
+
+// Firebase 키 안전화
+function makeKey(c, cls, name) {
+  return `${c}_${cls}_${name}`.replace(/[.#$/\[\]]/g, "_");
+}
+
+// 2단계 검증
+document.querySelectorAll('input[name="gender"], input[name="ageGroup"]').forEach(el => {
+  el.addEventListener("change", () => {
+    const gender = document.querySelector('input[name="gender"]:checked');
+    const age = document.querySelector('input[name="ageGroup"]:checked');
+    nextBtn2.disabled = !(gender && age);
+  });
+});
+
+// 3단계 검증
+["d1","d2","d3","d4","d5"].forEach(n => {
+  document.querySelectorAll(`input[name="${n}"]`).forEach(el => {
+    el.addEventListener("change", checkStep3);
+  });
+});
+function checkStep3() {
+  const ok = ["d1","d2","d3","d4","d5"].every(n =>
+    document.querySelector(`input[name="${n}"]:checked`)
+  );
+  submitBtn.disabled = !ok;
+}
+
+// 단계 이동
+window.goStep = function(n) {
+  document.querySelectorAll(".form-section").forEach(s => s.classList.remove("active"));
+  document.getElementById(`section${n}`).classList.add("active");
+  document.querySelectorAll(".step").forEach(s => {
+    s.classList.remove("active","done");
+    const sn = parseInt(s.dataset.step);
+    if (sn < n) s.classList.add("done");
+    if (sn === n) s.classList.add("active");
+  });
+  window.scrollTo({top:0, behavior:"smooth"});
+};
+
+nextBtn1.addEventListener("click", () => goStep(2));
+nextBtn2.addEventListener("click", () => goStep(3));
+
+// 제출
+submitBtn.addEventListener("click", async () => {
+  submitBtn.disabled = true;
+  submitBtn.textContent = "제출 중...";
+  try {
+    const c = centerSelect.value;
+    const cls = classSelect.value;
+    const name = childSelect.value;
+    const data = {
+      center: c,
+      className: cls,
+      childName: name,
+      gender: document.querySelector('input[name="gender"]:checked').value,
+      ageGroup: document.querySelector('input[name="ageGroup"]:checked').value,
+      asthma: document.querySelector('input[name="d1"]:checked').value,
+      atopic: document.querySelector('input[name="d2"]:checked').value,
+      rhinitis: document.querySelector('input[name="d3"]:checked').value,
+      foodAllergy: document.querySelector('input[name="d4"]:checked').value,
+      anaphylaxis: document.querySelector('input[name="d5"]:checked').value,
+      submittedAt: new Date().toISOString()
+    };
+    const key = makeKey(c, cls, name);
+    await set(ref(db, `allergy/responses/${key}`), data);
+    goStep(4);
+  } catch (e) {
+    alert("제출 중 오류가 발생했습니다. 다시 시도해 주세요.\n" + e.message);
+    submitBtn.disabled = false;
+    submitBtn.textContent = "제출하기";
+  }
+});
+</script>
+</body>
+</html>
