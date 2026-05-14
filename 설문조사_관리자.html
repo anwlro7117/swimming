@@ -499,9 +499,11 @@ document.querySelectorAll(".tab").forEach(btn => {
 
 // 데이터 로드
 window.loadData = async function() {
+  document.getElementById("overallStats").innerHTML = '<div class="loading">불러오는 중...</div>';
   try {
     const snap = await get(child(ref(db), "allergy/responses"));
-    allResponses = snap.exists() ? snap.val() : {};
+    const val = snap.val();
+    allResponses = (val && typeof val === "object") ? val : {};
     renderOverall();
     renderForm();
     initParticipationFilter();
@@ -509,7 +511,7 @@ window.loadData = async function() {
     renderDetail();
   } catch (e) {
     console.error(e);
-    alert("데이터 로드 오류: " + e.message);
+    document.getElementById("overallStats").innerHTML = `<div style="color:#c62828; padding:12px;">데이터 로드 오류: ${e.message}</div>`;
   }
 };
 
@@ -743,6 +745,13 @@ window.renderParticipation = function() {
     <div style="margin-bottom:12px; padding:10px; background:#e3f2fd; border-radius:8px; font-size:14px;">
       <strong>표시 결과:</strong> 총 ${rows.length}명 중 제출 ${submittedNum}명 / 미제출 ${pendingNum}명 (제출률 ${rate}%)
     </div>
+  `;
+  if (rows.length === 0) {
+    html += `<p style="text-align:center; padding:30px; color:#999;">조건에 맞는 데이터가 없습니다.</p>`;
+    document.getElementById("participationContainer").innerHTML = html;
+    return;
+  }
+  html += `
     <table class="participation-table">
       <thead>
         <tr>
@@ -762,7 +771,6 @@ window.renderParticipation = function() {
     `;
   });
   html += `</tbody></table>`;
-  if (rows.length === 0) html = `<p style="text-align:center; padding:30px; color:#999;">조건에 맞는 데이터가 없습니다.</p>`;
   document.getElementById("participationContainer").innerHTML = html;
 };
 
