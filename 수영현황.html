@@ -143,6 +143,9 @@ td.c,th.c{text-align:center;}
     <div class="today-date" id="todayDisp"></div>
   </div>
 
+  <!-- 디버그 패널 -->
+  <div id="debugInfo" style="display:none;background:#1a3a4a;color:#7ff;padding:10px 14px;border-radius:10px;font-size:.75rem;font-family:monospace;margin-bottom:12px;word-break:break-all;"></div>
+
   <!-- 메인탭 -->
   <div class="mtabs">
     <button class="mtab on" id="mTabC" onclick="showMain('child')">🧒 아동 현황</button>
@@ -273,7 +276,10 @@ window.loadData = async function(){
   try {
     const snap = await get(ref(db,'swimming_survey'));
     allData = snap.exists() ? snap.val() : {};
-    // 오늘 날짜 기준으로만 필터
+    // 디버그: 받아온 키 목록 표시
+    const keys = Object.keys(allData);
+    $('debugInfo').textContent = '수신 키: ' + (keys.length ? keys.join(', ') : '없음');
+    $('debugInfo').style.display = 'block';
     updateSummary(); renderCurrent();
     if($('secTeacher').style.display!=='none') renderTeacherSection();
     $('todayDisp').textContent='조회: '+new Date().toLocaleString('ko-KR',{timeZone:'Asia/Seoul'});
