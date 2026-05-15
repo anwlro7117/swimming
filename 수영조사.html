@@ -183,6 +183,7 @@ const db = getDatabase(fbApp);
 
 
 
+const TODAY = new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'});
 const ROSTER = {
   A:{name:"무지개어린이집",groups:[
     {title:"영아반",classes:{
@@ -276,7 +277,7 @@ window.selClass = async function(c) {
   ROSTER[C.inst].groups.forEach(g=>{ if(g.classes[c]) C.grp=g.title; });
   document.querySelectorAll('.cbtn').forEach(b=>b.classList.toggle('on', b.textContent===c));
   try {
-    const snap = await get(ref(db,`swimming_survey/${c}`));
+    const snap = await get(ref(db,`swimming_survey/${TODAY}_${c}`));
     if(snap.exists()&&snap.val().children){ C.ch={...snap.val().children}; $('c_already').classList.add('show'); }
     else $('c_already').classList.remove('show');
   } catch(e){ $('c_already').classList.remove('show'); }
@@ -322,8 +323,8 @@ window.setCS = async function(nm, st) {
   updateCP(kids);
   // 즉시저장
   try {
-    await set(ref(db,`swimming_survey/${C.cls}`),{
-      inst:C.inst, instName:ROSTER[C.inst].name, cls:C.cls,
+    await set(ref(db,`swimming_survey/${TODAY}_${C.cls}`),{
+      inst:C.inst, instName:ROSTER[C.inst].name, cls:C.cls, date:TODAY,
       children:C.ch, submittedAt:new Date().toISOString()
     });
     const ok=$(`ok_c_${nm}`); if(ok){ ok.classList.add('show'); }
@@ -348,7 +349,7 @@ async function t_init() {
   tInited=true;
   ALL_T.forEach(t=>{ TS[t.n]={s:'',lt:''}; });
   try {
-    const snap=await get(ref(db,`swimming_survey/teachers`));
+    const snap=await get(ref(db,`swimming_survey/teachers_${TODAY}`));
     if(snap.exists()&&snap.val().teachers){
       const sv=snap.val().teachers;
       ALL_T.forEach(t=>{ if(sv[t.n]) TS[t.n]={s:sv[t.n].s||'',lt:sv[t.n].lt||''}; });
@@ -399,8 +400,8 @@ function renderTeachers() {
 async function saveTeachers() {
   const data={};
   ALL_T.forEach(t=>{ data[t.n]={s:TS[t.n].s, lt:TS[t.n].lt}; });
-  await set(ref(db,`swimming_survey/teachers`),{
-    teachers:data, submittedAt:new Date().toISOString()
+  await set(ref(db,`swimming_survey/teachers_${TODAY}`),{
+    date:TODAY, teachers:data, submittedAt:new Date().toISOString()
   });
 }
 

@@ -143,9 +143,6 @@ td.c,th.c{text-align:center;}
     <div class="today-date" id="todayDisp"></div>
   </div>
 
-  <!-- 디버그 패널 -->
-  <div id="debugInfo" style="display:none;background:#1a3a4a;color:#7ff;padding:10px 14px;border-radius:10px;font-size:.75rem;font-family:monospace;margin-bottom:12px;word-break:break-all;"></div>
-
   <!-- 메인탭 -->
   <div class="mtabs">
     <button class="mtab on" id="mTabC" onclick="showMain('child')">🧒 아동 현황</button>
@@ -251,6 +248,7 @@ function getAllClasses(){
   return list;
 }
 
+const TODAY = new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'});
 let allData={};
 let curTab='A';
 
@@ -276,10 +274,6 @@ window.loadData = async function(){
   try {
     const snap = await get(ref(db,'swimming_survey'));
     allData = snap.exists() ? snap.val() : {};
-    // 디버그: 받아온 키 목록 표시
-    const keys = Object.keys(allData);
-    $('debugInfo').textContent = '수신 키: ' + (keys.length ? keys.join(', ') : '없음');
-    $('debugInfo').style.display = 'block';
     updateSummary(); renderCurrent();
     if($('secTeacher').style.display!=='none') renderTeacherSection();
     $('todayDisp').textContent='조회: '+new Date().toLocaleString('ko-KR',{timeZone:'Asia/Seoul'});
@@ -287,11 +281,32 @@ window.loadData = async function(){
   } catch(e){ toast('불러오기 실패: '+e.message); }
 };
 
+// ── 헬퍼: 반명으로 최신 데이터 추출 ────────────────────────
+// allData 키 형식: "날짜_반명" 또는 "반명" (둘 다 지원)
+function getClsData(cls) {
+  // 정확한 키 (날짜없는 형식)
+  if (allData[cls]) return allData[cls];
+  // 날짜_반명 형식에서 해당 반의 최신 항목 찾기
+  const keys = Object.keys(allData)
+    .filter(k => k.endsWith('_' + cls) && !k.startsWith('teachers'))
+    .sort().reverse();
+  return keys.length ? allData[keys[0]] : null;
+}
+
+// 교사 최신 데이터 추출
+function getTeacherData() {
+  if (allData['teachers']) return allData['teachers'];
+  const keys = Object.keys(allData)
+    .filter(k => k.startsWith('teachers_'))
+    .sort().reverse();
+  return keys.length ? allData[keys[0]] : null;
+}
+
 // ── 요약 ─────────────────────────────────────────────────
 function updateSummary(){
   let sw=0,id=0,ab=0,sub=0;
   getAllClasses().forEach(({cls})=>{
-    const d=allData[`${cls}`];
+    const d=getClsData(cls);
     if(!d||!d.children)return; sub++;
     Object.values(d.children).forEach(s=>{if(s==='swim')sw++;else if(s==='indoor')id++;else if(s==='absent')ab++;});
   });
@@ -331,7 +346,7 @@ function renderByClass(ik){
   let html='';
   ROSTER[ik].groups.forEach(g=>{
     Object.entries(g.classes).forEach(([cls,children])=>{
-      const d=allData[`${cls}`];
+      const d=getClsData(cls);
       const ok=!!(d&&d.children);
       const sw=ok?Object.values(d.children).filter(v=>v==='swim').length:0;
       const id=ok?Object.values(d.children).filter(v=>v==='indoor').length:0;
@@ -358,7 +373,7 @@ function renderByClass(ik){
 function renderAllList(){
   const sw=[],id=[],ab=[];
   getAllClasses().forEach(({instName,cls,children})=>{
-    const d=allData[`${cls}`];
+    const d=getClsData(cls);
     if(!d||!d.children)return;
     children.forEach(ch=>{
       const s=d.children[ch];
@@ -389,7 +404,7 @@ function tpill(st){
 }
 
 function renderTeacherSection(){
-  const td=allData[`teachers`];
+  const td=getTeacherData();
   const teachers=td?td.teachers||{}:{};
   let att=0,off=0,lv=0,none=0;
   ALL_T.forEach(t=>{
@@ -427,13 +442,16 @@ window.openReset = function(){
   // 오늘 데이터 있는 항목만 체크박스로 표시
   const items=[];
   // 아동
+  // 오늘 날짜 키 우선, 없으면 날짜_반명 형식으로 탐색
   getAllClasses().forEach(({instName,cls})=>{
-    const key=`${cls}`;
-    if(allData[key]) items.push({key, label:`🧒 ${instName} · ${cls}`});
+    const exactKey = TODAY+'_'+cls;
+    const key = allData[exactKey] ? exactKey : (allData[cls] ? cls : null);
+    if(key) items.push({key, label:'🧒 '+instName+' · '+cls});
   });
   // 교사
-  const tKey=`teachers`;
-  if(allData[tKey]) items.push({key:tKey, label:`👩‍🏫 교사 전체`});
+  const tExact = 'teachers_'+TODAY;
+  const tKey = allData[tExact] ? tExact : (allData['teachers'] ? 'teachers' : null);
+  if(tKey) items.push({key:tKey, label:'👩‍🏫 교사 전체'});
 
   if(!items.length){toast('오늘 입력된 데이터가 없어요.');return;}
 
@@ -468,7 +486,7 @@ window.doExcel = function(){
   const all=[['어린이집','반','아동','참여여부']];
   const swD=[['어린이집','반','아동']],idD=[['어린이집','반','아동']],abD=[['어린이집','반','아동']];
   getAllClasses().forEach(({instName,cls,children})=>{
-    const d=allData[`${cls}`];
+    const d=getClsData(cls);
     if(!d||!d.children){children.forEach(c=>all.push([instName,cls,c,'미입력']));return;}
     children.forEach(c=>{
       const s=d.children[c]||'미입력';
@@ -483,7 +501,7 @@ window.doExcel = function(){
   XLSX.utils.book_append_sheet(wb,mk(swD,[{wch:18},{wch:10},{wch:10}]),'수영');
   XLSX.utils.book_append_sheet(wb,mk(idD,[{wch:18},{wch:10},{wch:10}]),'원내보육');
   XLSX.utils.book_append_sheet(wb,mk(abD,[{wch:18},{wch:10},{wch:10}]),'결석');
-  const td=allData[`teachers`],tt=td?td.teachers||{}:{};
+  const td=getTeacherData(),tt=td?td.teachers||{}:{};
   const tD=[['이름','담당','참여여부','휴가유형']];
   ALL_T.forEach(t=>{
     const s=tt[t.n];
