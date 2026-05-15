@@ -139,7 +139,7 @@ td.c,th.c{text-align:center;}
 <main>
   <!-- 오늘 날짜 표시 -->
   <div class="today-bar">
-    <div class="today-lbl">📅 오늘 데이터</div>
+    <div class="today-lbl">📊 전체 합산 데이터</div>
     <div class="today-date" id="todayDisp"></div>
   </div>
 
@@ -190,7 +190,6 @@ const fbApp = initializeApp({
 });
 const db = getDatabase(fbApp);
 const PW = "7117";
-const TODAY = new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'});
 
 const ROSTER = {
   A:{name:"무지개어린이집",groups:[
@@ -256,7 +255,7 @@ const $=id=>document.getElementById(id);
 const toast=msg=>{const t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);};
 
 // 오늘 날짜 표시
-$('todayDisp').textContent=TODAY;
+$('todayDisp').textContent='조회: '+new Date().toLocaleString('ko-KR',{timeZone:'Asia/Seoul'});
 
 // ── 로그인 ───────────────────────────────────────────────
 window.doLogin = function(){
@@ -277,6 +276,7 @@ window.loadData = async function(){
     // 오늘 날짜 기준으로만 필터
     updateSummary(); renderCurrent();
     if($('secTeacher').style.display!=='none') renderTeacherSection();
+    $('todayDisp').textContent='조회: '+new Date().toLocaleString('ko-KR',{timeZone:'Asia/Seoul'});
     toast('데이터를 불러왔어요');
   } catch(e){ toast('불러오기 실패: '+e.message); }
 };
@@ -285,7 +285,7 @@ window.loadData = async function(){
 function updateSummary(){
   let sw=0,id=0,ab=0,sub=0;
   getAllClasses().forEach(({cls})=>{
-    const d=allData[`${TODAY}_${cls}`];
+    const d=allData[`${cls}`];
     if(!d||!d.children)return; sub++;
     Object.values(d.children).forEach(s=>{if(s==='swim')sw++;else if(s==='indoor')id++;else if(s==='absent')ab++;});
   });
@@ -325,7 +325,7 @@ function renderByClass(ik){
   let html='';
   ROSTER[ik].groups.forEach(g=>{
     Object.entries(g.classes).forEach(([cls,children])=>{
-      const d=allData[`${TODAY}_${cls}`];
+      const d=allData[`${cls}`];
       const ok=!!(d&&d.children);
       const sw=ok?Object.values(d.children).filter(v=>v==='swim').length:0;
       const id=ok?Object.values(d.children).filter(v=>v==='indoor').length:0;
@@ -352,7 +352,7 @@ function renderByClass(ik){
 function renderAllList(){
   const sw=[],id=[],ab=[];
   getAllClasses().forEach(({instName,cls,children})=>{
-    const d=allData[`${TODAY}_${cls}`];
+    const d=allData[`${cls}`];
     if(!d||!d.children)return;
     children.forEach(ch=>{
       const s=d.children[ch];
@@ -383,7 +383,7 @@ function tpill(st){
 }
 
 function renderTeacherSection(){
-  const td=allData[`teachers_${TODAY}`];
+  const td=allData[`teachers`];
   const teachers=td?td.teachers||{}:{};
   let att=0,off=0,lv=0,none=0;
   ALL_T.forEach(t=>{
@@ -422,11 +422,11 @@ window.openReset = function(){
   const items=[];
   // 아동
   getAllClasses().forEach(({instName,cls})=>{
-    const key=`${TODAY}_${cls}`;
+    const key=`${cls}`;
     if(allData[key]) items.push({key, label:`🧒 ${instName} · ${cls}`});
   });
   // 교사
-  const tKey=`teachers_${TODAY}`;
+  const tKey=`teachers`;
   if(allData[tKey]) items.push({key:tKey, label:`👩‍🏫 교사 전체`});
 
   if(!items.length){toast('오늘 입력된 데이터가 없어요.');return;}
@@ -462,7 +462,7 @@ window.doExcel = function(){
   const all=[['어린이집','반','아동','참여여부']];
   const swD=[['어린이집','반','아동']],idD=[['어린이집','반','아동']],abD=[['어린이집','반','아동']];
   getAllClasses().forEach(({instName,cls,children})=>{
-    const d=allData[`${TODAY}_${cls}`];
+    const d=allData[`${cls}`];
     if(!d||!d.children){children.forEach(c=>all.push([instName,cls,c,'미입력']));return;}
     children.forEach(c=>{
       const s=d.children[c]||'미입력';
@@ -477,7 +477,7 @@ window.doExcel = function(){
   XLSX.utils.book_append_sheet(wb,mk(swD,[{wch:18},{wch:10},{wch:10}]),'수영');
   XLSX.utils.book_append_sheet(wb,mk(idD,[{wch:18},{wch:10},{wch:10}]),'원내보육');
   XLSX.utils.book_append_sheet(wb,mk(abD,[{wch:18},{wch:10},{wch:10}]),'결석');
-  const td=allData[`teachers_${TODAY}`],tt=td?td.teachers||{}:{};
+  const td=allData[`teachers`],tt=td?td.teachers||{}:{};
   const tD=[['이름','담당','참여여부','휴가유형']];
   ALL_T.forEach(t=>{
     const s=tt[t.n];
@@ -486,7 +486,7 @@ window.doExcel = function(){
     tD.push([t.n,t.r,st,lt]);
   });
   XLSX.utils.book_append_sheet(wb,mk(tD,[{wch:10},{wch:14},{wch:10},{wch:10}]),'교사 현황');
-  XLSX.writeFile(wb,`수영참여현황_${TODAY}.xlsx`);
+  XLSX.writeFile(wb,'수영참여현황.xlsx');
   toast('엑셀 파일이 다운로드됐어요');
 };
 
