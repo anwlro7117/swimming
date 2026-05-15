@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>수영조사 관리자</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:linear-gradient(135deg,#fef3c7 0%,#fde68a 100%);min-height:100vh;padding:16px;color:#78350f}
+  .wrap{max-width:900px;margin:0 auto}
+  .card{background:white;border-radius:20px;padding:22px;box-shadow:0 8px 30px rgba(180,83,9,.12);margin-bottom:16px}
+  h1{font-size:24px;font-weight:800;color:#92400e;margin-bottom:6px;text-align:center}
+  .sub{text-align:center;color:#b45309;font-size:13px;margin-bottom:14px}
+
+  /* 로그인 */
+  .overlay{position:fixed;inset:0;background:rgba(120,53,15,.85);backdrop-filter:blur(8px);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+  .login-card{background:white;border-radius:20px;padding:32px 24px;width:100%;max-width:360px;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+  .login-card h2{font-size:20px;font-weight:800;color:#92400e;margin-bottom:18px;text-align:center}
+  .login-card input{width:100%;padding:14px 16px;border:2px solid #fde68a;border-radius:12px;font-size:18px;text-align:center;letter-spacing:8px;font-family:inherit}
+  .login-card input:focus{outline:none;border-color:#f59e0b}
+  .login-card button{width:100%;margin-top:12px;padding:14px;background:linear-gradient(135deg,#f59e0b,#d97706);color:white;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit}
+  .shake{animation:shk .35s}
+  @keyframes shk{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+  .err{color:#dc2626;font-size:13px;text-align:center;margin-top:8px;min-height:16px}
+
+  /* 통계 */
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+  .stat{background:#fffbeb;border:1px solid #fde68a;border-radius:14px;padding:12px 8px;text-align:center}
+  .stat .label{font-size:11px;color:#92400e;font-weight:700;margin-bottom:4px}
+  .stat .val{font-size:22px;font-weight:800;color:#78350f}
+  .stat.tot{background:linear-gradient(135deg,#f59e0b,#d97706);border:none}
+  .stat.tot .label,.stat.tot .val{color:white}
+  .stat.yes{background:#dbeafe;border-color:#93c5fd}
+  .stat.yes .label,.stat.yes .val{color:#1e40af}
+  .stat.stay{background:#fef3c7;border-color:#fcd34d}
+  .stat.stay .label,.stat.stay .val{color:#92400e}
+  .stat.no{background:#f1f5f9;border-color:#cbd5e1}
+  .stat.no .label,.stat.no .val{color:#475569}
+  .stat.leave{background:#f3e8ff;border-color:#d8b4fe}
+  .stat.leave .label,.stat.leave .val{color:#7e22ce}
+
+  /* 메인 탭 (아동/교사) */
+  .main-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;background:#fef3c7;padding:5px;border-radius:14px}
+  .main-tab{padding:12px;border:none;background:transparent;border-radius:10px;font-weight:800;color:#92400e;cursor:pointer;font-family:inherit;font-size:15px}
+  .main-tab.active{background:linear-gradient(135deg,#f59e0b,#d97706);color:white;box-shadow:0 4px 12px rgba(217,119,6,.25)}
+
+  /* 서브 탭 */
+  .sub-tabs{display:flex;gap:5px;margin-bottom:12px;background:#fef3c7;padding:5px;border-radius:12px}
+  .sub-tabs button{flex:1;padding:8px 4px;border:none;background:transparent;border-radius:8px;font-weight:700;color:#92400e;cursor:pointer;font-family:inherit;font-size:12px}
+  .sub-tabs button.active{background:white;color:#78350f;box-shadow:0 2px 6px rgba(0,0,0,.08)}
+
+  .actions{display:flex;gap:8px;margin-bottom:12px}
+  .act-btn{flex:1;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:10px;padding:10px;font-weight:700;cursor:pointer;font-family:inherit;font-size:13px}
+
+  /* 그룹 라벨 */
+  .group-label{font-size:12px;font-weight:800;color:#92400e;margin:14px 0 8px;letter-spacing:1px}
+  .group-label:first-child{margin-top:0}
+
+  /* 반/그룹 카드 */
+  .cls-card{background:#fffbeb;border:1px solid #fde68a;border-radius:14px;padding:14px;margin-bottom:8px}
+  .cls-head{display:flex;justify-content:space-between;align-items:center;cursor:pointer;flex-wrap:wrap;gap:8px}
+  .cls-name{font-weight:800;font-size:16px;color:#78350f}
+  .cls-count{display:flex;gap:4px;flex-wrap:wrap}
+  .c{display:inline-block;padding:3px 9px;border-radius:10px;font-size:11px;font-weight:700;white-space:nowrap}
+  .c-yes{background:#dbeafe;color:#1e40af}
+  .c-stay{background:#fde68a;color:#78350f}
+  .c-no{background:#f1f5f9;color:#475569}
+  .c-leave{background:#f3e8ff;color:#7e22ce}
+  .c-pending{background:#fee2e2;color:#991b1b}
+  .cls-body{display:none;padding-top:12px;margin-top:10px;border-top:1px dashed #fcd34d}
+  .cls-body.open{display:block}
+  .row{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:white;border-radius:8px;margin-bottom:5px;font-size:14px}
+  .row .nm{font-weight:600;color:#0c4a6e}
+  .row .right{display:flex;align-items:center;gap:8px}
+  .b{font-size:11px;padding:3px 9px;border-radius:8px;font-weight:700;white-space:nowrap}
+  .b-yes{background:#dbeafe;color:#1e40af}
+  .b-stay{background:#fde68a;color:#78350f}
+  .b-no{background:#f1f5f9;color:#475569}
+  .b-leave{background:#f3e8ff;color:#7e22ce}
+  .b-pending{background:#fee2e2;color:#991b1b}
+  .del-btn{background:#fee2e2;color:#991b1b;border:none;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit}
+
+  /* 리셋 */
+  .danger-section{background:#fee2e2;border:2px solid #fca5a5;border-radius:14px;padding:16px}
+  .danger-title{font-size:15px;font-weight:800;color:#991b1b;margin-bottom:6px}
+  .danger-desc{font-size:13px;color:#7f1d1d;margin-bottom:12px;line-height:1.5}
+  .reset-btn{background:#dc2626;color:white;border:none;border-radius:10px;padding:12px 18px;font-weight:800;cursor:pointer;font-family:inherit;font-size:14px}
+
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+  .modal.open{display:flex}
+  .modal-card{background:white;border-radius:20px;padding:24px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+  .modal-card h2{font-size:18px;color:#991b1b;font-weight:800;margin-bottom:8px;text-align:center}
+  .modal-card p{font-size:13px;color:#7f1d1d;margin-bottom:14px;text-align:center;line-height:1.5}
+  .modal-card label{display:block;font-size:12px;color:#7f1d1d;font-weight:700;margin-bottom:5px}
+  .modal-card input{width:100%;padding:12px;border:2px solid #fca5a5;border-radius:10px;font-size:15px;margin-bottom:10px;font-family:inherit;text-align:center}
+  .modal-card input:focus{outline:none;border-color:#dc2626}
+  .modal-btns{display:flex;gap:8px}
+  .modal-btns button{flex:1;padding:12px;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-family:inherit;font-size:14px}
+  .btn-cancel{background:#f1f5f9;color:#475569}
+  .btn-confirm{background:#dc2626;color:white}
+
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(120%);background:#0f172a;color:white;padding:14px 22px;border-radius:14px;font-weight:700;font-size:14px;transition:transform .3s;z-index:1000;max-width:90%;text-align:center}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+  .toast.success{background:#16a34a}
+  .toast.error{background:#dc2626}
+
+  .pane{display:none}
+  .pane.active{display:block}
+
+  @media (max-width:560px){
+    .stat-grid{grid-template-columns:repeat(2,1fr)}
+    .stat .val{font-size:18px}
+  }
+</style>
+</head>
+<body>
+
+<div id="loginOverlay" class="overlay">
+  <div class="login-card">
+    <h2>🔒 관리자 로그인</h2>
+    <input type="password" id="pwInput" maxlength="10" inputmode="numeric" placeholder="비밀번호" onkeypress="if(event.key==='Enter') tryLogin()">
+    <button onclick="tryLogin()">접속하기</button>
+    <div class="err" id="pwErr"></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="card">
+    <h1>🏊 수영조사 관리자</h1>
+    <div class="sub">전체 응답 현황 및 관리</div>
+    <div id="statusBar" class="sub">⏳ 연결 중...</div>
+
+    <div class="stat-grid">
+      <div class="stat tot"><div class="label">전체 응답</div><div class="val" id="totalResp">0</div></div>
+      <div class="stat yes"><div class="label">참여</div><div class="val" id="totalYes">0</div></div>
+      <div class="stat stay"><div class="label">잔류</div><div class="val" id="totalStay">0</div></div>
+      <div class="stat no"><div class="label">결석·불참</div><div class="val" id="totalNo">0</div></div>
+    </div>
+    <div class="stat-grid" style="grid-template-columns:1fr">
+      <div class="stat leave"><div class="label">교사 당일연차 (종일/오전반차/오후반차)</div><div class="val" id="totalLeave">0</div></div>
+    </div>
+
+    <div class="main-tabs">
+      <button class="main-tab active" id="mainTabChild" onclick="setMainTab('child')">👶 아동</button>
+      <button class="main-tab" id="mainTabTeacher" onclick="setMainTab('teacher')">👩‍🏫 교사</button>
+    </div>
+
+    <div class="sub-tabs">
+      <button id="subTabAll" class="active" onclick="setSubTab('all')">전체</button>
+      <button id="subTabPending" onclick="setSubTab('pending')">미응답만</button>
+      <button id="subTabResponded" onclick="setSubTab('responded')">응답완료만</button>
+    </div>
+
+    <div class="actions">
+      <button class="act-btn" onclick="renderAll()">🔄 새로고침</button>
+      <button class="act-btn" onclick="exportCSV()">📥 CSV 내보내기</button>
+    </div>
+
+    <!-- 아동 패널 -->
+    <div class="pane active" id="paneChild">
+      <div class="group-label">🏠 무지개어린이집</div>
+      <div id="childMujigae"></div>
+      <div class="group-label">🏠 우리무지개어린이집</div>
+      <div id="childWoori"></div>
+    </div>
+
+    <!-- 교사 패널 -->
+    <div class="pane" id="paneTeacher">
+      <div class="group-label">🏠 무지개어린이집</div>
+      <div id="teacherMujigae"></div>
+      <div class="group-label">🏠 우리무지개어린이집</div>
+      <div id="teacherWoori"></div>
+      <div class="group-label">💆 치료사 · 기타</div>
+      <div id="teacherExtra"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="danger-section">
+      <div class="danger-title">⚠️ 데이터 리셋</div>
+      <div class="danger-desc">
+        매달 조사가 끝난 뒤 새로 시작할 때 사용합니다.<br>
+        <b>전체 응답 데이터가 영구 삭제되며 복구할 수 없습니다.</b>
+      </div>
+      <button class="reset-btn" onclick="openResetModal()">전체 데이터 초기화</button>
+    </div>
+  </div>
+</div>
+
+<div id="resetModal" class="modal">
+  <div class="modal-card">
+    <h2>⚠️ 데이터 초기화</h2>
+    <p>모든 응답이 삭제됩니다.<br>아래 두 항목을 모두 입력해야 진행됩니다.</p>
+    <label>1. 관리자 비밀번호</label>
+    <input type="password" id="resetPw" placeholder="비밀번호" inputmode="numeric">
+    <label>2. <b style="color:#dc2626">초기화</b> 를 그대로 입력</label>
+    <input type="text" id="resetConfirm" placeholder="초기화">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeResetModal()">취소</button>
+      <button class="btn-confirm" id="confirmBtn" onclick="doReset()">삭제 실행</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDojXJ_9pOnla8uG240APwo3Ik9gBddMw4",
+  authDomain: "mujigae-swimming.firebaseapp.com",
+  databaseURL: "https://mujigae-swimming-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "mujigae-swimming",
+  storageBucket: "mujigae-swimming.firebasestorage.app",
+  messagingSenderId: "279953220805",
+  appId: "1:279953220805:web:b24cbe70f8556416c0bcac"
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const ADMIN_PW = '7117';
+
+const CHILDREN_BY_CLASS = {
+  mujigae: {
+    "은빛물결": ["이재헌","박수현","김성원","정하준","송지우","박승빈","김정후","주현우","신승혁","김수호","정연우","최보민","한다윤"],
+    "드림반": ["정하율","권민재","심유혁","안하람","박준하","서준우","강건영","박상현","구가율","김도원"]
+  },
+  woori: {
+    "아침햇살": ["정태호","고은호","김이안","전수호","위단우","서현우","김윤우","김지안"],
+    "고운햇살": ["박재희","박지유","김민준","곽나율","김은서","홍하루","김동휘","임라희"],
+    "들꽃향기": ["한지후","박은진","곽시안","박찬율","설재은","류시환","강은호","박다엘","김사랑","손리완","이로아","이소민","방서윤","김인우","이은우","임서우","이하린"],
+    "푸른하늘": ["김아린","김강준","박진우","한서후","윤태언","김서우","백민지","이하민","강태희","곽다온","박준","김세윤","김지민","이채민"],
+    "파도소리": ["윤지아","김수겸","돌란샤나","권민서","최도윤","장시영"],
+    "푸른바다": ["김평온","김별리","양준우","강지호","김도우","백이엘","이태헌","오주원","서연석","임하라","김태유","조믿음","유이서","윤예나","윤예지","조가온","곽시후","이소민"],
+    "다짐반": ["김중원","이아윤","강남준","문시후","문휘경","이안","이하준"],
+    "모둠반": ["김가온","한시혁","강승아","이승호","박도윤","최미소","정서진","김리윤","박수현","송아린","박건우","조하준","조혜윤"]
+  }
+};
+
+const TEACHERS_BY_GROUP = {
+  mujigae: {
+    "은빛물결": ["채준범","이왕성","서명화","임민주"],
+    "드림반": ["황경하","이승원","박정민"]
+  },
+  woori: {
+    "아침햇살": ["강수지","김보라","김하민"],
+    "고운햇살": ["박서정","천은주","모정아"],
+    "들꽃향기": ["박초롱","이효선"],
+    "푸른하늘": ["조현아","황선하"],
+    "파도소리": ["임정연","조명원"],
+    "푸른바다": ["백장미","이슬아","유주환"],
+    "다짐반": ["송태헌","마호진"],
+    "모둠반": ["정인애","변아진","윤아름","정다송"]
+  },
+  extra: {
+    "무지개 치료사": ["강수민","서홍련","정소윤"],
+    "우리무지개 치료사": ["이미화","권다애","표영민","전나인","박규리","임주현"],
+    "연장반": ["주은아","윤혜정"],
+    "보조교사": ["이숙현","마미선","정아영"]
+  }
+};
+
+let allData = {};
+let currentMainTab = 'child';
+let currentSubTab = 'all';
+
+(function() {
+  if (sessionStorage.getItem('mujigae_swim_admin') === 'ok') {
+    document.getElementById('loginOverlay').style.display = 'none';
+    initFirebase();
+  }
+})();
+
+window.tryLogin = function() {
+  const pw = document.getElementById('pwInput').value;
+  if (pw === ADMIN_PW) {
+    sessionStorage.setItem('mujigae_swim_admin', 'ok');
+    document.getElementById('loginOverlay').style.display = 'none';
+    initFirebase();
+  } else {
+    const input = document.getElementById('pwInput');
+    input.classList.remove('shake');
+    void input.offsetWidth;
+    input.classList.add('shake');
+    input.value = '';
+    document.getElementById('pwErr').textContent = '비밀번호가 틀렸어요';
+  }
+}
+
+function initFirebase() {
+  const statusBar = document.getElementById('statusBar');
+  onValue(ref(db, '.info/connected'), (snap) => {
+    if (snap.val() === true) {
+      statusBar.textContent = '🟢 실시간 연결됨';
+      statusBar.style.color = '#16a34a';
+    }
+  });
+  onValue(ref(db, 'swimming'), (snap) => {
+    allData = snap.val() || {};
+    renderAll();
+  });
+}
+
+window.setMainTab = function(t) {
+  currentMainTab = t;
+  document.getElementById('mainTabChild').classList.toggle('active', t==='child');
+  document.getElementById('mainTabTeacher').classList.toggle('active', t==='teacher');
+  document.getElementById('paneChild').classList.toggle('active', t==='child');
+  document.getElementById('paneTeacher').classList.toggle('active', t==='teacher');
+  renderAll();
+}
+
+window.setSubTab = function(t) {
+  currentSubTab = t;
+  ['all','pending','responded'].forEach(x => {
+    const id = 'subTab' + x.charAt(0).toUpperCase() + x.slice(1);
+    document.getElementById(id).classList.toggle('active', x === t);
+  });
+  renderAll();
+}
+
+window.renderAll = function() {
+  const childData = allData.child || {};
+  const teacherData = allData.teacher || {};
+
+  // 통계
+  let yes=0, stay=0, no=0, leave=0;
+  Object.values(childData).forEach(cls => {
+    Object.values(cls).forEach(v => {
+      if (v.answer === 'yes') yes++;
+      else if (v.answer === 'stay') stay++;
+      else if (v.answer === 'no') no++;
+    });
+  });
+  Object.values(teacherData).forEach(cls => {
+    Object.values(cls).forEach(v => {
+      if (v.answer === 'yes') yes++;
+      else if (v.answer === 'no') no++;
+      else if (v.answer === 'leave') leave++;
+    });
+  });
+
+  document.getElementById('totalResp').textContent = yes+stay+no+leave;
+  document.getElementById('totalYes').textContent = yes;
+  document.getElementById('totalStay').textContent = stay;
+  document.getElementById('totalNo').textContent = no;
+
+  let lvFull=0, lvAm=0, lvPm=0;
+  Object.values(teacherData).forEach(cls => {
+    Object.values(cls).forEach(v => {
+      if (v.answer === 'leave') {
+        if (v.leaveType === 'full') lvFull++;
+        else if (v.leaveType === 'am') lvAm++;
+        else if (v.leaveType === 'pm') lvPm++;
+      }
+    });
+  });
+  document.getElementById('totalLeave').textContent = `${leave}명 (종일 ${lvFull} · 오전 ${lvAm} · 오후 ${lvPm})`;
+
+  // 패널 렌더
+  if (currentMainTab === 'child') {
+    renderChildPanel();
+  } else {
+    renderTeacherPanel();
+  }
+}
+
+function renderChildPanel() {
+  const childData = allData.child || {};
+  const cM = document.getElementById('childMujigae');
+  const cW = document.getElementById('childWoori');
+  cM.innerHTML = ''; cW.innerHTML = '';
+
+  Object.entries(CHILDREN_BY_CLASS.mujigae).forEach(([cls, roster]) => {
+    const card = makeGroupCard(cls, roster, childData[cls] || {}, 'child');
+    if (card) cM.appendChild(card);
+  });
+  Object.entries(CHILDREN_BY_CLASS.woori).forEach(([cls, roster]) => {
+    const card = makeGroupCard(cls, roster, childData[cls] || {}, 'child');
+    if (card) cW.appendChild(card);
+  });
+
+  if (cM.children.length === 0) cM.innerHTML = '<div style="color:#92400e;text-align:center;padding:10px;font-size:13px">해당 항목 없음</div>';
+  if (cW.children.length === 0) cW.innerHTML = '<div style="color:#92400e;text-align:center;padding:10px;font-size:13px">해당 항목 없음</div>';
+}
+
+function renderTeacherPanel() {
+  const teacherData = allData.teacher || {};
+  const tM = document.getElementById('teacherMujigae');
+  const tW = document.getElementById('teacherWoori');
+  const tE = document.getElementById('teacherExtra');
+  tM.innerHTML = ''; tW.innerHTML = ''; tE.innerHTML = '';
+
+  Object.entries(TEACHERS_BY_GROUP.mujigae).forEach(([grp, roster]) => {
+    const card = makeGroupCard(grp, roster, teacherData[grp] || {}, 'teacher');
+    if (card) tM.appendChild(card);
+  });
+  Object.entries(TEACHERS_BY_GROUP.woori).forEach(([grp, roster]) => {
+    const card = makeGroupCard(grp, roster, teacherData[grp] || {}, 'teacher');
+    if (card) tW.appendChild(card);
+  });
+  Object.entries(TEACHERS_BY_GROUP.extra).forEach(([grp, roster]) => {
+    const card = makeGroupCard(grp, roster, teacherData[grp] || {}, 'teacher');
+    if (card) tE.appendChild(card);
+  });
+
+  if (tM.children.length === 0) tM.innerHTML = '<div style="color:#92400e;text-align:center;padding:10px;font-size:13px">해당 항목 없음</div>';
+  if (tW.children.length === 0) tW.innerHTML = '<div style="color:#92400e;text-align:center;padding:10px;font-size:13px">해당 항목 없음</div>';
+  if (tE.children.length === 0) tE.innerHTML = '<div style="color:#92400e;text-align:center;padding:10px;font-size:13px">해당 항목 없음</div>';
+}
+
+function makeGroupCard(grp, roster, ans, role) {
+  let y=0, s=0, n=0, l=0;
+  Object.values(ans).forEach(v=>{
+    if(v.answer==='yes')y++;
+    else if(v.answer==='stay')s++;
+    else if(v.answer==='no')n++;
+    else if(v.answer==='leave')l++;
+  });
+  const pending = roster.filter(nm => !ans[nm]).length;
+  const respondedCount = Object.keys(ans).length;
+
+  // 서브탭 필터
+  if (currentSubTab === 'pending' && pending === 0) return null;
+  if (currentSubTab === 'responded' && respondedCount === 0) return null;
+
+  const card = document.createElement('div');
+  card.className = 'cls-card';
+
+  let summary = '<div class="cls-count">';
+  if (y>0) summary += `<span class="c c-yes">참여 ${y}</span>`;
+  if (s>0) summary += `<span class="c c-stay">잔류 ${s}</span>`;
+  if (n>0) summary += `<span class="c c-no">${role==='teacher'?'불참':'결석'} ${n}</span>`;
+  if (l>0) summary += `<span class="c c-leave">연차 ${l}</span>`;
+  if (pending > 0) summary += `<span class="c c-pending">미응답 ${pending}</span>`;
+  summary += '</div>';
+
+  let body = '';
+  roster.forEach(nm => {
+    const v = ans[nm];
+    if (currentSubTab === 'pending' && v) return;
+    if (currentSubTab === 'responded' && !v) return;
+
+    let badge, label;
+    if (!v) { badge = 'b-pending'; label = '미응답'; }
+    else if (v.answer === 'yes') { badge = 'b-yes'; label = '참여'; }
+    else if (v.answer === 'stay') { badge = 'b-stay'; label = '원에 남음'; }
+    else if (v.answer === 'no') { badge = 'b-no'; label = role==='teacher'?'불참':'결석'; }
+    else if (v.answer === 'leave') {
+      badge = 'b-leave';
+      label = v.leaveType==='full'?'종일휴가':v.leaveType==='am'?'오전반차':v.leaveType==='pm'?'오후반차':'유형미정';
+    }
+    body += `<div class="row">
+      <span class="nm">${nm}</span>
+      <span class="right">
+        <span class="b ${badge}">${label}</span>
+        ${v ? `<button class="del-btn" onclick="delEntry('${role}','${grp}','${nm}')">삭제</button>` : ''}
+      </span>
+    </div>`;
+  });
+
+  card.innerHTML = `
+    <div class="cls-head">
+      <span class="cls-name">${grp} <span style="font-size:11px;color:#92400e;font-weight:600">(${respondedCount}/${roster.length})</span></span>
+      ${summary}
+    </div>
+    <div class="cls-body">${body || '<div style="color:#92400e;padding:8px;font-size:12px;text-align:center">필터 조건에 해당하는 항목 없음</div>'}</div>
+  `;
+  card.querySelector('.cls-head').onclick = () => {
+    card.querySelector('.cls-body').classList.toggle('open');
+  };
+  return card;
+}
+
+window.delEntry = async function(role, grp, nm) {
+  if (!confirm(`${nm}의 응답을 삭제할까요?`)) return;
+  try {
+    await remove(ref(db, `swimming/${role}/${grp}/${nm}`));
+    showToast('🗑 삭제됨', 'success');
+  } catch(e) {
+    showToast('삭제 실패: '+e.message, 'error');
+  }
+}
+
+window.openResetModal = function() {
+  document.getElementById('resetModal').classList.add('open');
+  document.getElementById('resetPw').value = '';
+  document.getElementById('resetConfirm').value = '';
+}
+window.closeResetModal = function() {
+  document.getElementById('resetModal').classList.remove('open');
+}
+window.doReset = async function() {
+  const pw = document.getElementById('resetPw').value;
+  const confirmText = document.getElementById('resetConfirm').value;
+  if (pw !== ADMIN_PW) { showToast('⚠ 비밀번호가 틀렸어요', 'error'); return; }
+  if (confirmText !== '초기화') { showToast('⚠ 확인 문구를 정확히 입력하세요', 'error'); return; }
+
+  const btn = document.getElementById('confirmBtn');
+  btn.disabled = true;
+  btn.textContent = '삭제 중...';
+  try {
+    await remove(ref(db, 'swimming'));
+    closeResetModal();
+    showToast('✅ 모든 데이터가 초기화되었습니다', 'success');
+  } catch(e) {
+    showToast('실패: '+e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '삭제 실행';
+  }
+}
+
+window.exportCSV = function() {
+  const childData = allData.child || {};
+  const teacherData = allData.teacher || {};
+  let csv = '\uFEFF구분,그룹,이름,응답,상세,시각\n';
+
+  Object.entries(childData).forEach(([cls, members]) => {
+    Object.entries(members).forEach(([nm, v]) => {
+      const ans = v.answer === 'yes' ? '참여' : v.answer === 'stay' ? '원에 남음' : '결석';
+      const ts = v.ts ? new Date(v.ts).toLocaleString('ko-KR') : '';
+      csv += `아동,${cls},${nm},${ans},,${ts}\n`;
+    });
+  });
+  Object.entries(teacherData).forEach(([grp, members]) => {
+    Object.entries(members).forEach(([nm, v]) => {
+      let ans, detail = '';
+      if (v.answer === 'yes') ans = '참여';
+      else if (v.answer === 'no') ans = '불참';
+      else if (v.answer === 'leave') {
+        ans = '당일연차';
+        detail = v.leaveType==='full'?'종일휴가':v.leaveType==='am'?'오전반차':v.leaveType==='pm'?'오후반차':'';
+      }
+      const ts = v.ts ? new Date(v.ts).toLocaleString('ko-KR') : '';
+      csv += `교사,${grp},${nm},${ans},${detail},${ts}\n`;
+    });
+  });
+
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `수영조사_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('📥 CSV 저장됨', 'success');
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (type || '');
+  setTimeout(() => { t.className = 'toast'; }, 2400);
+}
+</script>
+</body>
+</html>

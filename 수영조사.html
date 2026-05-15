@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>수영장 참여 조사</title>
+<style>
+  :root{
+    --bg:linear-gradient(135deg,#e0f2fe 0%,#bae6fd 100%);
+    --primary:#0284c7; --primary-dark:#0369a1; --primary-light:#0ea5e9;
+    --text:#0c4a6e; --muted:#64748b; --border:#bae6fd;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:var(--bg);min-height:100vh;padding:16px;color:var(--text)}
+  .wrap{max-width:600px;margin:0 auto}
+  .card{background:white;border-radius:20px;padding:22px;box-shadow:0 8px 30px rgba(2,132,199,.12);margin-bottom:14px}
+  h1{font-size:24px;font-weight:800;color:var(--primary-dark);margin-bottom:6px;text-align:center}
+  .sub{text-align:center;color:var(--primary);font-size:13px;margin-bottom:14px}
+  .status-bar{padding:8px 12px;border-radius:10px;font-size:12px;text-align:center;font-weight:600;margin-bottom:14px}
+  .status-bar.connected{background:#dcfce7;color:#166534}
+  .status-bar.connecting{background:#fef3c7;color:#92400e}
+  .status-bar.error{background:#fee2e2;color:#991b1b}
+
+  /* 메인 탭 (아동/교사) */
+  .main-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:16px;background:#f0f9ff;padding:5px;border-radius:14px}
+  .main-tab{padding:12px;border:none;background:transparent;border-radius:10px;font-weight:800;color:var(--primary);cursor:pointer;font-family:inherit;font-size:15px;transition:all .2s}
+  .main-tab.active{background:linear-gradient(135deg,var(--primary-light),var(--primary));color:white;box-shadow:0 4px 12px rgba(2,132,199,.25)}
+
+  .card-title{font-size:17px;font-weight:800;color:var(--primary-dark);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+  .card-title .small{font-size:12px;color:var(--muted);font-weight:600}
+
+  /* 반/그룹 카드 */
+  .cls-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .cls-btn{background:#f0f9ff;border:2px solid var(--border);border-radius:14px;padding:14px 10px;cursor:pointer;font-family:inherit;text-align:left;transition:all .15s}
+  .cls-btn:active{transform:scale(.97)}
+  .cls-btn.sel{background:linear-gradient(135deg,var(--primary-light),var(--primary));border-color:var(--primary);box-shadow:0 6px 18px rgba(2,132,199,.3)}
+  .cls-btn .cls-nm{font-weight:800;font-size:14px;color:var(--primary-dark);line-height:1.3}
+  .cls-btn.sel .cls-nm{color:white}
+  .cls-btn .cls-cnt{font-size:11px;color:var(--muted);margin-top:4px}
+  .cls-btn.sel .cls-cnt{color:rgba(255,255,255,.9)}
+  .cnt-status b{color:#0c4a6e;font-weight:700}
+  .cls-btn.sel .cnt-status b{color:white}
+
+  .group-label{font-size:12px;font-weight:800;color:var(--muted);margin:14px 0 8px;letter-spacing:1px}
+  .group-label:first-child{margin-top:0}
+
+  /* 멤버 행 */
+  .member-list{display:flex;flex-direction:column;gap:6px}
+  .member-row{display:grid;grid-template-columns:75px 1fr;align-items:center;gap:10px;padding:9px 12px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px}
+  .member-row.done{background:#dcfce7;border-color:#86efac}
+  .member-row .nm{font-weight:700;font-size:14px;color:var(--text)}
+
+  .status-btns{display:flex;gap:5px}
+  .status-btn{flex:1;padding:9px 4px;border:1.5px solid #cbd5e1;background:white;border-radius:8px;font-size:12px;font-weight:700;color:#475569;cursor:pointer;font-family:inherit;transition:all .15s;line-height:1.2}
+  .status-btn:active{transform:scale(.94)}
+  .status-btn.sel-yes{background:#0ea5e9;color:white;border-color:#0284c7}
+  .status-btn.sel-no{background:#94a3b8;color:white;border-color:#64748b}
+  .status-btn.sel-stay{background:#f59e0b;color:white;border-color:#d97706}
+  .status-btn.sel-leave{background:#a855f7;color:white;border-color:#9333ea}
+
+  /* 연차 세부 */
+  .leave-detail{grid-column:1/-1;padding-top:9px;margin-top:6px;border-top:1px dashed #cbd5e1;display:none}
+  .leave-detail.show{display:block}
+  .leave-detail-label{font-size:11px;color:var(--muted);font-weight:700;margin-bottom:5px}
+  .leave-btns{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+  .leave-btn{padding:8px 4px;border:1.5px solid #e9d5ff;background:white;border-radius:8px;font-size:11px;font-weight:700;color:#7e22ce;cursor:pointer;font-family:inherit}
+  .leave-btn:active{transform:scale(.94)}
+  .leave-btn.sel{background:#a855f7;color:white;border-color:#9333ea}
+
+  /* 토스트 */
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(120%);background:#0f172a;color:white;padding:14px 22px;border-radius:14px;font-weight:700;font-size:14px;transition:transform .3s;z-index:1000;max-width:90%;text-align:center}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+  .toast.success{background:#16a34a}
+  .toast.error{background:#dc2626}
+
+  /* 현황 */
+  .stat-cls{background:#f0f9ff;border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px}
+  .stat-head{display:flex;justify-content:space-between;align-items:center;cursor:pointer;flex-wrap:wrap;gap:6px}
+  .stat-head .nm{font-weight:800;color:var(--primary-dark);font-size:14px}
+  .stat-head .cnts{display:flex;gap:4px;flex-wrap:wrap}
+  .b{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:700;white-space:nowrap}
+  .b-y{background:#dbeafe;color:#1e40af}
+  .b-s{background:#fef3c7;color:#92400e}
+  .b-n{background:#f1f5f9;color:#475569}
+  .b-l{background:#f3e8ff;color:#7e22ce}
+  .stat-body{display:none;padding-top:10px;margin-top:10px;border-top:1px dashed var(--border);font-size:13px}
+  .stat-body.open{display:block}
+  .stat-row{padding:4px 0;display:flex;justify-content:space-between;align-items:center}
+
+  .pane{display:none}
+  .pane.active{display:block}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>🏊 수영장 참여 조사</h1>
+    <div class="sub">아동 / 교사 탭을 선택하고 응답해주세요</div>
+    <div id="statusBar" class="status-bar connecting">⏳ 연결 중...</div>
+
+    <div class="main-tabs">
+      <button class="main-tab active" id="mainTabChild" onclick="setMainTab('child')">👶 아동</button>
+      <button class="main-tab" id="mainTabTeacher" onclick="setMainTab('teacher')">👩‍🏫 교사</button>
+    </div>
+
+    <!-- 아동 패널 -->
+    <div class="pane active" id="paneChild">
+      <div class="card-title"><span>1️⃣ 반 선택</span></div>
+      <div class="group-label">🏠 무지개어린이집</div>
+      <div class="cls-grid" id="child-grid-mujigae"></div>
+      <div class="group-label">🏠 우리무지개어린이집</div>
+      <div class="cls-grid" id="child-grid-woori"></div>
+    </div>
+
+    <!-- 교사 패널 -->
+    <div class="pane" id="paneTeacher">
+      <div class="card-title"><span>1️⃣ 소속 선택</span></div>
+      <div class="group-label">🏠 무지개어린이집</div>
+      <div class="cls-grid" id="teacher-grid-mujigae"></div>
+      <div class="group-label">🏠 우리무지개어린이집</div>
+      <div class="cls-grid" id="teacher-grid-woori"></div>
+      <div class="group-label">💆 치료사 · 기타</div>
+      <div class="cls-grid" id="teacher-grid-extra"></div>
+    </div>
+  </div>
+
+  <div class="card" id="memberCard" style="display:none">
+    <div class="card-title">
+      <span id="memberCardTitle">2️⃣ 응답하기</span>
+      <span class="small">버튼만 누르면 즉시 저장</span>
+    </div>
+    <div class="member-list" id="memberList"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span>📋 신청 현황</span>
+      <button onclick="renderStats()" style="background:#e0f2fe;color:var(--primary-dark);border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">새로고침</button>
+    </div>
+    <div id="statsContainer"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDojXJ_9pOnla8uG240APwo3Ik9gBddMw4",
+  authDomain: "mujigae-swimming.firebaseapp.com",
+  databaseURL: "https://mujigae-swimming-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "mujigae-swimming",
+  storageBucket: "mujigae-swimming.firebasestorage.app",
+  messagingSenderId: "279953220805",
+  appId: "1:279953220805:web:b24cbe70f8556416c0bcac"
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// === 아동 명단 ===
+const CHILDREN_BY_CLASS = {
+  mujigae: {
+    "은빛물결": ["이재헌","박수현","김성원","정하준","송지우","박승빈","김정후","주현우","신승혁","김수호","정연우","최보민","한다윤"],
+    "드림반": ["정하율","권민재","심유혁","안하람","박준하","서준우","강건영","박상현","구가율","김도원"]
+  },
+  woori: {
+    "아침햇살": ["정태호","고은호","김이안","전수호","위단우","서현우","김윤우","김지안"],
+    "고운햇살": ["박재희","박지유","김민준","곽나율","김은서","홍하루","김동휘","임라희"],
+    "들꽃향기": ["한지후","박은진","곽시안","박찬율","설재은","류시환","강은호","박다엘","김사랑","손리완","이로아","이소민","방서윤","김인우","이은우","임서우","이하린"],
+    "푸른하늘": ["김아린","김강준","박진우","한서후","윤태언","김서우","백민지","이하민","강태희","곽다온","박준","김세윤","김지민","이채민"],
+    "파도소리": ["윤지아","김수겸","돌란샤나","권민서","최도윤","장시영"],
+    "푸른바다": ["김평온","김별리","양준우","강지호","김도우","백이엘","이태헌","오주원","서연석","임하라","김태유","조믿음","유이서","윤예나","윤예지","조가온","곽시후","이소민"],
+    "다짐반": ["김중원","이아윤","강남준","문시후","문휘경","이안","이하준"],
+    "모둠반": ["김가온","한시혁","강승아","이승호","박도윤","최미소","정서진","김리윤","박수현","송아린","박건우","조하준","조혜윤"]
+  }
+};
+
+// === 교사 명단 (반별 담임 + 치료사 + 기타) ===
+const TEACHERS_BY_GROUP = {
+  mujigae: {
+    "은빛물결": ["채준범","이왕성","서명화","임민주"],
+    "드림반": ["황경하","이승원","박정민"]
+  },
+  woori: {
+    "아침햇살": ["강수지","김보라","김하민"],
+    "고운햇살": ["박서정","천은주","모정아"],
+    "들꽃향기": ["박초롱","이효선"],
+    "푸른하늘": ["조현아","황선하"],
+    "파도소리": ["임정연","조명원"],
+    "푸른바다": ["백장미","이슬아","유주환"],
+    "다짐반": ["송태헌","마호진"],
+    "모둠반": ["정인애","변아진","윤아름","정다송"]
+  },
+  extra: {
+    "무지개 치료사": ["강수민","서홍련","정소윤"],
+    "우리무지개 치료사": ["이미화","권다애","표영민","전나인","박규리","임주현"],
+    "연장반": ["주은아","윤혜정"],
+    "보조교사": ["이숙현","마미선","정아영"]
+  }
+};
+
+let currentMainTab = 'child';
+let selectedGroup = null; // {role:'child'|'teacher', name:'반/그룹명'}
+let allData = {};
+
+// === 연결 상태 ===
+const statusBar = document.getElementById('statusBar');
+onValue(ref(db, '.info/connected'), (snap) => {
+  if (snap.val() === true) {
+    statusBar.className = 'status-bar connected';
+    statusBar.textContent = '🟢 실시간 연결됨';
+  }
+});
+setTimeout(() => {
+  if (statusBar.classList.contains('connecting')) {
+    statusBar.className = 'status-bar error';
+    statusBar.textContent = '🔴 연결 실패';
+  }
+}, 10000);
+
+// 실시간 데이터 구독
+onValue(ref(db, 'swimming'), (snap) => {
+  allData = snap.val() || {};
+  updateGroupCounts();
+  if (selectedGroup) renderMembers();
+  renderStats();
+});
+
+// === 메인 탭 ===
+window.setMainTab = function(t) {
+  currentMainTab = t;
+  document.getElementById('mainTabChild').classList.toggle('active', t==='child');
+  document.getElementById('mainTabTeacher').classList.toggle('active', t==='teacher');
+  document.getElementById('paneChild').classList.toggle('active', t==='child');
+  document.getElementById('paneTeacher').classList.toggle('active', t==='teacher');
+  // 선택 초기화
+  selectedGroup = null;
+  document.getElementById('memberCard').style.display = 'none';
+  document.querySelectorAll('.cls-btn').forEach(b => b.classList.remove('sel'));
+}
+
+// === 그룹 카드 생성 ===
+function renderGroupButtons() {
+  // 아동 탭
+  const cgM = document.getElementById('child-grid-mujigae');
+  const cgW = document.getElementById('child-grid-woori');
+  cgM.innerHTML = ''; cgW.innerHTML = '';
+  Object.entries(CHILDREN_BY_CLASS.mujigae).forEach(([cls, list]) =>
+    cgM.appendChild(makeGroupBtn('child', cls, list.length)));
+  Object.entries(CHILDREN_BY_CLASS.woori).forEach(([cls, list]) =>
+    cgW.appendChild(makeGroupBtn('child', cls, list.length)));
+
+  // 교사 탭
+  const tgM = document.getElementById('teacher-grid-mujigae');
+  const tgW = document.getElementById('teacher-grid-woori');
+  const tgE = document.getElementById('teacher-grid-extra');
+  tgM.innerHTML = ''; tgW.innerHTML = ''; tgE.innerHTML = '';
+  Object.entries(TEACHERS_BY_GROUP.mujigae).forEach(([grp, list]) =>
+    tgM.appendChild(makeGroupBtn('teacher', grp, list.length)));
+  Object.entries(TEACHERS_BY_GROUP.woori).forEach(([grp, list]) =>
+    tgW.appendChild(makeGroupBtn('teacher', grp, list.length)));
+  Object.entries(TEACHERS_BY_GROUP.extra).forEach(([grp, list]) =>
+    tgE.appendChild(makeGroupBtn('teacher', grp, list.length)));
+}
+
+function makeGroupBtn(role, grp, count) {
+  const btn = document.createElement('button');
+  btn.className = 'cls-btn';
+  btn.dataset.role = role;
+  btn.dataset.grp = grp;
+  btn.innerHTML = `
+    <div class="cls-nm">${grp}</div>
+    <div class="cls-cnt">${count}명<br><span class="cnt-status" data-role="${role}" data-grp="${grp}"></span></div>
+  `;
+  btn.onclick = () => selectGroup(role, grp);
+  return btn;
+}
+
+function updateGroupCounts() {
+  document.querySelectorAll('.cnt-status').forEach(el => {
+    const role = el.dataset.role;
+    const grp = el.dataset.grp;
+    const cnt = (allData[role] && allData[role][grp]) ? Object.keys(allData[role][grp]).length : 0;
+    if (cnt > 0) el.innerHTML = `<b>응답 ${cnt}건</b>`;
+    else el.textContent = '';
+  });
+}
+
+function selectGroup(role, grp) {
+  selectedGroup = { role, name: grp };
+  document.querySelectorAll('.cls-btn').forEach(b => {
+    b.classList.toggle('sel', b.dataset.role===role && b.dataset.grp===grp);
+  });
+  document.getElementById('memberCard').style.display = 'block';
+  document.getElementById('memberCardTitle').textContent = `2️⃣ ${grp} 응답`;
+  renderMembers();
+  setTimeout(() => {
+    document.getElementById('memberCard').scrollIntoView({behavior:'smooth', block:'start'});
+  }, 100);
+}
+
+function getRoster(role, grp) {
+  if (role === 'child') {
+    return CHILDREN_BY_CLASS.mujigae[grp] || CHILDREN_BY_CLASS.woori[grp];
+  } else {
+    return TEACHERS_BY_GROUP.mujigae[grp] || TEACHERS_BY_GROUP.woori[grp] || TEACHERS_BY_GROUP.extra[grp];
+  }
+}
+
+function renderMembers() {
+  if (!selectedGroup) return;
+  const { role, name } = selectedGroup;
+  const roster = getRoster(role, name);
+  if (!roster) return;
+  const answers = (allData[role] && allData[role][name]) || {};
+
+  const list = document.getElementById('memberList');
+  list.innerHTML = '';
+  roster.forEach(nm => {
+    if (role === 'child') list.appendChild(makeChildRow(nm, answers[nm]));
+    else list.appendChild(makeTeacherRow(nm, answers[nm]));
+  });
+}
+
+function makeChildRow(name, ans) {
+  const row = document.createElement('div');
+  row.className = 'member-row' + (ans ? ' done' : '');
+  const cur = ans ? ans.answer : '';
+  row.innerHTML = `
+    <div class="nm">${name}</div>
+    <div class="status-btns">
+      <button class="status-btn ${cur==='yes'?'sel-yes':''}" data-v="yes">참여</button>
+      <button class="status-btn ${cur==='stay'?'sel-stay':''}" data-v="stay">원에 남음</button>
+      <button class="status-btn ${cur==='no'?'sel-no':''}" data-v="no">결석</button>
+    </div>
+  `;
+  row.querySelectorAll('.status-btn').forEach(btn => {
+    btn.onclick = () => saveAnswer('child', name, btn.dataset.v, null);
+  });
+  return row;
+}
+
+function makeTeacherRow(name, ans) {
+  const row = document.createElement('div');
+  row.className = 'member-row' + (ans ? ' done' : '');
+  const cur = ans ? ans.answer : '';
+  const leaveType = ans && ans.leaveType ? ans.leaveType : '';
+  const showLeave = cur === 'leave';
+
+  row.innerHTML = `
+    <div class="nm">${name}</div>
+    <div class="status-btns">
+      <button class="status-btn ${cur==='yes'?'sel-yes':''}" data-v="yes">참여</button>
+      <button class="status-btn ${cur==='no'?'sel-no':''}" data-v="no">불참</button>
+      <button class="status-btn ${cur==='leave'?'sel-leave':''}" data-v="leave">당일연차</button>
+    </div>
+    <div class="leave-detail ${showLeave?'show':''}">
+      <div class="leave-detail-label">연차 유형을 선택해주세요</div>
+      <div class="leave-btns">
+        <button class="leave-btn ${leaveType==='full'?'sel':''}" data-lv="full">종일휴가</button>
+        <button class="leave-btn ${leaveType==='am'?'sel':''}" data-lv="am">오전반차</button>
+        <button class="leave-btn ${leaveType==='pm'?'sel':''}" data-lv="pm">오후반차</button>
+      </div>
+    </div>
+  `;
+  row.querySelectorAll('.status-btn').forEach(btn => {
+    btn.onclick = () => {
+      const v = btn.dataset.v;
+      if (v === 'leave') {
+        row.querySelectorAll('.status-btn').forEach(b => b.classList.remove('sel-yes','sel-no','sel-leave'));
+        btn.classList.add('sel-leave');
+        row.querySelector('.leave-detail').classList.add('show');
+        if (leaveType) {
+          saveAnswer('teacher', name, 'leave', leaveType);
+        } else {
+          showToast('👆 아래에서 연차 유형을 선택해주세요', 'success');
+        }
+      } else {
+        saveAnswer('teacher', name, v, null);
+      }
+    };
+  });
+  row.querySelectorAll('.leave-btn').forEach(btn => {
+    btn.onclick = () => saveAnswer('teacher', name, 'leave', btn.dataset.lv);
+  });
+  return row;
+}
+
+async function saveAnswer(role, name, answer, leaveType) {
+  if (!selectedGroup) return;
+  try {
+    const payload = { answer, ts: Date.now() };
+    if (answer === 'leave' && leaveType) payload.leaveType = leaveType;
+    await set(ref(db, `swimming/${role}/${selectedGroup.name}/${name}`), payload);
+
+    let label;
+    if (role === 'child') {
+      label = answer==='yes'?'참여':answer==='stay'?'원에 남음':'결석';
+    } else {
+      if (answer==='yes') label='참여';
+      else if (answer==='no') label='불참';
+      else label = leaveType==='full'?'종일휴가':leaveType==='am'?'오전반차':leaveType==='pm'?'오후반차':'연차';
+    }
+    showToast(`✅ ${name} - ${label}`, 'success');
+  } catch(e) {
+    showToast('저장 실패: '+e.message, 'error');
+  }
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (type || '');
+  setTimeout(() => { t.className = 'toast'; }, 2000);
+}
+
+// === 현황 ===
+window.renderStats = function() {
+  const container = document.getElementById('statsContainer');
+  container.innerHTML = '';
+  const childData = allData.child || {};
+  const teacherData = allData.teacher || {};
+
+  // 아동 그룹들
+  const childGroups = [...Object.keys(CHILDREN_BY_CLASS.mujigae), ...Object.keys(CHILDREN_BY_CLASS.woori)];
+  // 교사 그룹들
+  const teacherGroups = [
+    ...Object.keys(TEACHERS_BY_GROUP.mujigae),
+    ...Object.keys(TEACHERS_BY_GROUP.woori),
+    ...Object.keys(TEACHERS_BY_GROUP.extra)
+  ];
+
+  // 아동 섹션
+  const childRendered = [];
+  childGroups.forEach(grp => {
+    const ans = childData[grp] || {};
+    if (Object.keys(ans).length === 0) return;
+    childRendered.push({grp, ans});
+  });
+  if (childRendered.length > 0) {
+    const lbl = document.createElement('div');
+    lbl.className = 'group-label';
+    lbl.textContent = '👶 아동';
+    container.appendChild(lbl);
+    childRendered.forEach(({grp, ans}) => container.appendChild(makeStatCard(grp, ans, 'child')));
+  }
+
+  // 교사 섹션
+  const teacherRendered = [];
+  teacherGroups.forEach(grp => {
+    const ans = teacherData[grp] || {};
+    if (Object.keys(ans).length === 0) return;
+    teacherRendered.push({grp, ans});
+  });
+  if (teacherRendered.length > 0) {
+    const lbl = document.createElement('div');
+    lbl.className = 'group-label';
+    lbl.textContent = '👩‍🏫 교사';
+    container.appendChild(lbl);
+    teacherRendered.forEach(({grp, ans}) => container.appendChild(makeStatCard(grp, ans, 'teacher')));
+  }
+
+  if (container.children.length === 0) {
+    container.innerHTML = '<div style="text-align:center;color:#94a3b8;font-size:13px;padding:8px 0">아직 응답이 없습니다</div>';
+  }
+}
+
+function makeStatCard(grp, ans, role) {
+  let y=0, s=0, n=0, l=0;
+  Object.values(ans).forEach(v=>{
+    if(v.answer==='yes')y++;
+    else if(v.answer==='stay')s++;
+    else if(v.answer==='no')n++;
+    else if(v.answer==='leave')l++;
+  });
+
+  let head = '<div class="cnts">';
+  if (y>0) head += `<span class="b b-y">참여 ${y}</span>`;
+  if (s>0) head += `<span class="b b-s">잔류 ${s}</span>`;
+  if (n>0) head += `<span class="b b-n">${role==='teacher'?'불참':'결석'} ${n}</span>`;
+  if (l>0) head += `<span class="b b-l">연차 ${l}</span>`;
+  head += '</div>';
+
+  let body = '';
+  Object.entries(ans).forEach(([nm,v]) => {
+    let lbl, bcls;
+    if (v.answer==='yes') { lbl='참여'; bcls='b-y'; }
+    else if (v.answer==='stay') { lbl='원에 남음'; bcls='b-s'; }
+    else if (v.answer==='no') { lbl=role==='teacher'?'불참':'결석'; bcls='b-n'; }
+    else if (v.answer==='leave') {
+      const lv = v.leaveType==='full'?'종일휴가':v.leaveType==='am'?'오전반차':v.leaveType==='pm'?'오후반차':'유형미정';
+      lbl = lv; bcls = 'b-l';
+    }
+    body += `<div class="stat-row"><span>${nm}</span><span class="b ${bcls}">${lbl}</span></div>`;
+  });
+
+  const div = document.createElement('div');
+  div.className = 'stat-cls';
+  div.innerHTML = `
+    <div class="stat-head">
+      <span class="nm">${grp}</span>
+      ${head}
+    </div>
+    <div class="stat-body">${body}</div>
+  `;
+  div.querySelector('.stat-head').onclick = () => {
+    div.querySelector('.stat-body').classList.toggle('open');
+  };
+  return div;
+}
+
+// 초기 렌더
+renderGroupButtons();
+</script>
+</body>
+</html>
