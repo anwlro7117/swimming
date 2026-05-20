@@ -431,12 +431,13 @@ let state = {
 };
 let allSchedules = {};  // Firebase 데이터
 
-// ── 초기화 ──
+// ── 초기화 (접속일 기준 다음달) ──
 const now = new Date();
-state.topCy = now.getFullYear();
-state.topCm = now.getMonth();
-state.dateCy = now.getFullYear();
-state.dateCm = now.getMonth();
+const nextM = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+state.topCy = nextM.getFullYear();
+state.topCm = nextM.getMonth();
+state.dateCy = nextM.getFullYear();
+state.dateCm = nextM.getMonth();
 
 // 시간 select 채우기
 function fillTimeSelects() {
@@ -714,8 +715,8 @@ function selectType(t) {
   document.getElementById('tripOnly').style.display = t==='trip' ? 'block' : 'none';
   document.getElementById('detailTitle').textContent = t==='trip' ? '🗺 광주탐방 상세 정보' : '🌲 숲놀이 상세 정보';
   document.getElementById('detailCard').style.display = 'block';
-  // 날짜 달력: 전달~다음달 범위, 현재월로 초기화
-  state.dateCy = now.getFullYear(); state.dateCm = now.getMonth();
+  // 날짜 달력: 다음달로 초기화
+  state.dateCy = nextM.getFullYear(); state.dateCm = nextM.getMonth();
   state.date = '';
   document.getElementById('selDateDisplay').style.display = 'none';
   setBus(null);
@@ -729,9 +730,9 @@ function dateCalmove(d) {
   const next = state.dateCm + 1 > 11 ? 0 : state.dateCm + 1;
   const prevY = state.dateCm === 0 ? state.dateCy - 1 : state.dateCy;
   const nextY = state.dateCm === 11 ? state.dateCy + 1 : state.dateCy;
-  // 전달~다음달 범위만 이동 가능
-  const minM = now.getMonth() - 1; const minY = minM < 0 ? now.getFullYear()-1 : now.getFullYear();
-  const maxM = now.getMonth() + 1; const maxY = maxM > 11 ? now.getFullYear()+1 : now.getFullYear();
+  // 이번달~다다음달 범위만 이동 가능 (기본 다음달)
+  const minM = now.getMonth(); const minY = now.getFullYear();
+  const maxM = now.getMonth() + 2; const maxY = maxM > 11 ? now.getFullYear()+1 : now.getFullYear();
   const newM = state.dateCm + d;
   const newY = newM < 0 ? state.dateCy - 1 : newM > 11 ? state.dateCy + 1 : state.dateCy;
   const nm = ((newM % 12) + 12) % 12;
