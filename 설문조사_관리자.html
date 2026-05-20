@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>알레르기질환 조사 관리자</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+    background: #f5f7fa;
+    min-height: 100vh;
+    padding: 20px;
+    color: #333;
+  }
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  header {
+    background: linear-gradient(135deg, #1976d2 0%, #0d47a1 100%);
+    color: #fff;
+    padding: 20px 24px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  header h1 { font-size: 20px; }
+  header .deadline { font-size: 13px; opacity: 0.9; }
+
+  /* 로그인 */
+  .login-box {
+    max-width: 360px;
+    margin: 80px auto;
+    background: #fff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    text-align: center;
+  }
+  .login-box h2 { color: #0d47a1; margin-bottom: 20px; }
+  .login-box input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 16px;
+    margin-bottom: 14px;
+    text-align: center;
+  }
+  .login-box button {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #1976d2 0%, #0d47a1 100%);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  /* 탭 */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    background: #fff;
+    padding: 6px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+  .tab {
+    flex: 1;
+    padding: 12px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    color: #666;
+    transition: all 0.2s;
+  }
+  .tab.active {
+    background: linear-gradient(135deg, #1976d2 0%, #0d47a1 100%);
+    color: #fff;
+  }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  /* 요약 통계 */
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .stat-box {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    padding: 16px;
+    border-radius: 10px;
+    text-align: center;
+  }
+  .stat-box.green { background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); }
+  .stat-box.orange { background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); }
+  .stat-box.red { background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); }
+  .stat-box .num {
+    font-size: 28px;
+    font-weight: bold;
+    color: #0d47a1;
+  }
+  .stat-box.green .num { color: #2e7d32; }
+  .stat-box.orange .num { color: #e65100; }
+  .stat-box.red .num { color: #c62828; }
+  .stat-box .label {
+    font-size: 13px;
+    color: #555;
+    margin-top: 4px;
+  }
+
+  /* 기관 필터 */
+  .filter-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .filter-bar select, .filter-bar button {
+    padding: 8px 14px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .filter-bar button {
+    background: #1976d2;
+    color: #fff;
+    border-color: #1976d2;
+    font-weight: bold;
+  }
+  .filter-bar button.secondary {
+    background: #fff;
+    color: #1976d2;
+  }
+
+  /* 조사표 (보건소 양식) */
+  .survey-form {
+    overflow-x: auto;
+    margin-bottom: 20px;
+  }
+  .survey-form table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    min-width: 720px;
+  }
+  .survey-form th, .survey-form td {
+    border: 1px solid #999;
+    padding: 6px 8px;
+    text-align: center;
+  }
+  .survey-form thead th {
+    background: #ffe0b2;
+    font-weight: bold;
+  }
+  .survey-form .age-cell {
+    background: #fff3e0;
+    font-weight: bold;
+    text-align: center;
+    writing-mode: horizontal-tb;
+  }
+  .survey-form .subtotal {
+    background: #f5f5f5;
+    font-weight: bold;
+  }
+  .survey-form .total-row {
+    background: #fff9c4;
+    font-weight: bold;
+  }
+  .survey-form .header-info {
+    background: #f9f9f9;
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+  .survey-form .header-info span { margin-right: 20px; }
+  .survey-form .header-info strong { color: #0d47a1; }
+
+  /* 참여 현황 표 */
+  .participation-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .participation-table th {
+    background: #1976d2;
+    color: #fff;
+    padding: 10px 8px;
+    text-align: left;
+    position: sticky;
+    top: 0;
+  }
+  .participation-table td {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+  }
+  .participation-table tr:hover { background: #f5f9ff; }
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+  }
+  .badge.done { background: #c8e6c9; color: #2e7d32; }
+  .badge.pending { background: #ffcdd2; color: #c62828; }
+
+  /* 다운로드 버튼 */
+  .download-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .download-bar button {
+    padding: 10px 18px;
+    background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .download-bar button.refresh { background: linear-gradient(135deg, #ff9800 0%, #e65100 100%); }
+
+  h3.section-title {
+    color: #0d47a1;
+    margin-bottom: 12px;
+    font-size: 16px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #bbdefb;
+  }
+
+  .loading {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+  }
+
+  @media (max-width: 600px) {
+    body { padding: 10px; }
+    header h1 { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 로그인 -->
+<div id="loginScreen">
+  <div class="login-box">
+    <h2>🔒 관리자 로그인</h2>
+    <p style="color:#666; font-size:13px; margin-bottom:16px;">알레르기질환 조사 관리자 페이지</p>
+    <input type="password" id="pwInput" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter')login()">
+    <button onclick="login()">로그인</button>
+  </div>
+</div>
+
+<!-- 메인 -->
+<div class="container" id="mainScreen" style="display:none;">
+  <header>
+    <div>
+      <h1>🌿 2026년 아토피·천식 안심학교 알레르기질환 조사 관리</h1>
+      <div class="deadline">광주광역시 남구보건소 | 조사기간 2026.4.24 ~ 5.20</div>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button onclick="openResetModal()" style="padding:8px 16px; background:rgba(244,67,54,0.9); color:#fff; border:1px solid rgba(255,255,255,0.3); border-radius:6px; cursor:pointer; font-weight:bold;">🗑️ 데이터 리셋</button>
+      <button onclick="logout()" style="padding:8px 16px; background:rgba(255,255,255,0.2); color:#fff; border:1px solid rgba(255,255,255,0.3); border-radius:6px; cursor:pointer;">로그아웃</button>
+    </div>
+  </header>
+
+  <!-- 리셋 모달 -->
+  <div id="resetModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center; padding:20px;">
+    <div style="background:#fff; border-radius:12px; padding:24px; max-width:480px; width:100%; box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+      <h2 style="color:#c62828; margin-bottom:14px;">⚠️ 데이터 리셋</h2>
+      <p style="color:#333; line-height:1.6; margin-bottom:12px;">
+        이 작업은 <strong style="color:#c62828;">모든 설문 응답 데이터를 영구적으로 삭제</strong>합니다.<br>
+        삭제된 데이터는 복구할 수 없습니다.
+      </p>
+      <div id="resetStats" style="background:#ffebee; padding:12px; border-radius:8px; margin-bottom:14px; font-size:14px;">
+        현재 저장된 응답: <strong id="resetCount">0</strong>건
+      </div>
+
+      <!-- 1단계: 옵션 선택 -->
+      <div id="resetStep1">
+        <label style="display:block; margin-bottom:8px; font-weight:bold;">삭제 범위 선택:</label>
+        <div style="margin-bottom:14px;">
+          <label style="display:flex; align-items:center; padding:10px; background:#f5f5f5; border-radius:6px; margin-bottom:6px; cursor:pointer;">
+            <input type="radio" name="resetScope" value="all" checked style="margin-right:8px;">
+            <span><strong>전체 삭제</strong> — 모든 응답 데이터 삭제</span>
+          </label>
+          <label style="display:flex; align-items:center; padding:10px; background:#f5f5f5; border-radius:6px; cursor:pointer;">
+            <input type="radio" name="resetScope" value="center" style="margin-right:8px;">
+            <span><strong>기관별 삭제</strong> —
+              <select id="resetCenterSel" style="margin-left:6px; padding:4px;">
+                <option value="무지개어린이집">무지개어린이집</option>
+                <option value="우리무지개어린이집">우리무지개어린이집</option>
+              </select>
+            </span>
+          </label>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button onclick="closeResetModal()" style="flex:1; padding:12px; background:#e0e0e0; color:#333; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">취소</button>
+          <button onclick="goResetStep2()" style="flex:1; padding:12px; background:#c62828; color:#fff; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">다음 →</button>
+        </div>
+      </div>
+
+      <!-- 2단계: 확인 문구 입력 -->
+      <div id="resetStep2" style="display:none;">
+        <p style="margin-bottom:10px; font-size:14px;">정말 삭제하시려면 아래에 <strong style="color:#c62828;">"삭제확인"</strong>을 입력하세요:</p>
+        <input type="text" id="resetConfirmInput" placeholder="삭제확인" style="width:100%; padding:12px; border:2px solid #e0e0e0; border-radius:8px; font-size:15px; margin-bottom:14px; text-align:center;">
+        <div style="display:flex; gap:10px;">
+          <button onclick="backToResetStep1()" style="flex:1; padding:12px; background:#e0e0e0; color:#333; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">← 이전</button>
+          <button onclick="executeReset()" id="executeResetBtn" style="flex:1; padding:12px; background:#c62828; color:#fff; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">삭제 실행</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 요약 통계 -->
+  <div class="card">
+    <h3 class="section-title">📊 전체 현황</h3>
+    <div class="stat-row" id="overallStats">
+      <div class="loading">불러오는 중...</div>
+    </div>
+  </div>
+
+  <!-- 탭 -->
+  <div class="tabs">
+    <button class="tab active" data-tab="form">📋 조사표(보건소 제출용)</button>
+    <button class="tab" data-tab="participation">✅ 참여 현황</button>
+    <button class="tab" data-tab="detail">📝 상세 응답</button>
+  </div>
+
+  <!-- 탭1: 조사표 -->
+  <div class="tab-content active" id="tab-form">
+    <div class="card">
+      <div class="download-bar">
+        <button class="refresh" onclick="loadData()">🔄 데이터 새로고침</button>
+        <button onclick="downloadFormExcel()">📥 조사표 엑셀 다운로드</button>
+      </div>
+      <div class="filter-bar">
+        <select id="formCenter" onchange="renderForm()">
+          <option value="무지개어린이집">무지개어린이집</option>
+          <option value="우리무지개어린이집">우리무지개어린이집</option>
+        </select>
+      </div>
+      <div id="formContainer"></div>
+    </div>
+  </div>
+
+  <!-- 탭2: 참여 현황 -->
+  <div class="tab-content" id="tab-participation">
+    <div class="card">
+      <div class="download-bar">
+        <button onclick="downloadParticipationCSV()">📥 참여 현황 CSV 다운로드</button>
+      </div>
+      <div class="filter-bar">
+        <select id="partCenter" onchange="renderParticipation()">
+          <option value="all">전체 기관</option>
+          <option value="무지개어린이집">무지개어린이집</option>
+          <option value="우리무지개어린이집">우리무지개어린이집</option>
+        </select>
+        <select id="partClass" onchange="renderParticipation()">
+          <option value="all">전체 반</option>
+        </select>
+        <select id="partStatus" onchange="renderParticipation()">
+          <option value="all">전체</option>
+          <option value="done">제출 완료</option>
+          <option value="pending">미제출</option>
+        </select>
+      </div>
+      <div id="participationContainer"></div>
+    </div>
+  </div>
+
+  <!-- 탭3: 상세 응답 -->
+  <div class="tab-content" id="tab-detail">
+    <div class="card">
+      <div class="download-bar">
+        <button onclick="downloadDetailCSV()">📥 상세 응답 CSV 다운로드</button>
+      </div>
+      <div class="filter-bar">
+        <select id="detailCenter" onchange="renderDetail()">
+          <option value="all">전체 기관</option>
+          <option value="무지개어린이집">무지개어린이집</option>
+          <option value="우리무지개어린이집">우리무지개어린이집</option>
+        </select>
+      </div>
+      <div id="detailContainer"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, get, child, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDojXJ_9pOnla8uG240APwo3Ik9gBddMw4",
+  authDomain: "mujigae-swimming.firebaseapp.com",
+  databaseURL: "https://mujigae-swimming-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "mujigae-swimming",
+  storageBucket: "mujigae-swimming.firebasestorage.app",
+  messagingSenderId: "279953220805",
+  appId: "1:279953220805:web:b24cbe70f8556416c0bcac"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// 반 편성 (드림·모둠·다짐 제외)
+const roster = {
+  "무지개어린이집": {
+    "아기참새": ["박범준","정윤하","정다엘","고이솔","조은준"],
+    "초롱이슬": ["전유주","양선우","박하엘","박유하","정이안","정이준"],
+    "은빛물결": ["이재헌","박수현","김성원","정하준","송지우","박승빈","김정후","주현우","신승혁","김수호","정연우","최보민","한다윤"]
+  },
+  "우리무지개어린이집": {
+    "들꽃향기": ["한지후","박은진","곽시안","박찬율","설재은","류시환","강은호","박다엘","김사랑","손리완","이로아","이소민","방서윤","김인우","이은우","임서우","이하린"],
+    "푸른하늘": ["김아린","김강준","박진우","한서후","윤태언","김서우","백민지","이하민","강태희","곽다온","박준","김세윤","김지민","이채민"],
+    "푸른바다": ["김평온","김별리","양준우","강지호","김도우","백이엘","이태헌","오주원","서연석","임하라","김태유","조믿음","유이서","윤예나","윤예지","조가온","곽시후","이소민"],
+    "아침햇살": ["정태호","고은호","김이안","전수호","위단우","서현우","김윤우","김지안"],
+    "고운햇살": ["박재희","박지유","김민준","곽나율","김은서","홍하루","김동휘","임라희"],
+    "파도소리": ["윤지아","김수겸","돌란샤나","권민서","최도윤","장시영"]
+  }
+};
+
+const AGE_GROUPS = ["12개월 미만","12~24개월 미만","24~36개월 미만","36~48개월 미만","48~60개월 미만","60개월 이상"];
+const DISEASES = [
+  {key:"asthma", label:"천식"},
+  {key:"atopic", label:"아토피피부염"},
+  {key:"rhinitis", label:"알레르기비염"},
+  {key:"foodAllergy", label:"식품알레르기"},
+  {key:"anaphylaxis", label:"아나필락시스"}
+];
+
+// 비밀번호
+const ADMIN_PW = "7117";
+
+let allResponses = {};
+
+window.login = function() {
+  if (document.getElementById("pwInput").value === ADMIN_PW) {
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("mainScreen").style.display = "block";
+    sessionStorage.setItem("allergyAdmin", "1");
+    loadData();
+  } else {
+    alert("비밀번호가 올바르지 않습니다.");
+  }
+};
+window.logout = function() {
+  sessionStorage.removeItem("allergyAdmin");
+  location.reload();
+};
+
+
+
+// 탭 전환
+document.querySelectorAll(".tab").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById(`tab-${btn.dataset.tab}`).classList.add("active");
+  });
+});
+
+// 데이터 로드
+window.loadData = async function() {
+  document.getElementById("overallStats").innerHTML = '<div class="loading">불러오는 중...</div>';
+  try {
+    const snap = await get(child(ref(db), "allergy/responses"));
+    const val = snap.val();
+    allResponses = (val && typeof val === "object") ? val : {};
+    renderOverall();
+    renderForm();
+    initParticipationFilter();
+    renderParticipation();
+    renderDetail();
+  } catch (e) {
+    console.error(e);
+    document.getElementById("overallStats").innerHTML = `<div style="color:#c62828; padding:12px;">데이터 로드 오류: ${e.message}</div>`;
+  }
+};
+
+// 세션 유지 시 자동 로그인
+if (sessionStorage.getItem("allergyAdmin") === "1") {
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("mainScreen").style.display = "block";
+  loadData();
+}
+
+// 전체 현황 통계
+function renderOverall() {
+  let totalChildren = 0, submittedCount = 0;
+  Object.entries(roster).forEach(([c, classes]) => {
+    Object.values(classes).forEach(kids => totalChildren += kids.length);
+  });
+  submittedCount = Object.keys(allResponses).length;
+  const pending = totalChildren - submittedCount;
+  const rate = totalChildren ? ((submittedCount / totalChildren) * 100).toFixed(1) : 0;
+
+  // 질환별 환아수
+  const diseaseCounts = {};
+  DISEASES.forEach(d => diseaseCounts[d.key] = 0);
+  Object.values(allResponses).forEach(r => {
+    DISEASES.forEach(d => { if (r[d.key] === "예") diseaseCounts[d.key]++; });
+  });
+
+  let html = `
+    <div class="stat-box">
+      <div class="num">${totalChildren}</div>
+      <div class="label">전체 원아</div>
+    </div>
+    <div class="stat-box green">
+      <div class="num">${submittedCount}</div>
+      <div class="label">제출 완료 (${rate}%)</div>
+    </div>
+    <div class="stat-box red">
+      <div class="num">${pending}</div>
+      <div class="label">미제출</div>
+    </div>
+  `;
+  DISEASES.forEach(d => {
+    html += `<div class="stat-box orange"><div class="num">${diseaseCounts[d.key]}</div><div class="label">${d.label}</div></div>`;
+  });
+  document.getElementById("overallStats").innerHTML = html;
+}
+
+// 보건소 양식 조사표 (기관별)
+window.renderForm = function() {
+  const center = document.getElementById("formCenter").value;
+  const classes = roster[center];
+
+  // 전체 원아수 (기관)
+  let totalAll = 0;
+  Object.values(classes).forEach(kids => totalAll += kids.length);
+
+  // 집계 데이터 구조: ageGroup → {소계,남,여, 질환별 카운트}
+  const stats = {};
+  AGE_GROUPS.forEach(ag => {
+    stats[ag] = {
+      total: 0, male: 0, female: 0,
+      asthma: {total:0, male:0, female:0},
+      atopic: {total:0, male:0, female:0},
+      rhinitis: {total:0, male:0, female:0},
+      foodAllergy: {total:0, male:0, female:0},
+      anaphylaxis: {total:0, male:0, female:0}
+    };
+  });
+
+  // 응답 집계
+  Object.values(allResponses).forEach(r => {
+    if (r.center !== center) return;
+    if (!stats[r.ageGroup]) return;
+    const s = stats[r.ageGroup];
+    s.total++;
+    if (r.gender === "남") s.male++;
+    else if (r.gender === "여") s.female++;
+    DISEASES.forEach(d => {
+      if (r[d.key] === "예") {
+        s[d.key].total++;
+        if (r.gender === "남") s[d.key].male++;
+        else if (r.gender === "여") s[d.key].female++;
+      }
+    });
+  });
+
+  // 합계
+  const tot = {
+    total: 0, male: 0, female: 0,
+    asthma: {total:0, male:0, female:0},
+    atopic: {total:0, male:0, female:0},
+    rhinitis: {total:0, male:0, female:0},
+    foodAllergy: {total:0, male:0, female:0},
+    anaphylaxis: {total:0, male:0, female:0}
+  };
+  AGE_GROUPS.forEach(ag => {
+    const s = stats[ag];
+    tot.total += s.total; tot.male += s.male; tot.female += s.female;
+    DISEASES.forEach(d => {
+      tot[d.key].total += s[d.key].total;
+      tot[d.key].male += s[d.key].male;
+      tot[d.key].female += s[d.key].female;
+    });
+  });
+
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}.${today.getMonth()+1}.${today.getDate()}`;
+
+  let html = `
+    <div class="header-info">
+      <span><strong>시도:</strong> 광주광역시</span>
+      <span><strong>시군구:</strong> 남구</span>
+      <span><strong>안심학교명:</strong> ${center}</span>
+      <span><strong>조사기간:</strong> 2026.4.24 ~ 5.20</span>
+      <span><strong>출력일:</strong> ${dateStr}</span>
+    </div>
+    <p style="font-size:12px; color:#666; margin-bottom:10px;">※ 반드시 의사로부터 해당 질환을 진단받은 경우에만 명수 표시 / 2개 이상 복합 시 각각 표시</p>
+    <div class="survey-form">
+      <table>
+        <thead>
+          <tr>
+            <th rowspan="2">구분</th>
+            <th rowspan="2">전체<br>원아수*</th>
+            <th colspan="6">알레르기질환 원아수</th>
+          </tr>
+          <tr>
+            <th>총명수</th>
+            <th>천식</th>
+            <th>아토피<br>피부염</th>
+            <th>알레르기<br>비염</th>
+            <th>식품<br>알레르기</th>
+            <th>아나필락시스</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  AGE_GROUPS.forEach(ag => {
+    const s = stats[ag];
+    // 어린이집은 만 3세 이상이 대부분이라 일부 행은 0이 정상
+    const ageTotal = s.asthma.total + s.atopic.total + s.rhinitis.total + s.foodAllergy.total + s.anaphylaxis.total;
+    html += `
+      <tr>
+        <td class="age-cell" rowspan="3">${ag}</td>
+      </tr>
+      <tr class="subtotal">
+        <td>소계 ${s.total}명<br>(남${s.male}/여${s.female})</td>
+        <td>${ageTotal}</td>
+        <td>${s.asthma.total}</td>
+        <td>${s.atopic.total}</td>
+        <td>${s.rhinitis.total}</td>
+        <td>${s.foodAllergy.total}</td>
+        <td>${s.anaphylaxis.total}</td>
+      </tr>
+      <tr>
+        <td style="font-size:11px; color:#666;">남: ${s.male}명 / 여: ${s.female}명</td>
+        <td style="font-size:11px;">남${s.asthma.male+s.atopic.male+s.rhinitis.male+s.foodAllergy.male+s.anaphylaxis.male}/여${s.asthma.female+s.atopic.female+s.rhinitis.female+s.foodAllergy.female+s.anaphylaxis.female}</td>
+        <td style="font-size:11px;">남${s.asthma.male}/여${s.asthma.female}</td>
+        <td style="font-size:11px;">남${s.atopic.male}/여${s.atopic.female}</td>
+        <td style="font-size:11px;">남${s.rhinitis.male}/여${s.rhinitis.female}</td>
+        <td style="font-size:11px;">남${s.foodAllergy.male}/여${s.foodAllergy.female}</td>
+        <td style="font-size:11px;">남${s.anaphylaxis.male}/여${s.anaphylaxis.female}</td>
+      </tr>
+    `;
+  });
+
+  const totDisease = tot.asthma.total + tot.atopic.total + tot.rhinitis.total + tot.foodAllergy.total + tot.anaphylaxis.total;
+  html += `
+    <tr class="total-row">
+      <td>합계 (제출)</td>
+      <td>${tot.total}명<br>(전체 ${totalAll}명)</td>
+      <td>${totDisease}</td>
+      <td>${tot.asthma.total}</td>
+      <td>${tot.atopic.total}</td>
+      <td>${tot.rhinitis.total}</td>
+      <td>${tot.foodAllergy.total}</td>
+      <td>${tot.anaphylaxis.total}</td>
+    </tr>
+    </tbody></table></div>
+    <p style="font-size:12px; color:#666; margin-top:8px;">* 어린이집의 전체 원아수: <strong>${totalAll}명</strong> (응답 기준 ${tot.total}명)</p>
+  `;
+
+  document.getElementById("formContainer").innerHTML = html;
+};
+
+// 참여 현황 필터 초기화
+function initParticipationFilter() {
+  const center = document.getElementById("partCenter").value;
+  const classSel = document.getElementById("partClass");
+  classSel.innerHTML = '<option value="all">전체 반</option>';
+  if (center === "all") {
+    Object.entries(roster).forEach(([c, cls]) => {
+      Object.keys(cls).forEach(cl => {
+        classSel.innerHTML += `<option value="${c}__${cl}">${c} - ${cl}</option>`;
+      });
+    });
+  } else {
+    Object.keys(roster[center] || {}).forEach(cl => {
+      classSel.innerHTML += `<option value="${center}__${cl}">${cl}</option>`;
+    });
+  }
+}
+document.getElementById("partCenter").addEventListener("change", () => {
+  initParticipationFilter();
+  renderParticipation();
+});
+
+function makeKey(c, cls, name) {
+  return `${c}_${cls}_${name}`.replace(/[.#$/\[\]]/g, "_");
+}
+
+window.renderParticipation = function() {
+  const cf = document.getElementById("partCenter").value;
+  const clsF = document.getElementById("partClass").value;
+  const sf = document.getElementById("partStatus").value;
+
+  // 전체 명단 작성
+  const rows = [];
+  Object.entries(roster).forEach(([c, classes]) => {
+    if (cf !== "all" && c !== cf) return;
+    Object.entries(classes).forEach(([cls, kids]) => {
+      if (clsF !== "all" && clsF !== `${c}__${cls}`) return;
+      kids.forEach(name => {
+        const key = makeKey(c, cls, name);
+        const submitted = !!allResponses[key];
+        if (sf === "done" && !submitted) return;
+        if (sf === "pending" && submitted) return;
+        rows.push({ center:c, className:cls, name, submitted, data: allResponses[key] });
+      });
+    });
+  });
+
+  const submittedNum = rows.filter(r => r.submitted).length;
+  const pendingNum = rows.length - submittedNum;
+  const rate = rows.length ? ((submittedNum / rows.length) * 100).toFixed(1) : 0;
+
+  let html = `
+    <div style="margin-bottom:12px; padding:10px; background:#e3f2fd; border-radius:8px; font-size:14px;">
+      <strong>표시 결과:</strong> 총 ${rows.length}명 중 제출 ${submittedNum}명 / 미제출 ${pendingNum}명 (제출률 ${rate}%)
+    </div>
+  `;
+  if (rows.length === 0) {
+    html += `<p style="text-align:center; padding:30px; color:#999;">조건에 맞는 데이터가 없습니다.</p>`;
+    document.getElementById("participationContainer").innerHTML = html;
+    return;
+  }
+  html += `
+    <table class="participation-table">
+      <thead>
+        <tr>
+          <th>기관</th><th>반</th><th>아동명</th><th>제출 여부</th><th>제출 시각</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+  rows.forEach(r => {
+    const dt = r.submitted ? new Date(r.data.submittedAt).toLocaleString("ko-KR") : "-";
+    html += `
+      <tr>
+        <td>${r.center}</td><td>${r.className}</td><td><strong>${r.name}</strong></td>
+        <td><span class="badge ${r.submitted?'done':'pending'}">${r.submitted?'✓ 제출':'미제출'}</span></td>
+        <td style="font-size:12px; color:#666;">${dt}</td>
+      </tr>
+    `;
+  });
+  html += `</tbody></table>`;
+  document.getElementById("participationContainer").innerHTML = html;
+};
+
+// 상세 응답
+window.renderDetail = function() {
+  const cf = document.getElementById("detailCenter").value;
+  const rows = Object.values(allResponses)
+    .filter(r => cf === "all" || r.center === cf)
+    .sort((a,b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+
+  if (rows.length === 0) {
+    document.getElementById("detailContainer").innerHTML = `<p style="text-align:center; padding:30px; color:#999;">아직 제출된 응답이 없습니다.</p>`;
+    return;
+  }
+
+  let html = `
+    <table class="participation-table">
+      <thead>
+        <tr>
+          <th>기관</th><th>반</th><th>아동명</th><th>성별</th><th>연령</th>
+          <th>천식</th><th>아토피</th><th>비염</th><th>식품</th><th>아나필락시스</th><th>제출시각</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+  const cell = v => {
+    const style = v === "예" ? 'color:#c62828; font-weight:bold;' : v === "모름" ? 'color:#888;' : '';
+    return `<td style="${style}">${v||'-'}</td>`;
+  };
+  rows.forEach(r => {
+    html += `
+      <tr>
+        <td>${r.center}</td><td>${r.className}</td><td><strong>${r.childName}</strong></td>
+        <td>${r.gender}</td><td style="font-size:12px;">${r.ageGroup}</td>
+        ${cell(r.asthma)}${cell(r.atopic)}${cell(r.rhinitis)}${cell(r.foodAllergy)}${cell(r.anaphylaxis)}
+        <td style="font-size:12px; color:#666;">${new Date(r.submittedAt).toLocaleString("ko-KR")}</td>
+      </tr>
+    `;
+  });
+  html += `</tbody></table>`;
+  document.getElementById("detailContainer").innerHTML = html;
+};
+
+// CSV 다운로드
+function downloadCSV(filename, rows) {
+  const csv = rows.map(r => r.map(c => {
+    const s = String(c == null ? "" : c);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+  }).join(",")).join("\n");
+  const blob = new Blob(["\uFEFF" + csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+window.downloadParticipationCSV = function() {
+  const rows = [["기관","반","아동명","제출여부","제출시각"]];
+  Object.entries(roster).forEach(([c, classes]) => {
+    Object.entries(classes).forEach(([cls, kids]) => {
+      kids.forEach(name => {
+        const key = makeKey(c, cls, name);
+        const r = allResponses[key];
+        rows.push([c, cls, name, r ? "제출" : "미제출", r ? new Date(r.submittedAt).toLocaleString("ko-KR") : ""]);
+      });
+    });
+  });
+  downloadCSV(`알레르기조사_참여현황_${new Date().toISOString().slice(0,10)}.csv`, rows);
+};
+
+window.downloadDetailCSV = function() {
+  const rows = [["기관","반","아동명","성별","연령구분","천식","아토피피부염","알레르기비염","식품알레르기","아나필락시스","제출시각"]];
+  Object.values(allResponses).forEach(r => {
+    rows.push([r.center, r.className, r.childName, r.gender, r.ageGroup, r.asthma, r.atopic, r.rhinitis, r.foodAllergy, r.anaphylaxis, new Date(r.submittedAt).toLocaleString("ko-KR")]);
+  });
+  downloadCSV(`알레르기조사_상세응답_${new Date().toISOString().slice(0,10)}.csv`, rows);
+};
+
+window.downloadFormExcel = function() {
+  const center = document.getElementById("formCenter").value;
+  const stats = {};
+  AGE_GROUPS.forEach(ag => {
+    stats[ag] = { total:0, male:0, female:0,
+      asthma:{total:0,male:0,female:0}, atopic:{total:0,male:0,female:0},
+      rhinitis:{total:0,male:0,female:0}, foodAllergy:{total:0,male:0,female:0},
+      anaphylaxis:{total:0,male:0,female:0} };
+  });
+  Object.values(allResponses).forEach(r => {
+    if (r.center !== center || !stats[r.ageGroup]) return;
+    const s = stats[r.ageGroup];
+    s.total++;
+    if (r.gender === "남") s.male++;
+    else if (r.gender === "여") s.female++;
+    DISEASES.forEach(d => {
+      if (r[d.key] === "예") {
+        s[d.key].total++;
+        if (r.gender === "남") s[d.key].male++;
+        else if (r.gender === "여") s[d.key].female++;
+      }
+    });
+  });
+
+  let totalAll = 0;
+  Object.values(roster[center]).forEach(kids => totalAll += kids.length);
+
+  const rows = [
+    [`알레르기질환 조사표 - ${center}`],
+    ["시도","광주광역시","시군구","남구","안심학교명",center,"조사기간","2026.4.24~5.20"],
+    [],
+    ["구분","","전체 원아수*","총명수","천식","아토피피부염","알레르기비염","식품알레르기","아나필락시스"]
+  ];
+  AGE_GROUPS.forEach(ag => {
+    const s = stats[ag];
+    const tot = s.asthma.total + s.atopic.total + s.rhinitis.total + s.foodAllergy.total + s.anaphylaxis.total;
+    rows.push([ag,"소계", s.total, tot, s.asthma.total, s.atopic.total, s.rhinitis.total, s.foodAllergy.total, s.anaphylaxis.total]);
+    rows.push(["","남", s.male, "", s.asthma.male, s.atopic.male, s.rhinitis.male, s.foodAllergy.male, s.anaphylaxis.male]);
+    rows.push(["","여", s.female, "", s.asthma.female, s.atopic.female, s.rhinitis.female, s.foodAllergy.female, s.anaphylaxis.female]);
+  });
+  const totT = AGE_GROUPS.reduce((acc,ag)=>acc+stats[ag].total,0);
+  const totAst = AGE_GROUPS.reduce((acc,ag)=>acc+stats[ag].asthma.total,0);
+  const totAto = AGE_GROUPS.reduce((acc,ag)=>acc+stats[ag].atopic.total,0);
+  const totRhi = AGE_GROUPS.reduce((acc,ag)=>acc+stats[ag].rhinitis.total,0);
+  const totFood = AGE_GROUPS.reduce((acc,ag)=>acc+stats[ag].foodAllergy.total,0);
+  const totAna = AGE_GROUPS.reduce((acc,ag)=>acc+stats[ag].anaphylaxis.total,0);
+  rows.push(["합계","", `${totT}/${totalAll}`, totAst+totAto+totRhi+totFood+totAna, totAst, totAto, totRhi, totFood, totAna]);
+
+  downloadCSV(`알레르기조사표_${center}_${new Date().toISOString().slice(0,10)}.csv`, rows);
+};
+
+// ── 데이터 리셋 ────────────────────────────────────────
+window.openResetModal = function() {
+  document.getElementById("resetCount").textContent = Object.keys(allResponses).length;
+  document.getElementById("resetStep1").style.display = "block";
+  document.getElementById("resetStep2").style.display = "none";
+  document.getElementById("resetConfirmInput").value = "";
+  document.getElementById("resetModal").style.display = "flex";
+};
+
+window.closeResetModal = function() {
+  document.getElementById("resetModal").style.display = "none";
+};
+
+window.goResetStep2 = function() {
+  document.getElementById("resetStep1").style.display = "none";
+  document.getElementById("resetStep2").style.display = "block";
+  document.getElementById("resetConfirmInput").focus();
+};
+
+window.backToResetStep1 = function() {
+  document.getElementById("resetStep1").style.display = "block";
+  document.getElementById("resetStep2").style.display = "none";
+};
+
+window.executeReset = async function() {
+  const confirmText = document.getElementById("resetConfirmInput").value.trim();
+  if (confirmText !== "삭제확인") {
+    alert('"삭제확인"을 정확히 입력해주세요.');
+    return;
+  }
+  const scope = document.querySelector('input[name="resetScope"]:checked').value;
+  const btn = document.getElementById("executeResetBtn");
+  btn.disabled = true;
+  btn.textContent = "삭제 중...";
+  try {
+    if (scope === "all") {
+      // 전체 삭제
+      await remove(ref(db, "allergy/responses"));
+      alert("✅ 모든 응답 데이터가 삭제되었습니다.");
+    } else {
+      // 기관별 삭제
+      const targetCenter = document.getElementById("resetCenterSel").value;
+      const targetKeys = Object.entries(allResponses)
+        .filter(([k, v]) => v.center === targetCenter)
+        .map(([k, v]) => k);
+      if (targetKeys.length === 0) {
+        alert(`${targetCenter}에는 삭제할 데이터가 없습니다.`);
+        btn.disabled = false;
+        btn.textContent = "삭제 실행";
+        return;
+      }
+      // 각 키 개별 삭제
+      await Promise.all(targetKeys.map(k => remove(ref(db, `allergy/responses/${k}`))));
+      alert(`✅ ${targetCenter}의 ${targetKeys.length}건 데이터가 삭제되었습니다.`);
+    }
+    closeResetModal();
+    await loadData();
+  } catch (e) {
+    console.error(e);
+    alert("삭제 중 오류 발생: " + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "삭제 실행";
+  }
+};
+</script>
+</body>
+</html>
