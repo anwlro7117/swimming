@@ -406,9 +406,24 @@ async function saveAnswer(role, name, answer, leaveType) {
       else label = leaveType==='full'?'종일휴가':leaveType==='am'?'오전반차':leaveType==='pm'?'오후반차':'연차';
     }
     showToast(`✅ ${name} - ${label}`, 'success');
+    const icon = role === 'child' ? '👶' : '👩‍🏫';
+    sendTelegram(`🏊 수영조사\n${icon} ${selectedGroup.name} · ${name} → <b>${label}</b>`);
   } catch(e) {
     showToast('저장 실패: '+e.message, 'error');
   }
+}
+
+// ── 텔레그램 알림 ───────────────────────────
+const TG_TOKEN = '8705840306:AAFawx4brSyIxE7q94BIsHubqGB7x1FXyTw';
+const TG_CHAT  = '8226355915';
+async function sendTelegram(msg) {
+  try {
+    await fetch('https://api.telegram.org/bot' + TG_TOKEN + '/sendMessage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: TG_CHAT, text: msg, parse_mode: 'HTML' })
+    });
+  } catch(e) { console.warn('텔레그램 알림 실패:', e); }
 }
 
 function showToast(msg, type) {
