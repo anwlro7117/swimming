@@ -158,7 +158,8 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const EVENT_KEY = "evening_2026_05_14";
 
-const ALL_CLASSES = ["아침햇살", "고운햇살", "들꽃향기", "푸른하늘", "파도소리", "은빛물결", "푸른바다"];
+const ALL_CLASSES = ["아침햇살", "고운햇살", "들꽃향기", "푸른하늘", "파도소리", "은빛물결", "푸른바다", "초롱이슬", "아기참새"];
+const EXT_ONLY = ["초롱이슬", "아기참새"];
 
 window.tryLogin = function() {
   const pw = document.getElementById('pwInput').value;
@@ -181,6 +182,7 @@ window.loadData = async function() {
 
     const cards = ALL_CLASSES.map(cls => {
       const d = data[cls];
+      const isExt = EXT_ONLY.includes(cls);
       if (d) {
         submitted++;
         totalYes += (d.yesCount || 0);
@@ -190,6 +192,23 @@ window.loadData = async function() {
         const timeStr = d.submittedAt
           ? new Date(d.submittedAt).toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' })
           : '';
+        if (isExt) {
+          return `
+          <div class="cls-row submitted">
+            <div class="cls-row-head">
+              <div class="cls-name">${cls} <span style="font-size:0.7rem;color:#f59e0b;">연장반조사</span></div>
+              <div class="cls-status done">✓ 제출완료</div>
+            </div>
+            <div class="cls-stats">
+              <span>연장반 <b style="color:#f59e0b">${d.extCount||0}</b>명</span>
+            </div>
+            <div class="name-list">
+              <div><span class="label">연장반:</span><span style="color:#f59e0b">${extNames}</span></div>
+            </div>
+            <div class="cls-time">📥 ${timeStr}</div>
+          </div>
+          `;
+        }
         return `
           <div class="cls-row submitted">
             <div class="cls-row-head">
@@ -213,7 +232,7 @@ window.loadData = async function() {
         return `
           <div class="cls-row pending">
             <div class="cls-row-head">
-              <div class="cls-name">${cls}</div>
+              <div class="cls-name">${cls}${isExt?' <span style="font-size:0.7rem;color:#f59e0b;">연장반조사</span>':''}</div>
               <div class="cls-status pending">⏳ 미제출</div>
             </div>
             <div class="cls-stats" style="color:var(--muted);">아직 제출되지 않았습니다</div>

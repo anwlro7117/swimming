@@ -169,7 +169,7 @@ const db = getDatabase(app);
 const EVENT_KEY = "evening_2026_05_14";
 
 // ===== 아동 명부 (2026년 최신) =====
-// 유아반만 (영아반·방과후반 제외)
+// extOnly: true → 연장반 조사만 (참여/불참 없음)
 const CLASSES = {
   "아침햇살": {
     age: "만3세 (장애반)",
@@ -181,7 +181,7 @@ const CLASSES = {
   },
   "들꽃향기": {
     age: "만3세 (통합반)",
-    children: ["한지후", "박은진", "곽시안", "박찬율", "설재은", "류시환", "강은호", "박다엘", "김사랑", "손리완", "이로아", "이소민", "방서윤", "김인우", "이은우", "임서우", "이하린", "김세윤"]
+    children: ["한지후", "박은진", "곽시안", "박찬율", "설재은", "류시환", "강은호", "박다엘", "김사랑", "손리완", "이로아", "이소민", "방서윤", "김인우", "이은우", "임서우", "이하린"]
   },
   "푸른하늘": {
     age: "만4세 (통합반)",
@@ -193,11 +193,21 @@ const CLASSES = {
   },
   "은빛물결": {
     age: "만5세 이상 (장애반)",
-    children: ["이재헌", "박수현", "김성원", "정하준", "송유담", "박승빈", "김정후", "주현우", "신승혁", "김수호", "정연우", "최보민", "한다윤"]
+    children: ["이재헌", "박수현", "김성원", "정하준", "송지우", "박승빈", "김정후", "주현우", "신승혁", "김수호", "정연우", "최보민", "한다윤"]
   },
   "푸른바다": {
     age: "만5세 (통합반)",
-    children: ["김평온", "김별리", "양준우", "강지호", "김도우", "백이엘", "이태헌", "오주원", "서연석", "임하라", "김태유", "조믿음", "유이서", "윤예나", "윤예지", "조가온", "곽시후", "이소민2"]
+    children: ["김평온", "김별리", "양준우", "강지호", "김도우", "백이엘", "이태헌", "오주원", "서연석", "임하라", "김태유", "조믿음", "유이서", "윤예나", "윤예지", "조가온", "곽시후", "이소민"]
+  },
+  "초롱이슬": {
+    age: "만2세 (영아반)",
+    extOnly: true,
+    children: ["전유주", "양선우", "박하엘", "박유하", "정이안", "정이준"]
+  },
+  "아기참새": {
+    age: "만1세 (영아반)",
+    extOnly: true,
+    children: ["박범준", "정윤하", "정다엘", "고이솔", "조은준"]
   }
 };
 
@@ -225,7 +235,8 @@ window.selectClass = function(name) {
   setStep(2);
 
   answers = {};
-  CLASSES[name].children.forEach(c => answers[c] = null);
+  const ext = CLASSES[name].extOnly;
+  CLASSES[name].children.forEach(c => answers[c] = ext ? 'no' : null);
   renderChildren();
 
   setTimeout(() => {
@@ -234,18 +245,39 @@ window.selectClass = function(name) {
 };
 
 function renderChildren() {
+  const ext = CLASSES[selectedClass].extOnly;
+
+  // 안내 박스 / 빠른선택 버튼 분기
+  const infoBox = document.querySelector('#cardChildren .info-box');
+  const quick = document.querySelector('#cardChildren .quick-actions');
+  if (ext) {
+    infoBox.innerHTML = '🌙 <b>연장반(저녁있는밤)</b>을 이용하는 아동만 <b>연장반</b>으로 표시해주세요.';
+    quick.innerHTML = `
+      <button class="quick-btn" onclick="toggleAll('no')">전체 미이용</button>
+      <button class="quick-btn" onclick="toggleAll('ext')" style="border-color:rgba(245,158,11,0.4);color:#f59e0b;">🌙 전체 연장반</button>
+    `;
+  } else {
+    infoBox.innerHTML = '💡 참여하는 아동은 <b>참여</b>, 참여하지 않는 아동은 <b>불참</b>, 연장반을 이용하는 아동은 <b>연장반</b>으로 표시해주세요.';
+    quick.innerHTML = `
+      <button class="quick-btn" onclick="toggleAll('yes')">✅ 전체 참여</button>
+      <button class="quick-btn" onclick="toggleAll('no')">❌ 전체 불참</button>
+      <button class="quick-btn" onclick="toggleAll('ext')" style="border-color:rgba(245,158,11,0.4);color:#f59e0b;">🌙 전체 연장반</button>
+    `;
+  }
+
   const list = document.getElementById('childList');
   list.innerHTML = CLASSES[selectedClass].children.map(name => {
     const val = answers[name];
     const rowCls = val === 'yes' ? 'yes' : val === 'ext' ? 'ext' : '';
+    const toggles = ext
+      ? `<button class="toggle-btn ext-btn ${val==='ext'?'active':''}" onclick="setAnswer('${name}','${val==='ext'?'no':'ext'}')">${val==='ext'?'✓ 연장반':'연장반'}</button>`
+      : `<button class="toggle-btn yes-btn ${val==='yes'?'active':''}" onclick="setAnswer('${name}','yes')">참여</button>
+         <button class="toggle-btn no-btn ${val==='no'?'active':''}" onclick="setAnswer('${name}','no')">불참</button>
+         <button class="toggle-btn ext-btn ${val==='ext'?'active':''}" onclick="setAnswer('${name}','ext')">연장반</button>`;
     return `
     <div class="child-row ${rowCls}" id="row-${name}">
       <div class="child-name">${name}</div>
-      <div class="toggle-group">
-        <button class="toggle-btn yes-btn ${val==='yes'?'active':''}" onclick="setAnswer('${name}','yes')">참여</button>
-        <button class="toggle-btn no-btn ${val==='no'?'active':''}" onclick="setAnswer('${name}','no')">불참</button>
-        <button class="toggle-btn ext-btn ${val==='ext'?'active':''}" onclick="setAnswer('${name}','ext')">연장반</button>
-      </div>
+      <div class="toggle-group">${toggles}</div>
     </div>
   `}).join('');
   updateSummary();
@@ -262,12 +294,18 @@ window.toggleAll = function(val) {
 };
 
 function updateSummary() {
+  const ext = CLASSES[selectedClass].extOnly;
   const total = Object.keys(answers).length;
   const yesCount = Object.values(answers).filter(v => v === 'yes').length;
   const extCount = Object.values(answers).filter(v => v === 'ext').length;
   const decided = Object.values(answers).filter(v => v !== null).length;
-  document.getElementById('summaryPill').textContent = `참여 ${yesCount}명 · 연장반 ${extCount}명 / 전체 ${total}명`;
-  document.getElementById('submitBtn').disabled = decided !== total;
+  if (ext) {
+    document.getElementById('summaryPill').textContent = `연장반 ${extCount}명 / 전체 ${total}명`;
+    document.getElementById('submitBtn').disabled = false;
+  } else {
+    document.getElementById('summaryPill').textContent = `참여 ${yesCount}명 · 연장반 ${extCount}명 / 전체 ${total}명`;
+    document.getElementById('submitBtn').disabled = decided !== total;
+  }
 }
 
 // ── 텔레그램 알림 ──────────────────────────────
