@@ -224,7 +224,7 @@ function renderClasses() {
   `).join('');
 }
 
-window.selectClass = function(name) {
+window.selectClass = async function(name) {
   selectedClass = name;
   document.querySelectorAll('.cls-btn').forEach(b => {
     b.classList.toggle('selected', b.textContent.includes(name));
@@ -237,6 +237,18 @@ window.selectClass = function(name) {
   answers = {};
   const ext = CLASSES[name].extOnly;
   CLASSES[name].children.forEach(c => answers[c] = ext ? 'no' : null);
+
+  // Firebase에서 기존 제출 데이터 불러오기
+  try {
+    const snap = await get(ref(db, `${EVENT_KEY}/classes/${name}`));
+    if (snap.exists()) {
+      const saved = snap.val();
+      if (saved.yes)  saved.yes.forEach(c => { if (answers.hasOwnProperty(c)) answers[c] = 'yes'; });
+      if (saved.ext)  saved.ext.forEach(c => { if (answers.hasOwnProperty(c)) answers[c] = 'ext'; });
+      if (saved.no)   saved.no.forEach(c  => { if (answers.hasOwnProperty(c)) answers[c] = 'no'; });
+    }
+  } catch(e) { console.warn('기존 데이터 로드 실패:', e); }
+
   renderChildren();
 
   setTimeout(() => {
