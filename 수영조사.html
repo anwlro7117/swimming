@@ -160,7 +160,7 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 // === 아동 명단 ===
-const CHILDREN_BY_CLASS = {
+const DEFAULT_CHILDREN_BY_CLASS = {
   mujigae: {
     "초롱이슬": ["전유주","양선우","박하엘","박유하","정이안","정이준"],
     "은빛물결": ["이재헌","박수현","김성원","정하준","송지우","박승빈","김정후","주현우","신승혁","김수호","정연우","최보민","한다윤"],
@@ -179,7 +179,7 @@ const CHILDREN_BY_CLASS = {
 };
 
 // === 교사 명단 (반별 담임 + 치료사 + 기타) ===
-const TEACHERS_BY_GROUP = {
+const DEFAULT_TEACHERS_BY_GROUP = {
   mujigae: {
     "초롱이슬": ["정선윤"],
     "은빛물결": ["채준범","이왕성","서명화","임민주"],
@@ -203,6 +203,26 @@ const TEACHERS_BY_GROUP = {
   }
 };
 
+// 라이브 명단 (관리자가 수정한 swimming_roster 를 따름)
+let CHILDREN_BY_CLASS = JSON.parse(JSON.stringify(DEFAULT_CHILDREN_BY_CLASS));
+let TEACHERS_BY_GROUP = JSON.parse(JSON.stringify(DEFAULT_TEACHERS_BY_GROUP));
+
+function normalizeRoster(raw, def) {
+  const out = {};
+  const base = raw || {};
+  Object.keys(def).forEach(section => {
+    out[section] = {};
+    const secDef = def[section];
+    const secRaw = base[section] || {};
+    const grpNames = new Set([...Object.keys(secDef), ...Object.keys(secRaw)]);
+    grpNames.forEach(grp => {
+      const v = secRaw[grp] !== undefined ? secRaw[grp] : secDef[grp];
+      out[section][grp] = Array.isArray(v) ? v.filter(x => x != null) : Object.values(v || {}).filter(x => x != null);
+    });
+  });
+  return out;
+}
+
 let currentMainTab = 'child';
 let selectedGroup = null; // {role:'child'|'teacher', name:'반/그룹명'}
 let allData = {};
@@ -221,6 +241,24 @@ setTimeout(() => {
     statusBar.textContent = '🔴 연결 실패';
   }
 }, 10000);
+
+// 명단(관리자 수정본) 실시간 구독
+onValue(ref(db, 'swimming_roster'), (snap) => {
+  const raw = snap.val();
+  if (raw) {
+    CHILDREN_BY_CLASS = normalizeRoster(raw.child, DEFAULT_CHILDREN_BY_CLASS);
+    TEACHERS_BY_GROUP = normalizeRoster(raw.teacher, DEFAULT_TEACHERS_BY_GROUP);
+  }
+  renderGroupButtons();
+  if (selectedGroup) {
+    document.querySelectorAll('.cls-btn').forEach(b => {
+      b.classList.toggle('sel', b.dataset.role===selectedGroup.role && b.dataset.grp===selectedGroup.name);
+    });
+  }
+  updateGroupCounts();
+  if (selectedGroup) renderMembers();
+  renderStats();
+});
 
 // 실시간 데이터 구독
 onValue(ref(db, 'swimming'), (snap) => {

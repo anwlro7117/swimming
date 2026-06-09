@@ -79,6 +79,13 @@
   .b-leave{background:#f3e8ff;color:#7e22ce}
   .b-pending{background:#fee2e2;color:#991b1b}
   .del-btn{background:#fee2e2;color:#991b1b;border:none;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit}
+  .edit-btn{background:#dbeafe;color:#1e40af;border:none;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit}
+  .add-row{display:flex;gap:6px;margin-top:8px;padding-top:10px;border-top:1px dashed #fcd34d}
+  .add-row input{flex:1;padding:8px 10px;border:1.5px solid #fcd34d;border-radius:8px;font-size:13px;font-family:inherit}
+  .add-row input:focus{outline:none;border-color:#f59e0b}
+  .add-btn{background:#f59e0b;color:white;border:none;border-radius:8px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
+  .edit-banner{background:#dbeafe;border:1.5px solid #93c5fd;color:#1e40af;border-radius:12px;padding:10px 14px;font-size:13px;font-weight:700;text-align:center;margin-bottom:12px}
+  .act-btn.on{background:linear-gradient(135deg,#f59e0b,#d97706);color:white;border-color:#d97706}
 
   /* 리셋 */
   .danger-section{background:#fee2e2;border:2px solid #fca5a5;border-radius:14px;padding:16px}
@@ -154,7 +161,10 @@
     <div class="actions">
       <button class="act-btn" onclick="renderAll()">🔄 새로고침</button>
       <button class="act-btn" onclick="exportCSV()">📥 CSV 내보내기</button>
+      <button class="act-btn" id="editToggle" onclick="toggleEdit()">✏️ 명단관리</button>
     </div>
+
+    <div id="editBanner" class="edit-banner" style="display:none">✏️ 명단관리 모드 · 이름 추가·수정·삭제 가능 · 응답 데이터는 보존됩니다</div>
 
     <!-- 아동 패널 -->
     <div class="pane active" id="paneChild">
@@ -222,7 +232,7 @@ const db = getDatabase(app);
 
 const ADMIN_PW = '7117';
 
-const CHILDREN_BY_CLASS = {
+const DEFAULT_CHILDREN_BY_CLASS = {
   mujigae: {
     "초롱이슬": ["전유주","양선우","박하엘","박유하","정이안","정이준"],
     "은빛물결": ["이재헌","박수현","김성원","정하준","송지우","박승빈","김정후","주현우","신승혁","김수호","정연우","최보민","한다윤"],
@@ -240,7 +250,7 @@ const CHILDREN_BY_CLASS = {
   }
 };
 
-const TEACHERS_BY_GROUP = {
+const DEFAULT_TEACHERS_BY_GROUP = {
   mujigae: {
     "초롱이슬": ["정선윤"],
     "은빛물결": ["채준범","이왕성","서명화","임민주"],
@@ -264,9 +274,46 @@ const TEACHERS_BY_GROUP = {
   }
 };
 
+// 라이브 명단 (Firebase swimming_roster 에서 로드, 없으면 기본값 시드)
+let CHILDREN_BY_CLASS = JSON.parse(JSON.stringify(DEFAULT_CHILDREN_BY_CLASS));
+let TEACHERS_BY_GROUP = JSON.parse(JSON.stringify(DEFAULT_TEACHERS_BY_GROUP));
+let rosterLoaded = false;
+
+// roster 객체를 항상 배열로 정규화 (Firebase 가 배열을 객체로 줄 수 있음)
+function normalizeRoster(raw, def) {
+  const out = {};
+  const base = raw || {};
+  Object.keys(def).forEach(section => {
+    out[section] = {};
+    const secDef = def[section];
+    const secRaw = base[section] || {};
+    // 기본 그룹 + 추가된 그룹 모두 반영
+    const grpNames = new Set([...Object.keys(secDef), ...Object.keys(secRaw)]);
+    grpNames.forEach(grp => {
+      const v = secRaw[grp] !== undefined ? secRaw[grp] : secDef[grp];
+      out[section][grp] = Array.isArray(v) ? v.filter(x => x != null) : Object.values(v || {}).filter(x => x != null);
+    });
+  });
+  return out;
+}
+
+// 어떤 그룹이 어느 role/section 에 속하는지 찾기
+function findGroup(role, grp) {
+  const map = role === 'child' ? CHILDREN_BY_CLASS : TEACHERS_BY_GROUP;
+  for (const section of Object.keys(map)) {
+    if (map[section][grp] !== undefined) return { map, section };
+  }
+  return null;
+}
+
+async function saveRoster() {
+  await set(ref(db, 'swimming_roster'), { child: CHILDREN_BY_CLASS, teacher: TEACHERS_BY_GROUP });
+}
+
 let allData = {};
 let currentMainTab = 'child';
 let currentSubTab = 'all';
+let editMode = false;
 
 (function() {
   if (sessionStorage.getItem('mujigae_swim_admin') === 'ok') {
@@ -298,6 +345,20 @@ function initFirebase() {
       statusBar.textContent = '🟢 실시간 연결됨';
       statusBar.style.color = '#16a34a';
     }
+  });
+  onValue(ref(db, 'swimming_roster'), async (snap) => {
+    const raw = snap.val();
+    if (!raw) {
+      // 최초 1회: 기본 명단을 Firebase 에 시드
+      CHILDREN_BY_CLASS = JSON.parse(JSON.stringify(DEFAULT_CHILDREN_BY_CLASS));
+      TEACHERS_BY_GROUP = JSON.parse(JSON.stringify(DEFAULT_TEACHERS_BY_GROUP));
+      try { await saveRoster(); } catch(e) { console.warn('명단 시드 실패', e); }
+    } else {
+      CHILDREN_BY_CLASS = normalizeRoster(raw.child, DEFAULT_CHILDREN_BY_CLASS);
+      TEACHERS_BY_GROUP = normalizeRoster(raw.teacher, DEFAULT_TEACHERS_BY_GROUP);
+    }
+    rosterLoaded = true;
+    renderAll();
   });
   onValue(ref(db, 'swimming'), (snap) => {
     allData = snap.val() || {};
@@ -424,6 +485,36 @@ function makeGroupCard(grp, roster, ans, role) {
   const pending = roster.filter(nm => !ans[nm]).length;
   const respondedCount = Object.keys(ans).length;
 
+  // ── 명단관리 모드 ──
+  if (editMode) {
+    const card = document.createElement('div');
+    card.className = 'cls-card';
+    let mbody = '';
+    roster.forEach(nm => {
+      const hasResp = !!ans[nm];
+      mbody += `<div class="row">
+        <span class="nm">${nm}${hasResp?' <span style="font-size:10px;color:#16a34a">●응답</span>':''}</span>
+        <span class="right">
+          <button class="edit-btn" onclick="renameMember('${role}','${grp}','${nm}')">수정</button>
+          <button class="del-btn" onclick="removeMember('${role}','${grp}','${nm}')">삭제</button>
+        </span>
+      </div>`;
+    });
+    if (roster.length === 0) mbody = '<div style="color:#92400e;padding:8px;font-size:12px;text-align:center">명단 없음</div>';
+    card.innerHTML = `
+      <div class="cls-head">
+        <span class="cls-name">${grp} <span style="font-size:11px;color:#92400e;font-weight:600">(${roster.length}명)</span></span>
+      </div>
+      <div class="cls-body open">
+        ${mbody}
+        <div class="add-row">
+          <input type="text" placeholder="추가할 이름" id="add_${role}_${cssId(grp)}">
+          <button class="add-btn" onclick="addMember('${role}','${grp}')">＋ 추가</button>
+        </div>
+      </div>`;
+    return card;
+  }
+
   // 서브탭 필터
   if (currentSubTab === 'pending' && pending === 0) return null;
   if (currentSubTab === 'responded' && respondedCount === 0) return null;
@@ -474,6 +565,71 @@ function makeGroupCard(grp, roster, ans, role) {
     card.querySelector('.cls-body').classList.toggle('open');
   };
   return card;
+}
+
+// 그룹명/이름에 안전한 id 생성
+function cssId(s) {
+  return Array.from(s).map(c => c.charCodeAt(0).toString(16)).join('');
+}
+
+window.toggleEdit = function() {
+  editMode = !editMode;
+  document.getElementById('editToggle').classList.toggle('on', editMode);
+  document.getElementById('editBanner').style.display = editMode ? 'block' : 'none';
+  document.querySelector('.sub-tabs').style.display = editMode ? 'none' : 'flex';
+  renderAll();
+}
+
+window.addMember = async function(role, grp) {
+  const input = document.getElementById(`add_${role}_${cssId(grp)}`);
+  const name = (input.value || '').trim();
+  if (!name) { showToast('⚠ 이름을 입력하세요', 'error'); return; }
+  const found = findGroup(role, grp);
+  if (!found) return;
+  const arr = found.map[found.section][grp];
+  if (arr.includes(name)) { showToast('⚠ 이미 있는 이름이에요', 'error'); return; }
+  arr.push(name);
+  try {
+    await saveRoster();
+    showToast(`✅ ${name} 추가됨`, 'success');
+  } catch(e) { showToast('실패: '+e.message, 'error'); }
+}
+
+window.renameMember = async function(role, grp, oldName) {
+  const newName = (prompt(`"${oldName}" 새 이름 입력`, oldName) || '').trim();
+  if (!newName || newName === oldName) return;
+  const found = findGroup(role, grp);
+  if (!found) return;
+  const arr = found.map[found.section][grp];
+  if (arr.includes(newName)) { showToast('⚠ 이미 있는 이름이에요', 'error'); return; }
+  const idx = arr.indexOf(oldName);
+  if (idx === -1) return;
+  arr[idx] = newName;
+  try {
+    // 기존 응답 데이터를 새 이름으로 이동 (있으면)
+    const snap = await get(ref(db, `swimming/${role}/${grp}/${oldName}`));
+    if (snap.exists()) {
+      await set(ref(db, `swimming/${role}/${grp}/${newName}`), snap.val());
+      await remove(ref(db, `swimming/${role}/${grp}/${oldName}`));
+    }
+    await saveRoster();
+    showToast(`✅ ${oldName} → ${newName}`, 'success');
+  } catch(e) { showToast('실패: '+e.message, 'error'); }
+}
+
+window.removeMember = async function(role, grp, nm) {
+  if (!confirm(`명단에서 "${nm}" 삭제할까요?\n(해당 인원의 응답도 함께 삭제됩니다)`)) return;
+  const found = findGroup(role, grp);
+  if (!found) return;
+  const arr = found.map[found.section][grp];
+  const idx = arr.indexOf(nm);
+  if (idx === -1) return;
+  arr.splice(idx, 1);
+  try {
+    await remove(ref(db, `swimming/${role}/${grp}/${nm}`));
+    await saveRoster();
+    showToast(`🗑 ${nm} 삭제됨`, 'success');
+  } catch(e) { showToast('실패: '+e.message, 'error'); }
 }
 
 window.delEntry = async function(role, grp, nm) {
