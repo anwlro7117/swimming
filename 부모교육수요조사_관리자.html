@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📚 보호자 독서교육 신청 현황</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fff8fa;
+    --card: #ffffff;
+    --border: #f4dfe6;
+    --primary: #e87aa3;
+    --primary-dark: #d65a87;
+    --accent: #f9b8cf;
+    --light: #fff0f5;
+    --text: #3d2530;
+    --sub: #7a5a68;
+    --muted: #b89aa5;
+    --yes: #e87aa3;
+    --no: #c5c5c5;
+    --green: #7cc4a4;
+    --shadow: 0 4px 16px rgba(232,122,163,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  header {
+    background: linear-gradient(135deg, #ffd5e3 0%, #ffeef4 100%);
+    padding: 30px 24px 44px; position: relative; overflow: hidden;
+    border-bottom: 1px solid var(--border);
+  }
+  header::before {
+    content: '📚'; position: absolute; top: 14px; right: 22px;
+    font-size: 4.4rem; opacity: 0.18; transform: rotate(15deg);
+  }
+  header::after {
+    content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 28px;
+    background: var(--bg); clip-path: ellipse(55% 100% at 50% 100%);
+  }
+  .hdr-inner { max-width: 860px; margin: 0 auto; position: relative; z-index: 1; }
+  header h1 { font-size: 1.55rem; font-weight: 900; color: #5a2b3d; letter-spacing: -0.5px; }
+  .hdr-sub { color: var(--primary-dark); font-size: 0.84rem; margin-top: 6px; font-weight: 500; }
+
+  main { max-width: 860px; margin: 0 auto; padding: 0 16px 100px; }
+
+  /* 통계 카드 */
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .stat {
+    background: var(--card); border-radius: 16px; padding: 18px 14px; text-align: center;
+    box-shadow: var(--shadow); border: 1px solid var(--border);
+  }
+  .stat .num { font-size: 1.7rem; font-weight: 900; color: var(--primary-dark); }
+  .stat .lbl { font-size: 0.76rem; color: var(--sub); margin-top: 4px; font-weight: 600; }
+  .stat.g .num { color: var(--green); }
+  .stat.m .num { color: var(--muted); }
+
+  /* 필터 / 도구 */
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; align-items: center; }
+  .tool-btn {
+    padding: 10px 16px; background: #fff; border: 1.5px solid var(--border);
+    border-radius: 10px; font-family: inherit; font-size: 0.82rem; font-weight: 700;
+    color: var(--sub); cursor: pointer; transition: all 0.15s;
+  }
+  .tool-btn:hover { border-color: var(--accent); }
+  .tool-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .tool-btn.export { margin-left: auto; background: var(--green); border-color: var(--green); color: #fff; }
+  .tool-btn.reset { background: #fff; border-color: #e0a0a0; color: #c05050; }
+
+  select.tool-sel {
+    padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 10px;
+    font-family: inherit; font-size: 0.82rem; font-weight: 700; color: var(--text);
+    background: #fff; cursor: pointer;
+  }
+
+  /* 반별 카드 */
+  .cls-card {
+    background: var(--card); border-radius: 16px; padding: 18px 18px 8px;
+    box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 14px;
+  }
+  .cls-head {
+    display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px;
+    padding-bottom: 10px; border-bottom: 1px dashed var(--border); flex-wrap: wrap;
+  }
+  .cls-name { font-weight: 800; font-size: 1rem; color: var(--text); }
+  .cls-inst { font-size: 0.74rem; color: var(--muted); }
+  .cls-meta { margin-left: auto; font-size: 0.78rem; color: var(--sub); font-weight: 600; }
+  .cls-meta b { color: var(--primary-dark); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+  th, td { padding: 9px 8px; text-align: left; border-bottom: 1px solid #f6ebef; }
+  th { font-size: 0.72rem; color: var(--muted); font-weight: 700; letter-spacing: 0.4px; }
+  td.child-name { font-weight: 700; color: var(--text); }
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 0.74rem; font-weight: 700;
+  }
+  .badge.yes { background: #fce4ee; color: var(--primary-dark); }
+  .badge.no { background: #f0f0f0; color: var(--muted); }
+  .badge.wait { background: #fff4d6; color: #b58a00; }
+  .badge.park { background: #e4f3fb; color: #3a7ca0; }
+  .badge.nopark { background: #f4f4f4; color: var(--muted); }
+  .cnt-val { font-weight: 700; color: var(--text); }
+  .dash { color: var(--muted); }
+
+  .empty { text-align: center; padding: 60px 20px; color: var(--muted); }
+
+  /* 로그인 오버레이 */
+  .login-overlay {
+    position: fixed; inset: 0; background: rgba(61,37,48,0.55);
+    display: flex; align-items: center; justify-content: center; z-index: 9998;
+    backdrop-filter: blur(3px);
+  }
+  .login-box {
+    background: #fff; border-radius: 18px; padding: 32px 28px; width: 300px;
+    text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+  }
+  .login-box h2 { font-size: 1.05rem; color: var(--text); margin-bottom: 6px; }
+  .login-box p { font-size: 0.78rem; color: var(--sub); margin-bottom: 18px; }
+  .login-box input {
+    width: 100%; padding: 13px; border: 1.5px solid var(--border); border-radius: 11px;
+    font-family: inherit; font-size: 1.1rem; text-align: center; letter-spacing: 6px;
+    outline: none; margin-bottom: 6px;
+  }
+  .login-box input:focus { border-color: var(--primary); }
+  .login-box button {
+    width: 100%; padding: 13px; margin-top: 10px; border: none; border-radius: 11px;
+    background: var(--primary); color: #fff; font-family: inherit; font-weight: 800;
+    font-size: 0.92rem; cursor: pointer;
+  }
+  .login-box .err { color: #d63a3a; font-size: 0.76rem; height: 16px; }
+  .shake { animation: shake 0.3s; }
+  @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-6px);} 75%{transform:translateX(6px);} }
+
+  @media (max-width: 480px) {
+    header h1 { font-size: 1.35rem; }
+    .cls-meta { width: 100%; margin-left: 0; margin-top: 4px; }
+    th:nth-child(4), td:nth-child(4) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <h2>🔐 관리자 확인</h2>
+    <p>비밀번호를 입력해 주세요</p>
+    <input type="password" id="pwInput" inputmode="numeric" maxlength="8" placeholder="••••" onkeydown="if(event.key==='Enter')tryLogin()">
+    <div class="err" id="pwErr"></div>
+    <button onclick="tryLogin()">확인</button>
+  </div>
+</div>
+
+<header>
+  <div class="hdr-inner">
+    <h1>📚 보호자 독서교육 신청 현황</h1>
+    <p class="hdr-sub">2026년 8월 14일 (금) 10:00~11:30 · 무지개어린이집 실내놀이터</p>
+  </div>
+</header>
+
+<main>
+  <div class="stat-grid" id="statGrid"></div>
+
+  <div class="toolbar">
+    <button class="tool-btn active" data-f="all" onclick="setFilter('all')">전체</button>
+    <button class="tool-btn" data-f="A" onclick="setFilter('A')">무지개</button>
+    <button class="tool-btn" data-f="B" onclick="setFilter('B')">우리무지개</button>
+    <select class="tool-sel" id="viewSel" onchange="render()">
+      <option value="all">전체 아동</option>
+      <option value="submitted">제출만</option>
+      <option value="attend">참석만</option>
+      <option value="notsub">미제출만</option>
+    </select>
+    <button class="tool-btn export" onclick="exportCSV()">⬇ CSV</button>
+    <button class="tool-btn" onclick="loadData()">↻ 새로고침</button>
+  </div>
+
+  <div id="listArea"></div>
+</main>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDojXJ_9pOnla8uG240APwo3Ik9gBddMw4",
+  authDomain: "mujigae-swimming.firebaseapp.com",
+  databaseURL: "https://mujigae-swimming-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "mujigae-swimming"
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const EVENT_ID = "2026-08-14_보호자독서교육";
+
+// ── 명부 (수요조사 페이지와 동일) ──────────────────
+const ROSTER = {
+  A: {
+    name: "무지개어린이집",
+    groups: [
+      { title: "영아반", classes: {
+        "아기참새": ["박범준","정윤하","정다엘","고이솔","조은준"],
+        "초롱이슬": ["전유주","양선우","박하엘","박유하","정이안","정이준"]
+      }},
+      { title: "유아반", classes: {
+        "은빛물결": ["이재헌","박수현","김성원","정하준","송지우","박승빈","김정후","주현우","신승혁","김수호","정연우","최보민","한다윤"]
+      }}
+    ]
+  },
+  B: {
+    name: "우리무지개어린이집",
+    groups: [
+      { title: "유아반", classes: {
+        "아침햇살": ["정태호","고은호","김이안","전수호","위단우","서현우","김윤우","김지안"],
+        "들꽃향기": ["한지후","박은진","곽시안","박찬율","설재은","류시환","강은호","박다엘","김사랑","손리완","이로아","이소민","방서윤","김인우","이은우","임서우","이하린"],
+        "고운햇살": ["박재희","박지유","김민준","곽나율","김은서","홍하루","김동휘","임라희"],
+        "푸른하늘": ["김아린","김강준","박진우","한서후","윤태언","김서우","백민지","이하민","강태희","곽다온","박준","김세윤","김지민","이채민"],
+        "파도소리": ["윤지아","김수겸","돌란샤나","권민서","최도윤","장시영"],
+        "푸른바다": ["김평온","김별리","양준우","강지호","김도우","백이엘","이태헌","오주원","서연석","임하라","김태유","조믿음","유이서","윤예나","윤예지","조가온","곽시후","이소민"]
+      }}
+    ]
+  }
+};
+
+// ── 로그인 (7117) ──────────────────────────────
+const ADMIN_PW = '7117';
+(function() {
+  if (sessionStorage.getItem('mujigae_auth') === 'ok') {
+    document.getElementById('loginOverlay').style.display = 'none';
+    loadData();
+  } else {
+    document.getElementById('pwInput').focus();
+  }
+})();
+window.tryLogin = function() {
+  const pw = document.getElementById('pwInput').value;
+  if (pw === ADMIN_PW) {
+    sessionStorage.setItem('mujigae_auth', 'ok');
+    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('pwErr').textContent = '';
+    loadData();
+  } else {
+    const input = document.getElementById('pwInput');
+    input.classList.remove('shake'); void input.offsetWidth; input.classList.add('shake');
+    input.value = '';
+    document.getElementById('pwErr').textContent = '비밀번호가 틀렸어요';
+  }
+};
+
+// ── 데이터 ────────────────────────────────────
+let responses = {};   // key -> payload
+let filter = 'all';
+
+window.loadData = async function() {
+  try {
+    const snap = await get(ref(db, EVENT_ID));
+    responses = snap.exists() ? snap.val() : {};
+  } catch(e) {
+    console.error(e);
+    responses = {};
+  }
+  render();
+};
+
+window.setFilter = function(f) {
+  filter = f;
+  document.querySelectorAll('.tool-btn[data-f]').forEach(b =>
+    b.classList.toggle('active', b.dataset.f === f));
+  render();
+};
+
+function countLabel(c) {
+  if (!c) return '';
+  return c === '4' ? '4명+' : `${c}명`;
+}
+
+// 반별 아동 순회 → { inst, cls, child, resp }
+function walkRoster(cb) {
+  Object.keys(ROSTER).forEach(inst => {
+    if (filter !== 'all' && filter !== inst) return;
+    ROSTER[inst].groups.forEach(g => {
+      Object.keys(g.classes).forEach(cls => {
+        g.classes[cls].forEach(child => {
+          const key = `${inst}_${cls}_${child}`;
+          cb({ inst, cls, child, resp: responses[key] || null });
+        });
+      });
+    });
+  });
+}
+
+window.render = function() {
+  // 통계
+  let total = 0, submitted = 0, attend = 0, absent = 0, family = 0, park = 0;
+  walkRoster(({ resp }) => {
+    total++;
+    if (resp) {
+      submitted++;
+      if (resp.attend === 'yes') {
+        attend++;
+        family += Number(resp.count || 0);
+        if (resp.parking === 'yes') park++;
+      } else if (resp.attend === 'no') {
+        absent++;
+      }
+    }
+  });
+
+  document.getElementById('statGrid').innerHTML = `
+    <div class="stat"><div class="num">${submitted}<span style="font-size:0.9rem;color:var(--muted);">/${total}</span></div><div class="lbl">제출 / 전체</div></div>
+    <div class="stat"><div class="num">${attend}</div><div class="lbl">참석 가정</div></div>
+    <div class="stat"><div class="num">${family}</div><div class="lbl">총 참여 인원</div></div>
+    <div class="stat g"><div class="num">${park}</div><div class="lbl">주차 사용</div></div>
+    <div class="stat m"><div class="num">${absent}</div><div class="lbl">불참</div></div>
+    <div class="stat m"><div class="num">${total - submitted}</div><div class="lbl">미제출</div></div>
+  `;
+
+  // 반별 렌더
+  const view = document.getElementById('viewSel').value;
+  const byCls = {};
+  walkRoster(({ inst, cls, child, resp }) => {
+    if (!byCls[cls]) byCls[cls] = { inst, rows: [] };
+    byCls[cls].rows.push({ child, resp });
+  });
+
+  let html = '';
+  Object.keys(byCls).forEach(cls => {
+    const { inst, rows } = byCls[cls];
+    // 뷰 필터
+    let rowsF = rows;
+    if (view === 'submitted') rowsF = rows.filter(r => r.resp);
+    else if (view === 'attend') rowsF = rows.filter(r => r.resp && r.resp.attend === 'yes');
+    else if (view === 'notsub') rowsF = rows.filter(r => !r.resp);
+    if (rowsF.length === 0) return;
+
+    const sub = rows.filter(r => r.resp).length;
+    const att = rows.filter(r => r.resp && r.resp.attend === 'yes').length;
+
+    html += `<div class="cls-card">
+      <div class="cls-head">
+        <span class="cls-name">${cls}</span>
+        <span class="cls-inst">${ROSTER[inst].name}</span>
+        <span class="cls-meta">제출 <b>${sub}</b>/${rows.length} · 참석 <b>${att}</b></span>
+      </div>
+      <table><thead><tr>
+        <th>아동</th><th>참석</th><th>가족수</th><th>주차</th>
+      </tr></thead><tbody>`;
+
+    rowsF.forEach(({ child, resp }) => {
+      let att, cnt, pk;
+      if (!resp) {
+        att = `<span class="badge wait">미제출</span>`;
+        cnt = `<span class="dash">—</span>`;
+        pk = `<span class="dash">—</span>`;
+      } else if (resp.attend === 'yes') {
+        att = `<span class="badge yes">참석</span>`;
+        cnt = `<span class="cnt-val">${countLabel(resp.count)}</span>`;
+        pk = resp.parking === 'yes'
+          ? `<span class="badge park">사용</span>`
+          : `<span class="badge nopark">미사용</span>`;
+      } else {
+        att = `<span class="badge no">불참</span>`;
+        cnt = `<span class="dash">—</span>`;
+        pk = `<span class="dash">—</span>`;
+      }
+      html += `<tr>
+        <td class="child-name">${child}</td>
+        <td>${att}</td><td>${cnt}</td><td>${pk}</td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+  });
+
+  document.getElementById('listArea').innerHTML =
+    html || `<div class="empty">해당하는 아동이 없어요.</div>`;
+};
+
+window.exportCSV = function() {
+  const rows = [['어린이집','반','아동','참석여부','참여가족수','주차']];
+  Object.keys(ROSTER).forEach(inst => {
+    ROSTER[inst].groups.forEach(g => {
+      Object.keys(g.classes).forEach(cls => {
+        g.classes[cls].forEach(child => {
+          const r = responses[`${inst}_${cls}_${child}`];
+          let att = '미제출', cnt = '', pk = '';
+          if (r) {
+            if (r.attend === 'yes') {
+              att = '참석';
+              cnt = r.count === '4' ? '4명 이상' : (r.count ? r.count + '명' : '');
+              pk = r.parking === 'yes' ? '사용' : '미사용';
+            } else if (r.attend === 'no') att = '불참';
+          }
+          rows.push([ROSTER[inst].name, cls, child, att, cnt, pk]);
+        });
+      });
+    });
+  });
+  const csv = '\uFEFF' + rows.map(r => r.map(c => `"${c}"`).join(',')).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `보호자독서교육_현황_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+};
+</script>
+
+</body>
+</html>
