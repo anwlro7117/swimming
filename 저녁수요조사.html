@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌙 저녁있는밤 수요조사</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f1a;
+    --card: #1a1a2e;
+    --border: #2d2d4e;
+    --primary: #7c6af7;
+    --accent: #a78bfa;
+    --light: #1e1e3a;
+    --text: #e8e8f0;
+    --sub: #9090b0;
+    --muted: #5a5a7a;
+    --yes: #7c6af7;
+    --no: #2d2d4e;
+    --green: #34d399;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  header {
+    background: linear-gradient(135deg, #1a1040 0%, #0f0f1a 100%);
+    padding: 32px 24px 52px; position: relative; overflow: hidden;
+    border-bottom: 1px solid var(--border);
+  }
+  header::before {
+    content: ''; position: absolute;
+    top: -60px; right: -60px; width: 200px; height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(124,106,247,0.15) 0%, transparent 70%);
+  }
+  header::after {
+    content: ''; position: absolute;
+    bottom: -2px; left: 0; right: 0; height: 28px;
+    background: var(--bg);
+    clip-path: ellipse(55% 100% at 50% 100%);
+  }
+  .hdr-inner { max-width: 660px; margin: 0 auto; }
+  header h1 { font-size: 1.7rem; font-weight: 900; color: #fff; letter-spacing: -0.5px; }
+  .hdr-sub { color: var(--accent); font-size: 0.85rem; margin-top: 6px; opacity: 0.8; }
+  .event-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    margin-top: 14px; padding: 8px 16px;
+    background: rgba(124,106,247,0.15); border: 1px solid rgba(124,106,247,0.3);
+    border-radius: 30px; font-size: 0.83rem; font-weight: 700; color: var(--accent);
+  }
+
+  main { max-width: 660px; margin: 0 auto; padding: 0 16px 80px; }
+
+  .steps { display: flex; gap: 0; margin-bottom: 20px; padding-top: 20px; }
+  .step { flex: 1; text-align: center; padding: 12px 8px; font-size: 0.8rem; color: var(--muted); border-bottom: 2px solid var(--border); position: relative; transition: all 0.2s; }
+  .step.active { color: var(--accent); border-color: var(--accent); font-weight: 700; }
+  .step.done { color: var(--green); border-color: var(--green); }
+  .step .num { display: inline-block; width: 22px; height: 22px; line-height: 20px; border-radius: 50%; border: 1.5px solid currentColor; font-size: 0.75rem; margin-right: 5px; vertical-align: middle; }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 22px; margin-bottom: 16px; }
+  .card-title { font-size: 1.05rem; font-weight: 800; color: #fff; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+
+  .cls-group-label { font-size: 0.76rem; font-weight: 800; color: var(--sub); letter-spacing: 0.5px; margin: 4px 0 8px; }
+  .cls-group-label:not(:first-child) { margin-top: 18px; }
+  .cls-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+  .cls-btn { padding: 16px 12px; background: var(--light); border: 1.5px solid var(--border); border-radius: 14px; font-family: inherit; font-size: 0.95rem; font-weight: 700; color: var(--text); cursor: pointer; transition: all 0.18s; text-align: center; }
+  .cls-btn:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .cls-btn.selected { background: rgba(124,106,247,0.15); border-color: var(--primary); color: var(--accent); box-shadow: 0 4px 16px rgba(124,106,247,0.25); }
+  .cls-btn .cls-name { font-size: 1rem; }
+  .cls-btn .cls-age { font-size: 0.72rem; color: var(--sub); margin-top: 4px; font-weight: 500; }
+  .cls-btn .cls-cnt { font-size: 0.68rem; color: var(--muted); margin-top: 3px; font-family: 'DM Mono', monospace; }
+
+  .child-list { display: flex; flex-direction: column; gap: 8px; }
+  .child-row { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--light); border: 1.5px solid var(--border); border-radius: 12px; transition: all 0.15s; }
+  .child-row.yes { border-color: var(--primary); background: rgba(124,106,247,0.08); }
+  .child-name { flex: 1; font-size: 0.97rem; font-weight: 600; color: var(--text); }
+  .toggle-group { display: flex; gap: 4px; background: var(--bg); padding: 3px; border-radius: 9px; border: 1px solid var(--border); }
+  .toggle-btn { padding: 6px 14px; background: transparent; border: none; border-radius: 6px; font-family: inherit; font-size: 0.78rem; font-weight: 700; color: var(--sub); cursor: pointer; transition: all 0.15s; }
+  .toggle-btn.active.yes-btn { background: var(--primary); color: #fff; }
+  .toggle-btn.active.no-btn { background: var(--muted); color: #fff; }
+  .toggle-btn.active.ext-btn { background: #f59e0b; color: #fff; }
+  .child-row.ext { border-color: rgba(245,158,11,0.5); background: rgba(245,158,11,0.07); }
+
+  .quick-actions { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .quick-btn { padding: 7px 14px; background: var(--light); border: 1px solid var(--border); border-radius: 20px; font-family: inherit; font-size: 0.78rem; font-weight: 600; color: var(--sub); cursor: pointer; transition: all 0.15s; }
+  .quick-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .teacher-sel { width: 100%; padding: 12px 14px; background: var(--light); border: 1.5px solid var(--border); border-radius: 12px; color: var(--text); font-family: inherit; font-size: 0.92rem; margin-bottom: 14px; outline: none; }
+  .teacher-sel:focus { border-color: var(--accent); }
+
+  .submit-bar { position: fixed; bottom: 0; left: 0; right: 0; padding: 14px 16px; background: linear-gradient(180deg, transparent 0%, var(--bg) 30%); pointer-events: none; }
+  .submit-bar-inner { max-width: 660px; margin: 0 auto; display: flex; gap: 10px; pointer-events: auto; }
+  .btn { flex: 1; padding: 16px; border: none; border-radius: 14px; font-family: inherit; font-size: 0.97rem; font-weight: 800; cursor: pointer; transition: all 0.18s; }
+  .btn-primary { background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; box-shadow: 0 6px 20px rgba(124,106,247,0.35); }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(124,106,247,0.45); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+  .btn-ghost { flex: 0 0 auto; padding: 16px 20px; background: var(--card); border: 1px solid var(--border); color: var(--sub); }
+
+  .summary-pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.3); border-radius: 20px; font-size: 0.82rem; font-weight: 700; color: var(--green); margin-bottom: 10px; }
+
+  .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(100px); padding: 14px 22px; background: var(--card); border: 1px solid var(--accent); border-radius: 12px; color: #fff; font-size: 0.88rem; font-weight: 700; opacity: 0; transition: all 0.3s; z-index: 1000; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .empty { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 0.88rem; }
+
+  .info-box { background: rgba(124,106,247,0.08); border: 1px solid rgba(124,106,247,0.25); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; font-size: 0.83rem; color: var(--accent); line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr-inner">
+    <h1>🌙 저녁있는밤 수요조사</h1>
+    <p class="hdr-sub">우리무지개어린이집 · 무지개어린이집</p>
+    <div class="event-badge" id="eventBadge">📅 불러오는 중...</div>
+  </div>
+</header>
+
+<main>
+  <div class="steps">
+    <div class="step active" id="step-1"><span class="num">1</span>반 선택</div>
+    <div class="step" id="step-2"><span class="num">2</span>아동 표시</div>
+    <div class="step" id="step-3"><span class="num">3</span>제출</div>
+  </div>
+
+  <!-- STEP 1: 반 선택 -->
+  <div class="card" id="cardClass">
+    <div class="card-title">📋 우리 반을 선택해주세요</div>
+    <div id="clsWrap"><div class="empty">명부를 불러오는 중...</div></div>
+  </div>
+
+  <!-- STEP 2: 아동 명단 -->
+  <div class="card" id="cardChildren" style="display:none;">
+    <div class="card-title">
+      <span id="selectedClsTitle">👶 아동 참여 여부</span>
+    </div>
+    <select class="teacher-sel" id="teacherSel"></select>
+    <div class="info-box">
+      💡 참여하는 아동은 <b>참여</b>, 참여하지 않는 아동은 <b>불참</b>, 연장반을 이용하는 아동은 <b>연장반</b>으로 표시해주세요.
+    </div>
+    <div class="quick-actions"></div>
+    <div class="child-list" id="childList"></div>
+    <div style="margin-top:14px;">
+      <span class="summary-pill" id="summaryPill">참여 0명 / 전체 0명</span>
+    </div>
+  </div>
+</main>
+
+<div class="submit-bar" id="submitBar" style="display:none;">
+  <div class="submit-bar-inner">
+    <button class="btn btn-ghost" onclick="resetForm()">← 처음으로</button>
+    <button class="btn btn-primary" id="submitBtn" onclick="submit()">제출하기</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDojXJ_9pOnla8uG240APwo3Ik9gBddMw4",
+  authDomain: "mujigae-swimming.firebaseapp.com",
+  databaseURL: "https://mujigae-swimming-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "mujigae-swimming"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const SETTINGS_PATH = "evening_settings";
+
+/* ===== 기본 명부 (2026년 반 편성 명부 기준) =====
+   관리자 페이지에서 수정하면 Firebase 설정값이 우선 적용됩니다.
+   extOnly: true → 연장반 조사만 (참여/불참 없음)                    */
+const DEFAULT_CONFIG = {
+  eventDate: "2026-05-14",
+  classes: [
+    { name:"아침햇살", age:"만3세 (장애반)", facility:"우리무지개", extOnly:false,
+      teachers:["강수지","김보라","김하민"],
+      children:["정태호","고은호","김이안","전수호","위단우","서현우","김윤우","김지안"] },
+    { name:"고운햇살", age:"만3·4세 (장애반)", facility:"우리무지개", extOnly:false,
+      teachers:["천은주","변아진"],
+      children:["박재희","박지유","김민준","곽나율","김은서"] },
+    { name:"파도소리", age:"만5세 이상 (장애반)", facility:"우리무지개", extOnly:false,
+      teachers:["임정연","조명원"],
+      children:["윤지아","임라희","돌란샤나","권민서","최도윤","장시영"] },
+    { name:"들꽃향기", age:"만3세 (통합반)", facility:"우리무지개", extOnly:false,
+      teachers:["박초롱","이효선"],
+      children:["한지후","박은진","곽시안","박찬율","설재은","류시환","강은호","박다엘","김사랑","손리완","이로아","이소민","방서윤","김인우","이은우","임서우","이하린"] },
+    { name:"푸른하늘", age:"만4세 (통합반)", facility:"우리무지개", extOnly:false,
+      teachers:["조현아","황선하"],
+      children:["김아린","김강준","박진우","한서후","윤태언","김서우","백민지","이하민","강태희","곽다온","박준","김세윤","김지민","이채민"] },
+    { name:"푸른바다", age:"만5세 (통합반)", facility:"우리무지개", extOnly:false,
+      teachers:["백장미","이슬아","유주환"],
+      children:["김평온","김별리","양준우","강지호","김도우","백이엘","이태헌","오주원","서연석","임하라","김태유","조믿음","유이서","윤예나","윤예지","조가온","곽시후","이소민"] },
+    { name:"다짐반", age:"방과후 (장애반)", facility:"우리무지개", extOnly:false,
+      teachers:["송태헌","마호진"],
+      children:["김중원","이아윤","강남준","문시후","문휘경","이안","이하준"] },
+    { name:"모둠반", age:"방과후 (장애반)", facility:"우리무지개", extOnly:false,
+      teachers:["정인애","황진하","마미선","정다송"],
+      children:["김가온","한시혁","강승아","박도윤","최미소","정서진","김리윤","박수현","송아린","조하준","조혜윤"] },
+    { name:"은빛물결", age:"만5세 이상 (장애반)", facility:"무지개", extOnly:false,
+      teachers:["채준범","이왕성","서명화","임민주"],
+      children:["이재헌","박수현","김성원","정하준","송지우","박승빈","김정후","주현우","신승혁","김수호","정연우","최보민","한다윤"] },
+    { name:"드림반", age:"방과후 (장애반)", facility:"무지개", extOnly:false,
+      teachers:["황경하","이승원","박정민"],
+      children:["정하율","권민재","심유혁","안하람","박준하","서준우","강건영","박상현","구가율","김도원"] },
+    { name:"초롱이슬", age:"만2세 (영아반)", facility:"무지개", extOnly:true,
+      teachers:["정선윤"],
+      children:["전유주","양선우","박하엘","박유하","정이안","정이준"] },
+    { name:"아기참새", age:"만1세 (영아반)", facility:"무지개", extOnly:true,
+      teachers:["우지선"],
+      children:["박범준","정윤하","정다엘","고이솔","조은준"] }
+  ]
+};
+
+let CONFIG = DEFAULT_CONFIG;
+let EVENT_KEY = "";
+let DATE_LABEL = "";
+let selectedIdx = null;
+let answers = {};
+
+function dateLabel(d) {
+  const [y,m,dd] = d.split('-').map(Number);
+  const w = ['일','월','화','수','목','금','토'][new Date(y, m-1, dd).getDay()];
+  return `${y}년 ${m}월 ${dd}일 (${w})`;
+}
+function eventKeyOf(d) { return 'evening_' + d.replace(/-/g,'_'); }
+
+async function loadConfig() {
+  try {
+    const snap = await get(ref(db, SETTINGS_PATH));
+    if (snap.exists()) {
+      const c = snap.val();
+      if (c.eventDate && Array.isArray(c.classes) && c.classes.length) {
+        CONFIG = {
+          eventDate: c.eventDate,
+          classes: c.classes.map(x => ({
+            name: x.name, age: x.age || '', facility: x.facility || '',
+            extOnly: !!x.extOnly,
+            teachers: x.teachers || [],
+            children: x.children || []
+          }))
+        };
+      }
+    }
+  } catch(e) { console.warn('설정 로드 실패, 기본 명부 사용:', e); }
+
+  EVENT_KEY = eventKeyOf(CONFIG.eventDate);
+  DATE_LABEL = dateLabel(CONFIG.eventDate);
+  document.getElementById('eventBadge').textContent = '📅 ' + DATE_LABEL;
+  renderClasses();
+}
+
+function renderClasses() {
+  const wrap = document.getElementById('clsWrap');
+  const groups = {};
+  CONFIG.classes.forEach((c, i) => {
+    const g = c.facility || '기타';
+    (groups[g] = groups[g] || []).push(i);
+  });
+  wrap.innerHTML = Object.keys(groups).map(g => `
+    <div class="cls-group-label">🏠 ${g}어린이집</div>
+    <div class="cls-grid">
+      ${groups[g].map(i => `
+        <button class="cls-btn" data-idx="${i}" onclick="selectClass(${i})">
+          <div class="cls-name">${CONFIG.classes[i].name}</div>
+          <div class="cls-age">${CONFIG.classes[i].age}</div>
+          <div class="cls-cnt">${CONFIG.classes[i].children.length}명${CONFIG.classes[i].extOnly?' · 연장반조사':''}</div>
+        </button>`).join('')}
+    </div>
+  `).join('');
+}
+
+window.selectClass = async function(idx) {
+  selectedIdx = idx;
+  const cls = CONFIG.classes[idx];
+  document.querySelectorAll('.cls-btn').forEach(b => {
+    b.classList.toggle('selected', Number(b.dataset.idx) === idx);
+  });
+  document.getElementById('selectedClsTitle').textContent = `👶 ${cls.name} 아동 참여 여부`;
+  document.getElementById('cardChildren').style.display = 'block';
+  document.getElementById('submitBar').style.display = 'block';
+  setStep(2);
+
+  const tsel = document.getElementById('teacherSel');
+  tsel.innerHTML = `<option value="">작성 교사 선택 (선택사항)</option>` +
+    (cls.teachers || []).map(t => `<option value="${t}">${t}</option>`).join('');
+
+  answers = {};
+  cls.children.forEach(c => answers[c] = cls.extOnly ? 'no' : null);
+
+  try {
+    const snap = await get(ref(db, `${EVENT_KEY}/classes/${cls.name}`));
+    if (snap.exists()) {
+      const saved = snap.val();
+      if (saved.yes)  saved.yes.forEach(c => { if (answers.hasOwnProperty(c)) answers[c] = 'yes'; });
+      if (saved.ext)  saved.ext.forEach(c => { if (answers.hasOwnProperty(c)) answers[c] = 'ext'; });
+      if (saved.no)   saved.no.forEach(c  => { if (answers.hasOwnProperty(c)) answers[c] = 'no'; });
+      if (saved.teacher) tsel.value = saved.teacher;
+    }
+  } catch(e) { console.warn('기존 데이터 로드 실패:', e); }
+
+  renderChildren();
+
+  setTimeout(() => {
+    document.getElementById('cardChildren').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
+};
+
+function renderChildren() {
+  const cls = CONFIG.classes[selectedIdx];
+  const ext = cls.extOnly;
+
+  const infoBox = document.querySelector('#cardChildren .info-box');
+  const quick = document.querySelector('#cardChildren .quick-actions');
+  if (ext) {
+    infoBox.innerHTML = '🌙 <b>연장반(저녁있는밤)</b>을 이용하는 아동만 <b>연장반</b>으로 표시해주세요.';
+    quick.innerHTML = `
+      <button class="quick-btn" onclick="toggleAll('no')">전체 미이용</button>
+      <button class="quick-btn" onclick="toggleAll('ext')" style="border-color:rgba(245,158,11,0.4);color:#f59e0b;">🌙 전체 연장반</button>
+    `;
+  } else {
+    infoBox.innerHTML = '💡 참여하는 아동은 <b>참여</b>, 참여하지 않는 아동은 <b>불참</b>, 연장반을 이용하는 아동은 <b>연장반</b>으로 표시해주세요.';
+    quick.innerHTML = `
+      <button class="quick-btn" onclick="toggleAll('yes')">✅ 전체 참여</button>
+      <button class="quick-btn" onclick="toggleAll('no')">❌ 전체 불참</button>
+      <button class="quick-btn" onclick="toggleAll('ext')" style="border-color:rgba(245,158,11,0.4);color:#f59e0b;">🌙 전체 연장반</button>
+    `;
+  }
+
+  const list = document.getElementById('childList');
+  list.innerHTML = cls.children.map((name, i) => {
+    const val = answers[name];
+    const rowCls = val === 'yes' ? 'yes' : val === 'ext' ? 'ext' : '';
+    const toggles = ext
+      ? `<button class="toggle-btn ext-btn ${val==='ext'?'active':''}" onclick="setAnswer(${i},'${val==='ext'?'no':'ext'}')">${val==='ext'?'✓ 연장반':'연장반'}</button>`
+      : `<button class="toggle-btn yes-btn ${val==='yes'?'active':''}" onclick="setAnswer(${i},'yes')">참여</button>
+         <button class="toggle-btn no-btn ${val==='no'?'active':''}" onclick="setAnswer(${i},'no')">불참</button>
+         <button class="toggle-btn ext-btn ${val==='ext'?'active':''}" onclick="setAnswer(${i},'ext')">연장반</button>`;
+    return `
+    <div class="child-row ${rowCls}">
+      <div class="child-name">${name}</div>
+      <div class="toggle-group">${toggles}</div>
+    </div>
+  `}).join('');
+  updateSummary();
+}
+
+window.setAnswer = function(i, val) {
+  const name = CONFIG.classes[selectedIdx].children[i];
+  answers[name] = val;
+  renderChildren();
+};
+
+window.toggleAll = function(val) {
+  Object.keys(answers).forEach(k => answers[k] = val);
+  renderChildren();
+};
+
+function updateSummary() {
+  const ext = CONFIG.classes[selectedIdx].extOnly;
+  const total = Object.keys(answers).length;
+  const yesCount = Object.values(answers).filter(v => v === 'yes').length;
+  const extCount = Object.values(answers).filter(v => v === 'ext').length;
+  const decided = Object.values(answers).filter(v => v !== null).length;
+  if (ext) {
+    document.getElementById('summaryPill').textContent = `연장반 ${extCount}명 / 전체 ${total}명`;
+    document.getElementById('submitBtn').disabled = false;
+  } else {
+    document.getElementById('summaryPill').textContent = `참여 ${yesCount}명 · 연장반 ${extCount}명 / 전체 ${total}명`;
+    document.getElementById('submitBtn').disabled = decided !== total;
+  }
+}
+
+// ── 텔레그램 알림 ──────────────────────────────
+const TG_TOKEN = '8705840306:AAFawx4brSyIxE7q94BIsHubqGB7x1FXyTw';
+const TG_CHAT  = '8226355915';
+
+async function sendTelegram(msg) {
+  try {
+    await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: TG_CHAT, text: msg, parse_mode: 'HTML' })
+    });
+  } catch(e) { console.warn('텔레그램 전송 실패:', e); }
+}
+// ───────────────────────────────────────────────
+
+window.submit = async function() {
+  const cls = CONFIG.classes[selectedIdx];
+  const teacher = document.getElementById('teacherSel').value || '';
+  const yesList = Object.keys(answers).filter(k => answers[k] === 'yes');
+  const noList  = Object.keys(answers).filter(k => answers[k] === 'no');
+  const extList = Object.keys(answers).filter(k => answers[k] === 'ext');
+
+  const prevSnap = await get(ref(db, `${EVENT_KEY}/classes/${cls.name}`));
+  const isUpdate = prevSnap.exists();
+
+  try {
+    await set(ref(db, `${EVENT_KEY}/classes/${cls.name}`), {
+      yes: yesList,
+      no: noList,
+      ext: extList,
+      yesCount: yesList.length,
+      noCount: noList.length,
+      extCount: extList.length,
+      total: yesList.length + noList.length + extList.length,
+      teacher: teacher,
+      submittedAt: new Date().toISOString()
+    });
+
+    setStep(3);
+    showToast(`✅ ${cls.name} 제출 완료! 참여 ${yesList.length}명 · 연장반 ${extList.length}명`);
+
+    const now = new Date().toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    const icon = isUpdate ? '🔄' : '📋';
+    const label = isUpdate ? '수정 제출' : '신규 제출';
+    const yesStr = yesList.length ? yesList.join(', ') : '없음';
+    const extStr = extList.length ? extList.join(', ') : '없음';
+    const noStr  = noList.length  ? noList.join(', ')  : '없음';
+    const msg =
+`${icon} <b>[저녁있는밤 ${label}]</b>
+📅 ${DATE_LABEL}
+🏫 <b>${cls.name}</b>${teacher ? ' · ' + teacher : ''} · ${now}
+
+✅ 참여 ${yesList.length}명: ${yesStr}
+🌙 연장반 ${extList.length}명: ${extStr}
+❌ 불참 ${noList.length}명: ${noStr}`;
+    sendTelegram(msg);
+
+    setTimeout(resetForm, 2000);
+  } catch (e) {
+    showToast('❌ 제출 실패: ' + e.message);
+  }
+};
+
+window.resetForm = function() {
+  selectedIdx = null;
+  answers = {};
+  document.getElementById('cardChildren').style.display = 'none';
+  document.getElementById('submitBar').style.display = 'none';
+  document.querySelectorAll('.cls-btn').forEach(b => b.classList.remove('selected'));
+  setStep(1);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+function setStep(n) {
+  for (let i = 1; i <= 3; i++) {
+    const el = document.getElementById('step-' + i);
+    el.className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+loadConfig();
+</script>
+</body>
+</html>
