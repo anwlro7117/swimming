@@ -38,6 +38,11 @@
   .reset-btn { padding: 10px 16px; border: 1.5px solid rgba(239,68,68,0.4); border-radius: 10px; background: transparent; font-family: inherit; font-size: 0.82rem; font-weight: 700; color: #f87171; cursor: pointer; transition: all 0.15s; }
   .reset-btn:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,0.07); }
 
+  /* 탭 */
+  .tabs { max-width: 900px; margin: 18px auto 0; padding: 0 16px; display: flex; gap: 8px; }
+  .tab { flex: 1; padding: 12px; text-align: center; background: var(--card); border: 1.5px solid var(--border); border-radius: 12px; font-family: inherit; font-size: 0.9rem; font-weight: 700; color: var(--sub); cursor: pointer; transition: all 0.15s; }
+  .tab.active { border-color: var(--primary); color: var(--accent); background: rgba(124,106,247,0.12); }
+
   /* 리셋 확인 모달 */
   #resetModal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 9998; backdrop-filter: blur(6px); }
   #resetModal.show { display: flex; }
@@ -51,7 +56,7 @@
   .modal-confirm:hover { opacity: 0.85; }
   .modal-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
 
-  main { max-width: 900px; margin: 0 auto; padding: 20px 16px 40px; }
+  main { max-width: 900px; margin: 0 auto; padding: 20px 16px 60px; }
 
   .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
   .s-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 18px 14px; text-align: center; }
@@ -63,15 +68,15 @@
   .s-lbl { font-size: 0.78rem; color: var(--sub); margin-top: 4px; font-weight: 600; }
 
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 22px; margin-bottom: 16px; }
-  .card-title { font-size: 1.05rem; font-weight: 800; color: #fff; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .card-title { font-size: 1.05rem; font-weight: 800; color: #fff; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
   .cls-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
   .cls-row { background: var(--light); border: 1.5px solid var(--border); border-radius: 14px; padding: 16px; }
   .cls-row.submitted { border-color: rgba(52,211,153,0.4); background: rgba(52,211,153,0.04); }
   .cls-row.pending { border-color: rgba(251,191,36,0.3); background: rgba(251,191,36,0.04); }
-  .cls-row-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .cls-row-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 6px; }
   .cls-name { font-size: 1rem; font-weight: 800; color: #fff; }
-  .cls-status { font-size: 0.75rem; padding: 3px 9px; border-radius: 12px; font-weight: 700; }
+  .cls-status { font-size: 0.75rem; padding: 3px 9px; border-radius: 12px; font-weight: 700; white-space: nowrap; }
   .cls-status.done { background: rgba(52,211,153,0.18); color: var(--green); }
   .cls-status.pending { background: rgba(251,191,36,0.15); color: var(--warn); }
   .cls-stats { display: flex; gap: 14px; font-size: 0.85rem; color: var(--sub); margin-bottom: 8px; font-family: 'DM Mono', monospace; }
@@ -81,6 +86,32 @@
   .name-list .label { font-size: 0.72rem; color: var(--sub); font-weight: 700; margin-right: 4px; }
   .name-list .yes-names { color: var(--accent); }
   .name-list .no-names { color: var(--muted); }
+
+  /* 설정 탭 */
+  .fld { margin-bottom: 14px; }
+  .fld label { display: block; font-size: 0.78rem; font-weight: 700; color: var(--sub); margin-bottom: 6px; }
+  .inp { width: 100%; padding: 11px 13px; background: var(--light); border: 1.5px solid var(--border); border-radius: 10px; color: var(--text); font-family: inherit; font-size: 0.9rem; outline: none; }
+  .inp:focus { border-color: var(--accent); }
+  .inp.sm { padding: 8px 10px; font-size: 0.85rem; }
+
+  .edit-cls { background: var(--light); border: 1.5px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+  .edit-head { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+  .edit-head .inp { flex: 1; min-width: 110px; }
+  .chip-wrap { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; background: rgba(124,106,247,0.13); border: 1px solid rgba(124,106,247,0.3); border-radius: 18px; font-size: 0.83rem; font-weight: 600; color: var(--text); }
+  .chip.t { background: rgba(52,211,153,0.12); border-color: rgba(52,211,153,0.3); }
+  .chip .x { cursor: pointer; color: var(--muted); font-weight: 800; }
+  .chip .x:hover { color: #f87171; }
+  .add-row { display: flex; gap: 6px; }
+  .add-row .inp { flex: 1; }
+  .mini-btn { padding: 8px 12px; background: var(--card); border: 1.5px solid var(--border); border-radius: 10px; color: var(--sub); font-family: inherit; font-size: 0.82rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .mini-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .mini-btn.danger { border-color: rgba(239,68,68,0.4); color: #f87171; }
+  .sec-lbl { font-size: 0.75rem; font-weight: 800; color: var(--sub); margin: 12px 0 6px; }
+  .chk { display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; color: var(--sub); cursor: pointer; }
+  .save-bar { position: sticky; bottom: 12px; display: flex; gap: 8px; margin-top: 16px; }
+  .save-btn { flex: 1; padding: 15px; border: none; border-radius: 13px; background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; font-family: inherit; font-weight: 800; font-size: 0.95rem; cursor: pointer; box-shadow: 0 6px 20px rgba(124,106,247,0.3); }
+  .note { font-size: 0.78rem; color: var(--muted); line-height: 1.6; margin-top: 8px; }
 
   .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); padding: 14px 22px; background: var(--card); border: 1px solid var(--accent); border-radius: 12px; color: #fff; font-size: 0.88rem; font-weight: 700; opacity: 0; transition: all 0.3s; z-index: 1000; }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -104,7 +135,7 @@
   <div class="hdr-inner">
     <div>
       <h1>🌙 저녁있는밤 현황</h1>
-      <p>2026년 5월 14일 (목) · 무지개어린이집</p>
+      <p id="hdrDate">불러오는 중...</p>
     </div>
     <div style="display:flex;gap:8px;">
       <button class="refresh-btn" onclick="loadData()">🔄 새로고침</button>
@@ -113,12 +144,17 @@
   </div>
 </header>
 
+<div class="tabs">
+  <button class="tab active" id="tab-view" onclick="switchTab('view')">📋 현황</button>
+  <button class="tab" id="tab-edit" onclick="switchTab('edit')">⚙️ 날짜·명부 수정</button>
+</div>
+
 <!-- 리셋 확인 모달 -->
 <div id="resetModal">
   <div class="modal-box">
     <div class="m-icon">⚠️</div>
     <h3>데이터를 초기화할까요?</h3>
-    <p>5월 14일 수요조사 데이터가<br>모두 삭제됩니다.<br>이 작업은 되돌릴 수 없습니다.</p>
+    <p id="resetMsg">수요조사 데이터가<br>모두 삭제됩니다.<br>이 작업은 되돌릴 수 없습니다.</p>
     <div class="modal-btns">
       <button class="modal-cancel" onclick="hideResetModal()">취소</button>
       <button class="modal-confirm" id="confirmResetBtn" onclick="doReset()">삭제</button>
@@ -127,16 +163,42 @@
 </div>
 
 <main>
-  <div class="summary-grid">
-    <div class="s-card"><div class="s-num" id="s-total">-</div><div class="s-lbl">총 참여 아동</div></div>
-    <div class="s-card green"><div class="s-num" id="s-submitted">-</div><div class="s-lbl">제출 완료 반</div></div>
-    <div class="s-card warn"><div class="s-num" id="s-pending">-</div><div class="s-lbl">미제출 반</div></div>
+  <!-- 현황 탭 -->
+  <div id="viewPane">
+    <div class="summary-grid">
+      <div class="s-card"><div class="s-num" id="s-total">-</div><div class="s-lbl">총 참여 아동</div></div>
+      <div class="s-card green"><div class="s-num" id="s-submitted">-</div><div class="s-lbl">제출 완료 반</div></div>
+      <div class="s-card warn"><div class="s-num" id="s-pending">-</div><div class="s-lbl">미제출 반</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 반별 참여 현황</div>
+      <div class="cls-cards" id="clsCards">
+        <div style="color:var(--muted);font-size:0.88rem;">불러오는 중...</div>
+      </div>
+    </div>
   </div>
 
-  <div class="card">
-    <div class="card-title">📋 반별 참여 현황</div>
-    <div class="cls-cards" id="clsCards">
-      <div style="color:var(--muted);font-size:0.88rem;">불러오는 중...</div>
+  <!-- 설정 탭 -->
+  <div id="editPane" style="display:none;">
+    <div class="card">
+      <div class="card-title">📅 행사 날짜</div>
+      <div class="fld">
+        <label>저녁있는밤 날짜</label>
+        <input type="date" class="inp" id="dateInp">
+      </div>
+      <div class="note">※ 날짜를 바꾸면 새 행사로 저장됩니다. 이전 날짜의 제출 데이터는 그대로 보관되며, 새 날짜는 미제출 상태에서 시작합니다.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🏫 반 · 교사 · 아동 명부 <span style="font-size:0.75rem;color:var(--sub);font-weight:600;" id="cntLbl"></span></div>
+      <div id="editList"></div>
+      <button class="mini-btn" style="width:100%;padding:13px;" onclick="addClass()">➕ 반 추가</button>
+      <div class="save-bar">
+        <button class="mini-btn danger" onclick="reloadCfg()">↩︎ 되돌리기</button>
+        <button class="save-btn" onclick="saveConfig()">💾 저장하기</button>
+      </div>
+      <div class="note">※ 저장하면 수요조사 페이지에 바로 반영됩니다. 아동·교사 추가 입력창에는 쉼표(,)로 여러 명을 한 번에 넣을 수 있습니다.</div>
     </div>
   </div>
 </main>
@@ -145,7 +207,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, get, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDojXJ_9pOnla8uG240APwo3Ik9gBddMw4",
@@ -156,15 +218,97 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const EVENT_KEY = "evening_2026_05_14";
+const SETTINGS_PATH = "evening_settings";
 
-const ALL_CLASSES = ["아침햇살", "고운햇살", "들꽃향기", "푸른하늘", "파도소리", "은빛물결", "푸른바다", "초롱이슬", "아기참새"];
-const EXT_ONLY = ["초롱이슬", "아기참새"];
+/* ===== 기본 명부 (2026년 반 편성 명부 기준) ===== */
+const DEFAULT_CONFIG = {
+  eventDate: "2026-05-14",
+  classes: [
+    { name:"아침햇살", age:"만3세 (장애반)", facility:"우리무지개", extOnly:false,
+      teachers:["강수지","김보라","김하민"],
+      children:["정태호","고은호","김이안","전수호","위단우","서현우","김윤우","김지안"] },
+    { name:"고운햇살", age:"만3·4세 (장애반)", facility:"우리무지개", extOnly:false,
+      teachers:["천은주","변아진"],
+      children:["박재희","박지유","김민준","곽나율","김은서"] },
+    { name:"파도소리", age:"만5세 이상 (장애반)", facility:"우리무지개", extOnly:false,
+      teachers:["임정연","조명원"],
+      children:["윤지아","임라희","돌란샤나","권민서","최도윤","장시영"] },
+    { name:"들꽃향기", age:"만3세 (통합반)", facility:"우리무지개", extOnly:false,
+      teachers:["박초롱","이효선"],
+      children:["한지후","박은진","곽시안","박찬율","설재은","류시환","강은호","박다엘","김사랑","손리완","이로아","이소민","방서윤","김인우","이은우","임서우","이하린"] },
+    { name:"푸른하늘", age:"만4세 (통합반)", facility:"우리무지개", extOnly:false,
+      teachers:["조현아","황선하"],
+      children:["김아린","김강준","박진우","한서후","윤태언","김서우","백민지","이하민","강태희","곽다온","박준","김세윤","김지민","이채민"] },
+    { name:"푸른바다", age:"만5세 (통합반)", facility:"우리무지개", extOnly:false,
+      teachers:["백장미","이슬아","유주환"],
+      children:["김평온","김별리","양준우","강지호","김도우","백이엘","이태헌","오주원","서연석","임하라","김태유","조믿음","유이서","윤예나","윤예지","조가온","곽시후","이소민"] },
+    { name:"다짐반", age:"방과후 (장애반)", facility:"우리무지개", extOnly:false,
+      teachers:["송태헌","마호진"],
+      children:["김중원","이아윤","강남준","문시후","문휘경","이안","이하준"] },
+    { name:"모둠반", age:"방과후 (장애반)", facility:"우리무지개", extOnly:false,
+      teachers:["정인애","황진하","마미선","정다송"],
+      children:["김가온","한시혁","강승아","박도윤","최미소","정서진","김리윤","박수현","송아린","조하준","조혜윤"] },
+    { name:"은빛물결", age:"만5세 이상 (장애반)", facility:"무지개", extOnly:false,
+      teachers:["채준범","이왕성","서명화","임민주"],
+      children:["이재헌","박수현","김성원","정하준","송지우","박승빈","김정후","주현우","신승혁","김수호","정연우","최보민","한다윤"] },
+    { name:"드림반", age:"방과후 (장애반)", facility:"무지개", extOnly:false,
+      teachers:["황경하","이승원","박정민"],
+      children:["정하율","권민재","심유혁","안하람","박준하","서준우","강건영","박상현","구가율","김도원"] },
+    { name:"초롱이슬", age:"만2세 (영아반)", facility:"무지개", extOnly:true,
+      teachers:["정선윤"],
+      children:["전유주","양선우","박하엘","박유하","정이안","정이준"] },
+    { name:"아기참새", age:"만1세 (영아반)", facility:"무지개", extOnly:true,
+      teachers:["우지선"],
+      children:["박범준","정윤하","정다엘","고이솔","조은준"] }
+  ]
+};
 
-window.tryLogin = function() {
+let CONFIG = null;   // 현재 적용중 설정
+let draft = null;    // 편집중 사본
+let EVENT_KEY = "";
+let DATE_LABEL = "";
+
+const clone = o => JSON.parse(JSON.stringify(o));
+function dateLabel(d) {
+  const [y,m,dd] = d.split('-').map(Number);
+  const w = ['일','월','화','수','목','금','토'][new Date(y, m-1, dd).getDay()];
+  return `${y}년 ${m}월 ${dd}일 (${w})`;
+}
+function eventKeyOf(d) { return 'evening_' + d.replace(/-/g,'_'); }
+
+async function loadConfig() {
+  let cfg = DEFAULT_CONFIG;
+  try {
+    const snap = await get(ref(db, SETTINGS_PATH));
+    if (snap.exists()) {
+      const c = snap.val();
+      if (c.eventDate && Array.isArray(c.classes) && c.classes.length) {
+        cfg = {
+          eventDate: c.eventDate,
+          classes: c.classes.map(x => ({
+            name: x.name, age: x.age || '', facility: x.facility || '',
+            extOnly: !!x.extOnly,
+            teachers: x.teachers || [],
+            children: x.children || []
+          }))
+        };
+      }
+    }
+  } catch(e) { console.warn('설정 로드 실패:', e); }
+  CONFIG = clone(cfg);
+  draft = clone(cfg);
+  EVENT_KEY = eventKeyOf(CONFIG.eventDate);
+  DATE_LABEL = dateLabel(CONFIG.eventDate);
+  document.getElementById('hdrDate').textContent = `${DATE_LABEL} · 무지개어린이집`;
+  document.getElementById('resetMsg').innerHTML = `${DATE_LABEL} 수요조사 데이터가<br>모두 삭제됩니다.<br>이 작업은 되돌릴 수 없습니다.`;
+  renderEditor();
+}
+
+window.tryLogin = async function() {
   const pw = document.getElementById('pwInput').value;
   if (pw === '7117') {
     document.getElementById('loginOverlay').style.display = 'none';
+    await loadConfig();
     loadData();
   } else {
     document.getElementById('pwErr').textContent = '비밀번호가 올바르지 않습니다';
@@ -172,23 +316,34 @@ window.tryLogin = function() {
   }
 };
 
+window.switchTab = function(t) {
+  document.getElementById('tab-view').classList.toggle('active', t === 'view');
+  document.getElementById('tab-edit').classList.toggle('active', t === 'edit');
+  document.getElementById('viewPane').style.display = t === 'view' ? 'block' : 'none';
+  document.getElementById('editPane').style.display = t === 'edit' ? 'block' : 'none';
+};
+
+/* ───────── 현황 ───────── */
 window.loadData = async function() {
+  if (!CONFIG) return;
   try {
     const snap = await get(ref(db, `${EVENT_KEY}/classes`));
     const data = snap.exists() ? snap.val() : {};
 
-    let totalYes = 0;
-    let submitted = 0;
+    let totalYes = 0, totalExt = 0, submitted = 0;
 
-    const cards = ALL_CLASSES.map(cls => {
+    const cards = CONFIG.classes.map(c => {
+      const cls = c.name;
       const d = data[cls];
-      const isExt = EXT_ONLY.includes(cls);
+      const isExt = c.extOnly;
       if (d) {
         submitted++;
         totalYes += (d.yesCount || 0);
+        totalExt += (d.extCount || 0);
         const yesNames = (d.yes || []).join(', ') || '없음';
         const noNames = (d.no || []).join(', ') || '없음';
         const extNames = (d.ext || []).join(', ') || '없음';
+        const who = d.teacher ? ` · ${d.teacher}` : '';
         const timeStr = d.submittedAt
           ? new Date(d.submittedAt).toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' })
           : '';
@@ -205,9 +360,8 @@ window.loadData = async function() {
             <div class="name-list">
               <div><span class="label">연장반:</span><span style="color:#f59e0b">${extNames}</span></div>
             </div>
-            <div class="cls-time">📥 ${timeStr}</div>
-          </div>
-          `;
+            <div class="cls-time">📥 ${timeStr}${who}</div>
+          </div>`;
         }
         return `
           <div class="cls-row submitted">
@@ -225,9 +379,8 @@ window.loadData = async function() {
               <div style="margin-top:4px;"><span class="label">연장반:</span><span style="color:#f59e0b">${extNames}</span></div>
               <div style="margin-top:4px;"><span class="label">불참:</span><span class="no-names">${noNames}</span></div>
             </div>
-            <div class="cls-time">📥 ${timeStr}</div>
-          </div>
-        `;
+            <div class="cls-time">📥 ${timeStr}${who}</div>
+          </div>`;
       } else {
         return `
           <div class="cls-row pending">
@@ -236,19 +389,114 @@ window.loadData = async function() {
               <div class="cls-status pending">⏳ 미제출</div>
             </div>
             <div class="cls-stats" style="color:var(--muted);">아직 제출되지 않았습니다</div>
-          </div>
-        `;
+          </div>`;
       }
     }).join('');
 
     document.getElementById('clsCards').innerHTML = cards;
     document.getElementById('s-total').textContent = totalYes;
-    document.getElementById('s-submitted').textContent = `${submitted}/${ALL_CLASSES.length}`;
-    document.getElementById('s-pending').textContent = ALL_CLASSES.length - submitted;
+    document.getElementById('s-submitted').textContent = `${submitted}/${CONFIG.classes.length}`;
+    document.getElementById('s-pending').textContent = CONFIG.classes.length - submitted;
 
-    showToast('🔄 새로고침 완료');
+    showToast(`🔄 새로고침 완료 · 연장반 ${totalExt}명`);
   } catch (e) {
     showToast('❌ 불러오기 실패: ' + e.message);
+  }
+};
+
+/* ───────── 설정 편집 ───────── */
+function renderEditor() {
+  document.getElementById('dateInp').value = draft.eventDate;
+  const totalKids = draft.classes.reduce((s,c) => s + c.children.length, 0);
+  document.getElementById('cntLbl').textContent = `· ${draft.classes.length}개 반 / 아동 ${totalKids}명`;
+
+  document.getElementById('editList').innerHTML = draft.classes.map((c, i) => `
+    <div class="edit-cls">
+      <div class="edit-head">
+        <input class="inp sm" style="max-width:120px;" value="${esc(c.name)}" onchange="setField(${i},'name',this.value)" placeholder="반 이름">
+        <input class="inp sm" value="${esc(c.age)}" onchange="setField(${i},'age',this.value)" placeholder="연령 표기">
+        <input class="inp sm" style="max-width:100px;" value="${esc(c.facility)}" onchange="setField(${i},'facility',this.value)" placeholder="소속">
+        <button class="mini-btn danger" onclick="delClass(${i})">반 삭제</button>
+      </div>
+      <label class="chk"><input type="checkbox" ${c.extOnly?'checked':''} onchange="setField(${i},'extOnly',this.checked)"> 연장반 조사만 (참여/불참 없음)</label>
+
+      <div class="sec-lbl">👩‍🏫 교사 (${c.teachers.length}명)</div>
+      <div class="chip-wrap">
+        ${c.teachers.map((t,j) => `<span class="chip t">${esc(t)}<span class="x" onclick="delItem(${i},'teachers',${j})">×</span></span>`).join('') || '<span style="color:var(--muted);font-size:0.8rem;">없음</span>'}
+      </div>
+      <div class="add-row">
+        <input class="inp sm" placeholder="교사 이름 추가 (쉼표로 여러 명)" onkeydown="if(event.key==='Enter'){addItem(${i},'teachers',this.value);this.value='';}">
+        <button class="mini-btn" onclick="addItem(${i},'teachers',this.previousElementSibling.value); this.previousElementSibling.value='';">추가</button>
+      </div>
+
+      <div class="sec-lbl">👶 아동 (${c.children.length}명)</div>
+      <div class="chip-wrap">
+        ${c.children.map((t,j) => `<span class="chip">${esc(t)}<span class="x" onclick="delItem(${i},'children',${j})">×</span></span>`).join('') || '<span style="color:var(--muted);font-size:0.8rem;">없음</span>'}
+      </div>
+      <div class="add-row">
+        <input class="inp sm" placeholder="아동 이름 추가 (쉼표로 여러 명)" onkeydown="if(event.key==='Enter'){addItem(${i},'children',this.value);this.value='';}">
+        <button class="mini-btn" onclick="addItem(${i},'children',this.previousElementSibling.value); this.previousElementSibling.value='';">추가</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+window.setField = function(i, k, v) {
+  draft.classes[i][k] = v;
+  if (k === 'extOnly' || k === 'name') renderEditor();
+};
+window.delItem = function(i, key, j) {
+  draft.classes[i][key].splice(j, 1);
+  renderEditor();
+};
+window.addItem = function(i, key, raw) {
+  const names = String(raw||'').split(/[,·\n]/).map(s => s.trim()).filter(Boolean);
+  if (!names.length) return;
+  draft.classes[i][key].push(...names);
+  renderEditor();
+};
+window.delClass = function(i) {
+  if (!confirm(`'${draft.classes[i].name}' 반을 목록에서 삭제할까요?`)) return;
+  draft.classes.splice(i, 1);
+  renderEditor();
+};
+window.addClass = function() {
+  draft.classes.push({ name:'새로운반', age:'', facility:'우리무지개', extOnly:false, teachers:[], children:[] });
+  renderEditor();
+  window.scrollTo({ top: document.body.scrollHeight, behavior:'smooth' });
+};
+window.reloadCfg = function() {
+  draft = clone(CONFIG);
+  renderEditor();
+  showToast('↩︎ 저장 전 상태로 되돌렸습니다');
+};
+
+window.saveConfig = async function() {
+  draft.eventDate = document.getElementById('dateInp').value || draft.eventDate;
+  const bad = draft.classes.find(c => !c.name.trim());
+  if (bad) { showToast('❌ 반 이름이 비어 있습니다'); return; }
+  const names = draft.classes.map(c => c.name.trim());
+  if (new Set(names).size !== names.length) { showToast('❌ 반 이름이 중복됩니다'); return; }
+
+  try {
+    await set(ref(db, SETTINGS_PATH), {
+      eventDate: draft.eventDate,
+      classes: draft.classes.map(c => ({
+        name: c.name.trim(), age: c.age || '', facility: c.facility || '',
+        extOnly: !!c.extOnly, teachers: c.teachers || [], children: c.children || []
+      })),
+      updatedAt: new Date().toISOString()
+    });
+    const dateChanged = draft.eventDate !== CONFIG.eventDate;
+    await loadConfig();
+    loadData();
+    showToast('💾 저장 완료 · 수요조사에 반영되었습니다');
+    const now = new Date().toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    sendTelegram(`⚙️ <b>[저녁있는밤 설정 변경]</b>\n📅 ${DATE_LABEL}${dateChanged?' (날짜 변경됨)':''}\n🏫 ${CONFIG.classes.length}개 반 · 아동 ${CONFIG.classes.reduce((s,c)=>s+c.children.length,0)}명\n🕒 ${now}`);
+  } catch (e) {
+    showToast('❌ 저장 실패: ' + e.message);
   }
 };
 
@@ -277,11 +525,9 @@ async function sendTelegram(msg) {
 window.showResetModal = function() {
   document.getElementById('resetModal').classList.add('show');
 };
-
 window.hideResetModal = function() {
   document.getElementById('resetModal').classList.remove('show');
 };
-
 window.doReset = async function() {
   const btn = document.getElementById('confirmResetBtn');
   btn.disabled = true;
@@ -291,7 +537,7 @@ window.doReset = async function() {
     hideResetModal();
     showToast('🗑️ 데이터가 초기화되었습니다');
     const now = new Date().toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
-    sendTelegram(`🗑️ <b>[저녁있는밤 데이터 리셋]</b>\n📅 2026년 5월 14일\n관리자가 ${now}에 전체 수요조사 데이터를 초기화했습니다.`);
+    sendTelegram(`🗑️ <b>[저녁있는밤 데이터 리셋]</b>\n📅 ${DATE_LABEL}\n관리자가 ${now}에 전체 수요조사 데이터를 초기화했습니다.`);
     loadData();
   } catch (e) {
     showToast('❌ 리셋 실패: ' + e.message);

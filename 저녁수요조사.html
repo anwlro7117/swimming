@@ -61,12 +61,15 @@
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 22px; margin-bottom: 16px; }
   .card-title { font-size: 1.05rem; font-weight: 800; color: #fff; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
 
+  .cls-group-label { font-size: 0.76rem; font-weight: 800; color: var(--sub); letter-spacing: 0.5px; margin: 4px 0 8px; }
+  .cls-group-label:not(:first-child) { margin-top: 18px; }
   .cls-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
-  .cls-btn { padding: 18px 12px; background: var(--light); border: 1.5px solid var(--border); border-radius: 14px; font-family: inherit; font-size: 0.95rem; font-weight: 700; color: var(--text); cursor: pointer; transition: all 0.18s; text-align: center; }
+  .cls-btn { padding: 16px 12px; background: var(--light); border: 1.5px solid var(--border); border-radius: 14px; font-family: inherit; font-size: 0.95rem; font-weight: 700; color: var(--text); cursor: pointer; transition: all 0.18s; text-align: center; }
   .cls-btn:hover { border-color: var(--accent); transform: translateY(-2px); }
   .cls-btn.selected { background: rgba(124,106,247,0.15); border-color: var(--primary); color: var(--accent); box-shadow: 0 4px 16px rgba(124,106,247,0.25); }
   .cls-btn .cls-name { font-size: 1rem; }
   .cls-btn .cls-age { font-size: 0.72rem; color: var(--sub); margin-top: 4px; font-weight: 500; }
+  .cls-btn .cls-cnt { font-size: 0.68rem; color: var(--muted); margin-top: 3px; font-family: 'DM Mono', monospace; }
 
   .child-list { display: flex; flex-direction: column; gap: 8px; }
   .child-row { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--light); border: 1.5px solid var(--border); border-radius: 12px; transition: all 0.15s; }
@@ -82,6 +85,9 @@
   .quick-actions { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
   .quick-btn { padding: 7px 14px; background: var(--light); border: 1px solid var(--border); border-radius: 20px; font-family: inherit; font-size: 0.78rem; font-weight: 600; color: var(--sub); cursor: pointer; transition: all 0.15s; }
   .quick-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .teacher-sel { width: 100%; padding: 12px 14px; background: var(--light); border: 1.5px solid var(--border); border-radius: 12px; color: var(--text); font-family: inherit; font-size: 0.92rem; margin-bottom: 14px; outline: none; }
+  .teacher-sel:focus { border-color: var(--accent); }
 
   .submit-bar { position: fixed; bottom: 0; left: 0; right: 0; padding: 14px 16px; background: linear-gradient(180deg, transparent 0%, var(--bg) 30%); pointer-events: none; }
   .submit-bar-inner { max-width: 660px; margin: 0 auto; display: flex; gap: 10px; pointer-events: auto; }
@@ -107,7 +113,7 @@
   <div class="hdr-inner">
     <h1>🌙 저녁있는밤 수요조사</h1>
     <p class="hdr-sub">우리무지개어린이집 · 무지개어린이집</p>
-    <div class="event-badge">📅 2026년 5월 14일 (목)</div>
+    <div class="event-badge" id="eventBadge">📅 불러오는 중...</div>
   </div>
 </header>
 
@@ -121,7 +127,7 @@
   <!-- STEP 1: 반 선택 -->
   <div class="card" id="cardClass">
     <div class="card-title">📋 우리 반을 선택해주세요</div>
-    <div class="cls-grid" id="clsGrid"></div>
+    <div id="clsWrap"><div class="empty">명부를 불러오는 중...</div></div>
   </div>
 
   <!-- STEP 2: 아동 명단 -->
@@ -129,14 +135,11 @@
     <div class="card-title">
       <span id="selectedClsTitle">👶 아동 참여 여부</span>
     </div>
+    <select class="teacher-sel" id="teacherSel"></select>
     <div class="info-box">
       💡 참여하는 아동은 <b>참여</b>, 참여하지 않는 아동은 <b>불참</b>, 연장반을 이용하는 아동은 <b>연장반</b>으로 표시해주세요.
     </div>
-    <div class="quick-actions">
-      <button class="quick-btn" onclick="toggleAll('yes')">✅ 전체 참여</button>
-      <button class="quick-btn" onclick="toggleAll('no')">❌ 전체 불참</button>
-      <button class="quick-btn" onclick="toggleAll('ext')" style="border-color:rgba(245,158,11,0.4);color:#f59e0b;">🌙 전체 연장반</button>
-    </div>
+    <div class="quick-actions"></div>
     <div class="child-list" id="childList"></div>
     <div style="margin-top:14px;">
       <span class="summary-pill" id="summaryPill">참여 0명 / 전체 0명</span>
@@ -166,86 +169,137 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const EVENT_KEY = "evening_2026_05_14";
+const SETTINGS_PATH = "evening_settings";
 
-// ===== 아동 명부 (2026년 최신) =====
-// extOnly: true → 연장반 조사만 (참여/불참 없음)
-const CLASSES = {
-  "아침햇살": {
-    age: "만3세 (장애반)",
-    children: ["정태호", "고은호", "김이안", "전수호", "위단우", "서현우", "김윤우", "김지안"]
-  },
-  "고운햇살": {
-    age: "만3·4세 (장애반)",
-    children: ["박재희", "박지유", "김민준", "곽나율", "김은서", "홍하루", "김동휘", "임라희"]
-  },
-  "들꽃향기": {
-    age: "만3세 (통합반)",
-    children: ["한지후", "박은진", "곽시안", "박찬율", "설재은", "류시환", "강은호", "박다엘", "김사랑", "손리완", "이로아", "이소민", "방서윤", "김인우", "이은우", "임서우", "이하린"]
-  },
-  "푸른하늘": {
-    age: "만4세 (통합반)",
-    children: ["김아린", "김강준", "박진우", "한서후", "윤태언", "김서우", "백민지", "이하민", "강태희", "곽다온", "박준", "김세윤", "김지민", "이채민"]
-  },
-  "파도소리": {
-    age: "만5세 이상 (장애반)",
-    children: ["윤지아", "김수겸", "돌란샤나", "권민서", "최도윤", "장시영"]
-  },
-  "은빛물결": {
-    age: "만5세 이상 (장애반)",
-    children: ["이재헌", "박수현", "김성원", "정하준", "송지우", "박승빈", "김정후", "주현우", "신승혁", "김수호", "정연우", "최보민", "한다윤"]
-  },
-  "푸른바다": {
-    age: "만5세 (통합반)",
-    children: ["김평온", "김별리", "양준우", "강지호", "김도우", "백이엘", "이태헌", "오주원", "서연석", "임하라", "김태유", "조믿음", "유이서", "윤예나", "윤예지", "조가온", "곽시후", "이소민"]
-  },
-  "초롱이슬": {
-    age: "만2세 (영아반)",
-    extOnly: true,
-    children: ["전유주", "양선우", "박하엘", "박유하", "정이안", "정이준"]
-  },
-  "아기참새": {
-    age: "만1세 (영아반)",
-    extOnly: true,
-    children: ["박범준", "정윤하", "정다엘", "고이솔", "조은준"]
-  }
+/* ===== 기본 명부 (2026년 반 편성 명부 기준) =====
+   관리자 페이지에서 수정하면 Firebase 설정값이 우선 적용됩니다.
+   extOnly: true → 연장반 조사만 (참여/불참 없음)                    */
+const DEFAULT_CONFIG = {
+  eventDate: "2026-05-14",
+  classes: [
+    { name:"아침햇살", age:"만3세 (장애반)", facility:"우리무지개", extOnly:false,
+      teachers:["강수지","김보라","김하민"],
+      children:["정태호","고은호","김이안","전수호","위단우","서현우","김윤우","김지안"] },
+    { name:"고운햇살", age:"만3·4세 (장애반)", facility:"우리무지개", extOnly:false,
+      teachers:["천은주","변아진"],
+      children:["박재희","박지유","김민준","곽나율","김은서"] },
+    { name:"파도소리", age:"만5세 이상 (장애반)", facility:"우리무지개", extOnly:false,
+      teachers:["임정연","조명원"],
+      children:["윤지아","임라희","돌란샤나","권민서","최도윤","장시영"] },
+    { name:"들꽃향기", age:"만3세 (통합반)", facility:"우리무지개", extOnly:false,
+      teachers:["박초롱","이효선"],
+      children:["한지후","박은진","곽시안","박찬율","설재은","류시환","강은호","박다엘","김사랑","손리완","이로아","이소민","방서윤","김인우","이은우","임서우","이하린"] },
+    { name:"푸른하늘", age:"만4세 (통합반)", facility:"우리무지개", extOnly:false,
+      teachers:["조현아","황선하"],
+      children:["김아린","김강준","박진우","한서후","윤태언","김서우","백민지","이하민","강태희","곽다온","박준","김세윤","김지민","이채민"] },
+    { name:"푸른바다", age:"만5세 (통합반)", facility:"우리무지개", extOnly:false,
+      teachers:["백장미","이슬아","유주환"],
+      children:["김평온","김별리","양준우","강지호","김도우","백이엘","이태헌","오주원","서연석","임하라","김태유","조믿음","유이서","윤예나","윤예지","조가온","곽시후","이소민"] },
+    { name:"다짐반", age:"방과후 (장애반)", facility:"우리무지개", extOnly:false,
+      teachers:["송태헌","마호진"],
+      children:["김중원","이아윤","강남준","문시후","문휘경","이안","이하준"] },
+    { name:"모둠반", age:"방과후 (장애반)", facility:"우리무지개", extOnly:false,
+      teachers:["정인애","황진하","마미선","정다송"],
+      children:["김가온","한시혁","강승아","박도윤","최미소","정서진","김리윤","박수현","송아린","조하준","조혜윤"] },
+    { name:"은빛물결", age:"만5세 이상 (장애반)", facility:"무지개", extOnly:false,
+      teachers:["채준범","이왕성","서명화","임민주"],
+      children:["이재헌","박수현","김성원","정하준","송지우","박승빈","김정후","주현우","신승혁","김수호","정연우","최보민","한다윤"] },
+    { name:"드림반", age:"방과후 (장애반)", facility:"무지개", extOnly:false,
+      teachers:["황경하","이승원","박정민"],
+      children:["정하율","권민재","심유혁","안하람","박준하","서준우","강건영","박상현","구가율","김도원"] },
+    { name:"초롱이슬", age:"만2세 (영아반)", facility:"무지개", extOnly:true,
+      teachers:["정선윤"],
+      children:["전유주","양선우","박하엘","박유하","정이안","정이준"] },
+    { name:"아기참새", age:"만1세 (영아반)", facility:"무지개", extOnly:true,
+      teachers:["우지선"],
+      children:["박범준","정윤하","정다엘","고이솔","조은준"] }
+  ]
 };
 
-let selectedClass = null;
+let CONFIG = DEFAULT_CONFIG;
+let EVENT_KEY = "";
+let DATE_LABEL = "";
+let selectedIdx = null;
 let answers = {};
 
+function dateLabel(d) {
+  const [y,m,dd] = d.split('-').map(Number);
+  const w = ['일','월','화','수','목','금','토'][new Date(y, m-1, dd).getDay()];
+  return `${y}년 ${m}월 ${dd}일 (${w})`;
+}
+function eventKeyOf(d) { return 'evening_' + d.replace(/-/g,'_'); }
+
+async function loadConfig() {
+  try {
+    const snap = await get(ref(db, SETTINGS_PATH));
+    if (snap.exists()) {
+      const c = snap.val();
+      if (c.eventDate && Array.isArray(c.classes) && c.classes.length) {
+        CONFIG = {
+          eventDate: c.eventDate,
+          classes: c.classes.map(x => ({
+            name: x.name, age: x.age || '', facility: x.facility || '',
+            extOnly: !!x.extOnly,
+            teachers: x.teachers || [],
+            children: x.children || []
+          }))
+        };
+      }
+    }
+  } catch(e) { console.warn('설정 로드 실패, 기본 명부 사용:', e); }
+
+  EVENT_KEY = eventKeyOf(CONFIG.eventDate);
+  DATE_LABEL = dateLabel(CONFIG.eventDate);
+  document.getElementById('eventBadge').textContent = '📅 ' + DATE_LABEL;
+  renderClasses();
+}
+
 function renderClasses() {
-  const grid = document.getElementById('clsGrid');
-  grid.innerHTML = Object.keys(CLASSES).map(name => `
-    <button class="cls-btn" onclick="selectClass('${name}')">
-      <div class="cls-name">${name}</div>
-      <div class="cls-age">${CLASSES[name].age}</div>
-    </button>
+  const wrap = document.getElementById('clsWrap');
+  const groups = {};
+  CONFIG.classes.forEach((c, i) => {
+    const g = c.facility || '기타';
+    (groups[g] = groups[g] || []).push(i);
+  });
+  wrap.innerHTML = Object.keys(groups).map(g => `
+    <div class="cls-group-label">🏠 ${g}어린이집</div>
+    <div class="cls-grid">
+      ${groups[g].map(i => `
+        <button class="cls-btn" data-idx="${i}" onclick="selectClass(${i})">
+          <div class="cls-name">${CONFIG.classes[i].name}</div>
+          <div class="cls-age">${CONFIG.classes[i].age}</div>
+          <div class="cls-cnt">${CONFIG.classes[i].children.length}명${CONFIG.classes[i].extOnly?' · 연장반조사':''}</div>
+        </button>`).join('')}
+    </div>
   `).join('');
 }
 
-window.selectClass = async function(name) {
-  selectedClass = name;
+window.selectClass = async function(idx) {
+  selectedIdx = idx;
+  const cls = CONFIG.classes[idx];
   document.querySelectorAll('.cls-btn').forEach(b => {
-    b.classList.toggle('selected', b.textContent.includes(name));
+    b.classList.toggle('selected', Number(b.dataset.idx) === idx);
   });
-  document.getElementById('selectedClsTitle').textContent = `👶 ${name} 아동 참여 여부`;
+  document.getElementById('selectedClsTitle').textContent = `👶 ${cls.name} 아동 참여 여부`;
   document.getElementById('cardChildren').style.display = 'block';
   document.getElementById('submitBar').style.display = 'block';
   setStep(2);
 
-  answers = {};
-  const ext = CLASSES[name].extOnly;
-  CLASSES[name].children.forEach(c => answers[c] = ext ? 'no' : null);
+  const tsel = document.getElementById('teacherSel');
+  tsel.innerHTML = `<option value="">작성 교사 선택 (선택사항)</option>` +
+    (cls.teachers || []).map(t => `<option value="${t}">${t}</option>`).join('');
 
-  // Firebase에서 기존 제출 데이터 불러오기
+  answers = {};
+  cls.children.forEach(c => answers[c] = cls.extOnly ? 'no' : null);
+
   try {
-    const snap = await get(ref(db, `${EVENT_KEY}/classes/${name}`));
+    const snap = await get(ref(db, `${EVENT_KEY}/classes/${cls.name}`));
     if (snap.exists()) {
       const saved = snap.val();
       if (saved.yes)  saved.yes.forEach(c => { if (answers.hasOwnProperty(c)) answers[c] = 'yes'; });
       if (saved.ext)  saved.ext.forEach(c => { if (answers.hasOwnProperty(c)) answers[c] = 'ext'; });
       if (saved.no)   saved.no.forEach(c  => { if (answers.hasOwnProperty(c)) answers[c] = 'no'; });
+      if (saved.teacher) tsel.value = saved.teacher;
     }
   } catch(e) { console.warn('기존 데이터 로드 실패:', e); }
 
@@ -257,9 +311,9 @@ window.selectClass = async function(name) {
 };
 
 function renderChildren() {
-  const ext = CLASSES[selectedClass].extOnly;
+  const cls = CONFIG.classes[selectedIdx];
+  const ext = cls.extOnly;
 
-  // 안내 박스 / 빠른선택 버튼 분기
   const infoBox = document.querySelector('#cardChildren .info-box');
   const quick = document.querySelector('#cardChildren .quick-actions');
   if (ext) {
@@ -278,16 +332,16 @@ function renderChildren() {
   }
 
   const list = document.getElementById('childList');
-  list.innerHTML = CLASSES[selectedClass].children.map(name => {
+  list.innerHTML = cls.children.map((name, i) => {
     const val = answers[name];
     const rowCls = val === 'yes' ? 'yes' : val === 'ext' ? 'ext' : '';
     const toggles = ext
-      ? `<button class="toggle-btn ext-btn ${val==='ext'?'active':''}" onclick="setAnswer('${name}','${val==='ext'?'no':'ext'}')">${val==='ext'?'✓ 연장반':'연장반'}</button>`
-      : `<button class="toggle-btn yes-btn ${val==='yes'?'active':''}" onclick="setAnswer('${name}','yes')">참여</button>
-         <button class="toggle-btn no-btn ${val==='no'?'active':''}" onclick="setAnswer('${name}','no')">불참</button>
-         <button class="toggle-btn ext-btn ${val==='ext'?'active':''}" onclick="setAnswer('${name}','ext')">연장반</button>`;
+      ? `<button class="toggle-btn ext-btn ${val==='ext'?'active':''}" onclick="setAnswer(${i},'${val==='ext'?'no':'ext'}')">${val==='ext'?'✓ 연장반':'연장반'}</button>`
+      : `<button class="toggle-btn yes-btn ${val==='yes'?'active':''}" onclick="setAnswer(${i},'yes')">참여</button>
+         <button class="toggle-btn no-btn ${val==='no'?'active':''}" onclick="setAnswer(${i},'no')">불참</button>
+         <button class="toggle-btn ext-btn ${val==='ext'?'active':''}" onclick="setAnswer(${i},'ext')">연장반</button>`;
     return `
-    <div class="child-row ${rowCls}" id="row-${name}">
+    <div class="child-row ${rowCls}">
       <div class="child-name">${name}</div>
       <div class="toggle-group">${toggles}</div>
     </div>
@@ -295,7 +349,8 @@ function renderChildren() {
   updateSummary();
 }
 
-window.setAnswer = function(name, val) {
+window.setAnswer = function(i, val) {
+  const name = CONFIG.classes[selectedIdx].children[i];
   answers[name] = val;
   renderChildren();
 };
@@ -306,7 +361,7 @@ window.toggleAll = function(val) {
 };
 
 function updateSummary() {
-  const ext = CLASSES[selectedClass].extOnly;
+  const ext = CONFIG.classes[selectedIdx].extOnly;
   const total = Object.keys(answers).length;
   const yesCount = Object.values(answers).filter(v => v === 'yes').length;
   const extCount = Object.values(answers).filter(v => v === 'ext').length;
@@ -336,16 +391,17 @@ async function sendTelegram(msg) {
 // ───────────────────────────────────────────────
 
 window.submit = async function() {
+  const cls = CONFIG.classes[selectedIdx];
+  const teacher = document.getElementById('teacherSel').value || '';
   const yesList = Object.keys(answers).filter(k => answers[k] === 'yes');
   const noList  = Object.keys(answers).filter(k => answers[k] === 'no');
   const extList = Object.keys(answers).filter(k => answers[k] === 'ext');
 
-  // 기존 데이터 확인 (신규 제출인지 수정인지 판별)
-  const prevSnap = await get(ref(db, `${EVENT_KEY}/classes/${selectedClass}`));
+  const prevSnap = await get(ref(db, `${EVENT_KEY}/classes/${cls.name}`));
   const isUpdate = prevSnap.exists();
 
   try {
-    await set(ref(db, `${EVENT_KEY}/classes/${selectedClass}`), {
+    await set(ref(db, `${EVENT_KEY}/classes/${cls.name}`), {
       yes: yesList,
       no: noList,
       ext: extList,
@@ -353,13 +409,13 @@ window.submit = async function() {
       noCount: noList.length,
       extCount: extList.length,
       total: yesList.length + noList.length + extList.length,
+      teacher: teacher,
       submittedAt: new Date().toISOString()
     });
 
     setStep(3);
-    showToast(`✅ ${selectedClass} 제출 완료! 참여 ${yesList.length}명 · 연장반 ${extList.length}명`);
+    showToast(`✅ ${cls.name} 제출 완료! 참여 ${yesList.length}명 · 연장반 ${extList.length}명`);
 
-    // 텔레그램 알림 전송
     const now = new Date().toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
     const icon = isUpdate ? '🔄' : '📋';
     const label = isUpdate ? '수정 제출' : '신규 제출';
@@ -368,8 +424,8 @@ window.submit = async function() {
     const noStr  = noList.length  ? noList.join(', ')  : '없음';
     const msg =
 `${icon} <b>[저녁있는밤 ${label}]</b>
-📅 2026년 5월 14일 (목)
-🏫 <b>${selectedClass}</b> · ${now}
+📅 ${DATE_LABEL}
+🏫 <b>${cls.name}</b>${teacher ? ' · ' + teacher : ''} · ${now}
 
 ✅ 참여 ${yesList.length}명: ${yesStr}
 🌙 연장반 ${extList.length}명: ${extStr}
@@ -383,7 +439,7 @@ window.submit = async function() {
 };
 
 window.resetForm = function() {
-  selectedClass = null;
+  selectedIdx = null;
   answers = {};
   document.getElementById('cardChildren').style.display = 'none';
   document.getElementById('submitBar').style.display = 'none';
@@ -406,7 +462,7 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2800);
 }
 
-renderClasses();
+loadConfig();
 </script>
 </body>
 </html>
