@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>우리무지개 가족운동회 참석 조사</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fbeff1;
+  --panel:#ffffff;
+  --pill:#f3c3cd;
+  --pill-deep:#e58ba0;
+  --ink:#4b3a3f;
+  --ink-soft:#8b767c;
+  --line:#f0dade;
+  --cta:#e8798c;
+  --ok:#5aa86e;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'Gowun Dodum',system-ui,sans-serif;
+  font-size:16px;
+  line-height:1.7;
+  padding:0 0 60px;
+}
+.wrap{max-width:640px;margin:0 auto;padding:0 16px}
+
+/* 배너 */
+.bunting{display:flex;height:26px;overflow:hidden}
+.bunting i{flex:1;height:26px;clip-path:polygon(0 0,100% 0,50% 100%)}
+.bunting i:nth-child(6n+1){background:#f2a0ae}
+.bunting i:nth-child(6n+2){background:#f7c98b}
+.bunting i:nth-child(6n+3){background:#f6e08a}
+.bunting i:nth-child(6n+4){background:#9fd6a8}
+.bunting i:nth-child(6n+5){background:#95c4e8}
+.bunting i:nth-child(6n+6){background:#c1a8dd}
+
+header{text-align:center;padding:22px 0 26px}
+header h1{
+  font-family:'Jua',sans-serif;font-weight:400;
+  font-size:30px;line-height:1.35;margin:0;color:#e06a83;
+  text-shadow:2px 2px 0 #fff;
+}
+header p{margin:10px 0 0;color:var(--ink-soft);font-size:15px}
+.meta{
+  margin:16px auto 0;max-width:420px;background:#fff;border-radius:16px;
+  padding:12px 16px;font-size:14px;color:var(--ink-soft);
+  border:1px solid var(--line);
+}
+.meta b{color:var(--ink);font-weight:400}
+
+/* 포스터식 행 */
+.row{display:flex;gap:12px;margin:0 0 16px;align-items:stretch}
+.row > .tag{
+  flex:0 0 62px;background:var(--pill);border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Jua',sans-serif;font-size:17px;color:#7d4351;
+  writing-mode:vertical-rl;letter-spacing:4px;padding:14px 0;
+}
+.row > .body{
+  flex:1;background:var(--panel);border-radius:16px;
+  padding:18px;border:1px solid var(--line);
+}
+h2{font-family:'Jua',sans-serif;font-weight:400;font-size:18px;margin:0 0 12px}
+
+label.f{display:block;font-size:14px;color:var(--ink-soft);margin:14px 0 6px}
+label.f:first-of-type{margin-top:0}
+select,input[type=text],textarea{
+  width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:12px;
+  font-family:inherit;font-size:16px;background:#fffdfd;color:var(--ink);
+}
+select:focus,input:focus,textarea:focus,button:focus-visible{
+  outline:3px solid #f6b9c6;outline-offset:1px;
+}
+textarea{min-height:70px;resize:vertical}
+
+/* 참석 여부 */
+.choice{display:flex;gap:10px}
+.choice button{
+  flex:1;padding:16px 8px;border-radius:14px;border:2px solid var(--line);
+  background:#fffdfd;font-family:'Jua',sans-serif;font-size:17px;color:var(--ink-soft);
+  cursor:pointer;
+}
+.choice button[aria-pressed=true]{
+  border-color:var(--cta);background:#fdeef1;color:#c9445e;
+}
+
+/* 인원 카운터 */
+.counters{display:flex;flex-direction:column;gap:2px}
+.cnt{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line)}
+.cnt:last-child{border-bottom:0}
+.cnt .who{flex:1;font-size:16px}
+.cnt .emoji{width:26px;text-align:center;font-size:18px}
+.step{
+  width:38px;height:38px;border-radius:50%;border:1px solid var(--line);
+  background:#fff;font-size:20px;line-height:1;color:var(--pill-deep);cursor:pointer;
+}
+.step:active{background:#fdeef1}
+.num{width:34px;text-align:center;font-family:'Jua',sans-serif;font-size:19px}
+.num.zero{color:#d8c6ca}
+
+.total{
+  margin-top:14px;background:#fdf2f4;border-radius:14px;padding:12px 16px;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.total span{font-size:14px;color:var(--ink-soft)}
+.total b{font-family:'Jua',sans-serif;font-size:22px;font-weight:400;color:#c9445e}
+
+.submit{
+  width:100%;margin-top:8px;padding:18px;border:0;border-radius:18px;
+  background:var(--cta);color:#fff;font-family:'Jua',sans-serif;font-size:19px;
+  cursor:pointer;box-shadow:0 6px 0 #cf5f72;
+}
+.submit:active{transform:translateY(3px);box-shadow:0 3px 0 #cf5f72}
+.submit[disabled]{background:#e3cdd2;box-shadow:0 6px 0 #d3bcc1;cursor:default}
+
+.note{font-size:13px;color:var(--ink-soft);text-align:center;margin-top:14px}
+.err{color:#c9445e;font-size:14px;margin-top:10px;min-height:20px}
+
+footer{text-align:center;margin-top:34px;color:var(--ink-soft);font-size:13px}
+footer a{color:var(--ink-soft);text-decoration:underline;cursor:pointer}
+
+/* 완료 화면 */
+.done{display:none;text-align:center;background:#fff;border-radius:20px;padding:36px 20px;border:1px solid var(--line)}
+.done .big{font-family:'Jua',sans-serif;font-size:24px;color:#e06a83}
+.done .rainbow{font-size:40px}
+.done .recap{margin:14px auto 0;max-width:340px;text-align:left;font-size:15px;color:var(--ink-soft)}
+.done button{margin-top:20px;padding:12px 22px;border-radius:14px;border:1px solid var(--line);background:#fff;font-family:'Jua',sans-serif;font-size:15px;color:var(--ink-soft);cursor:pointer}
+
+/* 관리자 */
+#admin{display:none}
+table{width:100%;border-collapse:collapse;font-size:13px;background:#fff}
+th,td{border:1px solid var(--line);padding:6px 8px;text-align:center;white-space:nowrap}
+th{background:#fdeef1;font-weight:400}
+.scroll{overflow-x:auto;border-radius:12px}
+.sum{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.sum div{background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 14px;font-size:14px}
+.sum b{font-family:'Jua',sans-serif;font-weight:400;color:#c9445e;font-size:18px}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.tools button{padding:10px 16px;border-radius:12px;border:1px solid var(--line);background:#fff;font-family:inherit;cursor:pointer}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (max-width:420px){
+  header h1{font-size:25px}
+  .row>.tag{flex-basis:52px;font-size:15px}
+  .row>.body{padding:14px}
+}
+</style>
+</head>
+<body>
+
+<div class="bunting"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+
+<div class="wrap">
+<header>
+  <h1>우리무지개 가족운동회<br>참석 조사</h1>
+  <p>가족과 함께 웃고 응원하는 하루, 함께해 주세요.</p>
+  <div class="meta">
+    <b>2026년 10월 18일(일) 오전 10시~12시</b><br>
+    송원대학교 청송관 3층 대강당<br>
+    회신 기한 · 9월 18일(금)
+  </div>
+</header>
+
+<!-- ===== 학부모 폼 ===== -->
+<div id="form">
+
+  <div class="row">
+    <div class="tag">아동정보</div>
+    <div class="body">
+      <label class="f" for="fac">어린이집</label>
+      <select id="fac"><option value="">선택해 주세요</option></select>
+
+      <label class="f" for="cls">반</label>
+      <select id="cls" disabled><option value="">어린이집 먼저 선택</option></select>
+
+      <label class="f" for="kid">아동 이름</label>
+      <select id="kid" disabled><option value="">반 먼저 선택</option></select>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="tag">참석여부</div>
+    <div class="body">
+      <div class="choice">
+        <button type="button" id="yes" aria-pressed="false">참석해요</button>
+        <button type="button" id="no" aria-pressed="false">어려워요</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="row" id="peopleRow" style="display:none">
+    <div class="tag">참석인원</div>
+    <div class="body">
+      <h2>오시는 분을 각각 눌러 주세요</h2>
+      <div class="counters" id="counters"></div>
+      <div class="total"><span>아동 포함 총인원</span><b id="total">1명</b></div>
+      <label class="f" for="etcName">기타 관계 (기타 인원이 있을 때만)</label>
+      <input type="text" id="etcName" placeholder="예) 이모, 사촌형">
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="tag">남길말씀</div>
+    <div class="body">
+      <textarea id="memo" placeholder="전달할 내용이 있으면 적어 주세요 (선택)"></textarea>
+    </div>
+  </div>
+
+  <button class="submit" id="send">응답 보내기</button>
+  <div class="err" id="err"></div>
+  <p class="note">응답 후 변동이 생기면 담임선생님께 알려 주세요.<br>같은 아동으로 다시 보내면 마지막 응답으로 바뀝니다.</p>
+</div>
+
+<!-- ===== 완료 ===== -->
+<div class="done" id="done">
+  <div class="rainbow">🌈</div>
+  <div class="big">응답을 받았어요</div>
+  <div class="recap" id="recap"></div>
+  <button type="button" onclick="location.reload()">다른 아동 응답하기</button>
+</div>
+
+<!-- ===== 관리자 ===== -->
+<div id="admin">
+  <h2>참석 현황</h2>
+  <div class="sum" id="sum"></div>
+  <div class="tools">
+    <button type="button" id="csv">CSV 내려받기</button>
+    <button type="button" id="back">조사 화면으로</button>
+  </div>
+  <div class="scroll"><table id="tbl"></table></div>
+</div>
+
+<footer>
+  꿈꾸는 만큼 자라나는 우리무지개어린이집 · 062-374-7117~8<br>
+  <a id="adminLink">관리자</a>
+</footer>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+/* ================= 파이어베이스 설정 (mujigae-swimming) ================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyDojXJ_9pOnla8uG240APwo3Ik9gBddMw4",
+  authDomain: "mujigae-swimming.firebaseapp.com",
+  databaseURL: "https://mujigae-swimming-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "mujigae-swimming",
+  storageBucket: "mujigae-swimming.firebasestorage.app",
+  messagingSenderId: "279953220805",
+  appId: "1:279953220805:web:b24cbe70f8556416c0bcac"
+};
+const DB_PATH = "sportsday2026";
+const ADMIN_PW = "7117";
+/* ================================================================================== */
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+/* ---------- 명단 ---------- */
+const ROSTER = {
+  "무지개어린이집": {
+    "아기참새": ["박범준","정윤하","고이솔","조은준"],
+    "초롱이슬": ["전유주","양선우","박하엘","박유하","정이안","정이준"],
+    "은빛물결": ["이재헌","박수현","김성원","정하준","송지우","박승빈","김정후","주현우","신승혁","김수호","정연우","최보민","한다윤"]
+  },
+  "우리무지개어린이집": {
+    "들꽃향기": ["한지후","박은진","곽시안","박찬율","설재은","류시환","강은호","박다엘","김사랑","손리완","이로아","이소민","방서윤","김인우","이은우","임서우","이하린","김동휘"],
+    "푸른하늘": ["김아린","김강준","박진우","한서후","윤태언","김서우","백민지","이하민","강태희","곽다온","박준","김세윤","김지민","이채민"],
+    "푸른바다": ["김평온","김별리","양준우","강지호","김도우","백이엘","이태헌","오주원","서연석","임하라","김태유","조믿음","유이서","윤예나","윤예지","조가온","곽시후","이소민"],
+    "아침햇살": ["정태호","고은호","김이안","전수호","위단우","서현우","김윤우","김지안","홍하루"],
+    "고운햇살": ["박재희","박지유","김민준","곽나율","김은서"],
+    "파도소리": ["윤지아","임라희","돌란샤나","권민서","최도윤","장시영"]
+  }
+};
+const ROLES = [
+  {key:"father",   label:"아버지",  emoji:"👨"},
+  {key:"mother",   label:"어머니",  emoji:"👩"},
+  {key:"sibling",  label:"형제자매",emoji:"🧒"},
+  {key:"grandpa",  label:"할아버지",emoji:"👴"},
+  {key:"grandma",  label:"할머니",  emoji:"👵"},
+  {key:"etc",      label:"기타",    emoji:"🙂"}
+];
+
+/* ---------- 요소 ---------- */
+const $ = id => document.getElementById(id);
+const fac=$("fac"), cls=$("cls"), kid=$("kid");
+const counts = {}; ROLES.forEach(r=>counts[r.key]=0);
+let attend = null;
+
+/* ---------- 드롭다운 ---------- */
+Object.keys(ROSTER).forEach(f=>fac.add(new Option(f,f)));
+fac.onchange = () => {
+  cls.innerHTML = '<option value="">선택해 주세요</option>';
+  kid.innerHTML = '<option value="">반 먼저 선택</option>';
+  kid.disabled = true;
+  if(!fac.value){ cls.disabled = true; return; }
+  Object.keys(ROSTER[fac.value]).forEach(c=>cls.add(new Option(c,c)));
+  cls.disabled = false;
+};
+cls.onchange = () => {
+  kid.innerHTML = '<option value="">선택해 주세요</option>';
+  if(!cls.value){ kid.disabled = true; return; }
+  ROSTER[fac.value][cls.value].forEach(n=>kid.add(new Option(n,n)));
+  kid.disabled = false;
+};
+
+/* ---------- 참석 여부 ---------- */
+$("yes").onclick = () => setAttend(true);
+$("no").onclick  = () => setAttend(false);
+function setAttend(v){
+  attend = v;
+  $("yes").setAttribute("aria-pressed", v);
+  $("no").setAttribute("aria-pressed", !v);
+  $("peopleRow").style.display = v ? "flex" : "none";
+}
+
+/* ---------- 카운터 ---------- */
+const box = $("counters");
+ROLES.forEach(r=>{
+  const row = document.createElement("div");
+  row.className = "cnt";
+  row.innerHTML =
+    '<span class="emoji">'+r.emoji+'</span>'+
+    '<span class="who">'+r.label+'</span>'+
+    '<button type="button" class="step" data-k="'+r.key+'" data-d="-1" aria-label="'+r.label+' 줄이기">−</button>'+
+    '<span class="num zero" id="n-'+r.key+'">0</span>'+
+    '<button type="button" class="step" data-k="'+r.key+'" data-d="1" aria-label="'+r.label+' 늘리기">＋</button>';
+  box.appendChild(row);
+});
+box.onclick = e => {
+  const b = e.target.closest(".step"); if(!b) return;
+  const k = b.dataset.k;
+  counts[k] = Math.max(0, Math.min(9, counts[k] + Number(b.dataset.d)));
+  const n = $("n-"+k);
+  n.textContent = counts[k];
+  n.classList.toggle("zero", counts[k]===0);
+  const sum = ROLES.reduce((a,r)=>a+counts[r.key],0);
+  $("total").textContent = (sum+1) + "명";
+};
+
+/* ---------- 저장 ---------- */
+$("send").onclick = () => {
+  const err = $("err"); err.textContent = "";
+  if(!fac.value || !cls.value || !kid.value){ err.textContent="어린이집·반·아동 이름을 선택해 주세요."; return; }
+  if(attend === null){ err.textContent="참석 여부를 선택해 주세요."; return; }
+  const sum = ROLES.reduce((a,r)=>a+counts[r.key],0);
+  if(attend && sum === 0){ err.textContent="함께 오시는 가족 인원을 입력해 주세요."; return; }
+
+  const key = (cls.value+"_"+kid.value).replace(/[.#$/\[\]]/g,"");
+  const data = {
+    facility: fac.value, cls: cls.value, name: kid.value,
+    attend: attend ? "참석" : "미참석",
+    father: attend?counts.father:0, mother: attend?counts.mother:0,
+    sibling: attend?counts.sibling:0, grandpa: attend?counts.grandpa:0,
+    grandma: attend?counts.grandma:0, etc: attend?counts.etc:0,
+    etcName: attend ? $("etcName").value.trim() : "",
+    total: attend ? sum+1 : 0,
+    memo: $("memo").value.trim(),
+    at: new Date().toLocaleString("ko-KR")
+  };
+
+  $("send").disabled = true; $("send").textContent = "보내는 중…";
+  db.ref(DB_PATH+"/"+key).set(data)
+    .then(()=>{
+      let recap = "<b>"+data.cls+" "+data.name+"</b> · "+data.attend;
+      if(attend){
+        recap += "<br>" + ROLES.filter(r=>counts[r.key]>0)
+          .map(r=>r.label+" "+counts[r.key]+"명").join(" · ");
+        recap += "<br>아동 포함 총 "+data.total+"명";
+      }
+      $("recap").innerHTML = recap;
+      $("form").style.display = "none";
+      $("done").style.display = "block";
+      window.scrollTo(0,0);
+    })
+    .catch(e=>{
+      err.textContent = "저장하지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.";
+      $("send").disabled = false; $("send").textContent = "응답 보내기";
+    });
+};
+
+/* ---------- 관리자 ---------- */
+let rows = [];
+$("adminLink").onclick = () => {
+  if(prompt("관리자 비밀번호") !== ADMIN_PW) return;
+  $("form").style.display="none"; $("done").style.display="none";
+  $("admin").style.display="block";
+  db.ref(DB_PATH).on("value", s=>{
+    rows = Object.values(s.val()||{});
+    rows.sort((a,b)=> (a.facility+a.cls).localeCompare(b.facility+b.cls) || a.name.localeCompare(b.name));
+    render();
+  });
+};
+$("back").onclick = () => location.reload();
+
+function render(){
+  const go = rows.filter(r=>r.attend==="참석");
+  const people = go.reduce((a,r)=>a+(r.total||0),0);
+  const t = k => go.reduce((a,r)=>a+(r[k]||0),0);
+  $("sum").innerHTML =
+    '<div>응답 <b>'+rows.length+'</b></div>'+
+    '<div>참석 <b>'+go.length+'</b>가정</div>'+
+    '<div>미참석 <b>'+(rows.length-go.length)+'</b></div>'+
+    '<div>총인원 <b>'+people+'</b>명</div>'+
+    '<div>부 <b>'+t("father")+'</b></div>'+
+    '<div>모 <b>'+t("mother")+'</b></div>'+
+    '<div>형제 <b>'+t("sibling")+'</b></div>'+
+    '<div>조부 <b>'+t("grandpa")+'</b></div>'+
+    '<div>조모 <b>'+t("grandma")+'</b></div>'+
+    '<div>기타 <b>'+t("etc")+'</b></div>';
+
+  let h = "<tr><th>어린이집</th><th>반</th><th>아동</th><th>참석</th><th>부</th><th>모</th><th>형제</th><th>조부</th><th>조모</th><th>기타</th><th>총</th><th>기타관계</th><th>남긴말</th><th>시각</th></tr>";
+  rows.forEach(r=>{
+    h += "<tr><td>"+r.facility+"</td><td>"+r.cls+"</td><td>"+r.name+"</td><td>"+r.attend+"</td><td>"+r.father+"</td><td>"+r.mother+"</td><td>"+r.sibling+"</td><td>"+r.grandpa+"</td><td>"+r.grandma+"</td><td>"+r.etc+"</td><td>"+r.total+"</td><td>"+(r.etcName||"")+"</td><td>"+(r.memo||"")+"</td><td>"+(r.at||"")+"</td></tr>";
+  });
+  $("tbl").innerHTML = h;
+}
+
+$("csv").onclick = () => {
+  const head = ["어린이집","반","아동","참석","부","모","형제자매","할아버지","할머니","기타","총인원","기타관계","남긴말","응답시각"];
+  const body = rows.map(r=>[r.facility,r.cls,r.name,r.attend,r.father,r.mother,r.sibling,r.grandpa,r.grandma,r.etc,r.total,r.etcName||"",(r.memo||"").replace(/[\r\n]+/g," "),r.at||""]);
+  const csv = "\uFEFF" + [head,...body].map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(",")).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download = "가족운동회_참석조사.csv";
+  a.click();
+};
+</script>
+</body>
+</html>
