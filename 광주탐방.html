@@ -828,8 +828,9 @@ async function submitForm() {
     payload.사후활동 = document.getElementById('fPost').value.trim();
   }
 
-  // 수정 모드면 기존 key 유지, 신규면 새 key 생성
-  const key = state.editKey || `${state.inst}_${state.cls}_${state.date}`;
+  // 수정 모드면 기존 key 유지, 신규면 고유 key 생성 (횟수 제한 없음, 기존 key 형식 데이터 보존)
+  const isEdit = !!state.editKey;
+  const key = state.editKey || (db ? db.ref('광주탐방일정').push().key : `local_${Date.now()}`);
 
   if (db) {
     try {
@@ -851,7 +852,7 @@ async function submitForm() {
   renderMyList();
   document.getElementById('formArea').style.display = 'none';
   document.getElementById('doneArea').style.display = 'block';
-  document.getElementById('doneTitle').textContent = state.editKey ? `${state.cls} 일정 수정 완료!` : `${state.cls} 일정 제출 완료!`;
+  document.getElementById('doneTitle').textContent = isEdit ? `${state.cls} 일정 수정 완료!` : `${state.cls} 일정 제출 완료!`;
   const d = parseDate(state.date);
   document.getElementById('doneSub').innerHTML =
     `<b>${payload.기관}</b> · ${state.cls}<br>` +
