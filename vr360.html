@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>VR실 360 뷰어</title>
+<style>
+  html,body{margin:0;height:100%;background:#000;color:#eee;font-family:"Malgun Gothic",sans-serif;overflow:hidden}
+  #gl{position:fixed;inset:0;display:none}
+  #setup{position:fixed;inset:0;overflow:auto;padding:20px;background:#15171c;display:none}
+  #setup h1{font-size:20px;margin:0 0 12px}
+  #setup button{font:inherit;padding:6px 12px;margin:4px 4px 4px 0;cursor:pointer}
+  table{border-collapse:collapse;margin:10px 0}
+  td,th{border:1px solid #444;padding:4px 6px;font-size:13px}
+  input[type=number]{width:70px}
+  #map{background:#000;border:1px solid #444;display:block;margin:10px 0}
+  textarea{width:100%;height:110px;font-family:monospace;font-size:12px}
+  #hud{position:fixed;display:none;padding:14px 18px;background:rgba(0,0,0,.65);border-radius:10px;font-size:18px;line-height:1.6;pointer-events:none}
+  .note{color:#aaa;font-size:13px}
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="hud"></div>
+<input type="file" id="file" accept="video/*" style="display:none">
+
+<div id="setup">
+  <h1>VR실 360 뷰어 — 화면 설정</h1>
+  <div class="note">이 화면은 VR실 PC 크롬에서 엽니다. 윈도우 디스플레이 설정·YTS 보정은 건드리지 않습니다.</div>
+  <button id="detect">화면 감지</button>
+  <button id="addRow">수동 행 추가</button>
+  <table id="tbl"><thead><tr><th>#</th><th>이름</th><th>left</th><th>top</th><th>width</th><th>height</th><th>역할</th><th>바닥 방향</th></tr></thead><tbody></tbody></table>
+  <canvas id="map" width="900" height="300"></canvas>
+  <button id="make">실행 명령 만들기</button>
+  <button id="preview">이 창에서 미리보기</button>
+  <p class="note">아래 내용을 <b>VR360.bat</b>으로 저장 → 더블클릭 실행. 창 위치·크기 자동. 크기가 덜 늘어나면 창 가장자리 끌어 화면들 덮으면 됨(위치 자동 보정).</p>
+  <textarea id="bat" readonly></textarea>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const ROLES = {none:'안 씀', front:'정면 벽', left:'좌측 벽', right:'우측 벽', floorL:'바닥 왼쪽', floorR:'바닥 오른쪽'};
+const UPS = {'-x':'상이 왼벽 쪽', '+x':'상이 오른벽 쪽', '-z':'상이 정면 쪽', '+z':'상이 뒤쪽'};
+
+/* ---------- config in URL hash ---------- */
+const enc = o => btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const dec = s => JSON.parse(decodeURIComponent(escape(atob(s.replace(/-/g,'+').replace(/_/g,'/')))));
+function readHash(){
+  const m = location.hash.match(/c=([A-Za-z0-9_-]+)/);
+  if(!m) return null;
+  try { return dec(m[1]); } catch(e){ return null; }
+}
+
+/* ---------- SETUP ---------- */
+let rows = [];
+const tbody = document.querySelector('#tbl tbody');
+function renderRows(){
+  tbody.innerHTML = '';
+  rows.forEach((r,i)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${i+1}</td><td>${r.label||''}</td>` +
+      ['x','y','w','h'].map(k=>`<td><input type="number" data-k="${k}" value="${r[k]}"></td>`).join('') +
+      `<td><select data-k="role">${Object.entries(ROLES).map(([k,v])=>`<option value="${k}" ${r.role===k?'selected':''}>${v}</option>`).join('')}</select></td>` +
+      `<td><select data-k="up">${Object.entries(UPS).map(([k,v])=>`<option value="${k}" ${r.up===k?'selected':''}>${v}</option>`).join('')}</select></td>`;
+    tr.querySelectorAll('[data-k]').forEach(el=>el.onchange=()=>{
+      const k = el.dataset.k;
+      r[k] = (k==='role'||k==='up') ? el.value : +el.value;
+      if(k==='role' && (r.role==='floorL')) r.up='-x';
+      if(k==='role' && (r.role==='floorR')) r.up='+x';
+      renderRows();
+    });
+    tbody.appendChild(tr);
+  });
+  drawMap();
+}
+function drawMap(){
+  const c = document.getElementById('map'), g = c.getContext('2d');
+  g.clearRect(0,0,c.width,c.height);
+  if(!rows.length) return;
+  const minX=Math.min(...rows.map(r=>r.x)), minY=Math.min(...rows.map(r=>r.y));
+  const maxX=Math.max(...rows.map(r=>r.x+r.w)), maxY=Math.max(...rows.map(r=>r.y+r.h));
+  const s = Math.min((c.width-20)/(maxX-minX),(c.height-20)/(maxY-minY));
+  rows.forEach((r,i)=>{
+    const x=10+(r.x-minX)*s, y=10+(r.y-minY)*s, w=r.w*s, h=r.h*s;
+    g.fillStyle = r.role==='none' ? '#333' : r.role.startsWith('floor') ? '#2a5' : '#36c';
+    g.fillRect(x,y,w,h); g.strokeStyle='#fff'; g.strokeRect(x,y,w,h);
+    g.fillStyle='#fff'; g.font='bold 14px sans-serif';
+    g.fillText(`${i+1} ${ROLES[r.role]}`, x+6, y+20);
+    g.font='11px sans-serif'; g.fillText(`${r.w}×${r.h}`, x+6, y+36);
+  });
+}
+document.getElementById('detect').onclick = async ()=>{
+  if(!('getScreenDetails' in window)){ alert('이 브라우저는 화면 감지 미지원. 크롬 최신 버전 사용 또는 수동 입력.'); return; }
+  try{
+    const d = await window.getScreenDetails();
+    rows = d.screens.map(s=>({label:s.label+(s.isPrimary?' (주)':''), x:s.left, y:s.top, w:s.width, h:s.height, role:'none', up:'-x'}));
+    renderRows();
+  }catch(e){ alert('화면 감지 권한 거부됨: '+e.message); }
+};
+document.getElementById('addRow').onclick = ()=>{ rows.push({label:'수동',x:0,y:0,w:1920,h:1080,role:'none',up:'-x'}); renderRows(); };
+function buildCfg(){
+  return {s: rows.filter(r=>r.role!=='none').map(r=>({r:r.role,x:r.x,y:r.y,w:r.w,h:r.h,u:r.up}))};
+}
+document.getElementById('make').onclick = ()=>{
+  const cfg = buildCfg();
+  if(!cfg.s.length){ alert('역할 지정된 화면 없음'); return; }
+  const minX=Math.min(...cfg.s.map(r=>r.x)), minY=Math.min(...cfg.s.map(r=>r.y));
+  const maxX=Math.max(...cfg.s.map(r=>r.x+r.w)), maxY=Math.max(...cfg.s.map(r=>r.y+r.h));
+  const url = (location.href.split('#')[0] + '#c=' + enc(cfg)).replace(/%/g,'%%');
+  document.getElementById('bat').value =
+`@echo off
+set CHROME="C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+if not exist %CHROME% set CHROME="C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+start "" %CHROME% --user-data-dir="%TEMP%\\vr360" --autoplay-policy=no-user-gesture-required --app="${url}" --window-position=${minX},${minY-32} --window-size=${maxX-minX},${maxY-minY+32}
+`;
+  try{ localStorage.setItem('vr360rows', JSON.stringify(rows)); }catch(e){}
+};
+document.getElementById('preview').onclick = ()=>{
+  const cfg = buildCfg();
+  if(!cfg.s.length){ alert('역할 지정된 화면 없음'); return; }
+  location.hash = 'c=' + enc(cfg); location.reload();
+};
+
+/* ---------- PLAY ---------- */
+function startPlay(cfg){
+  document.getElementById('gl').style.display='block';
+  const canvas = document.getElementById('gl');
+  const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setScissorTest(true);
+  const scene = new THREE.Scene();
+
+  // sphere
+  const geo = new THREE.SphereGeometry(500, 96, 48); geo.scale(-1,1,1);
+  const mat = new THREE.MeshBasicMaterial({map: testTexture()});
+  const sphere = new THREE.Mesh(geo, mat); scene.add(sphere);
+  let yaw = 0;
+  const applyYaw = ()=> sphere.rotation.y = -Math.PI/2 + yaw;
+  applyYaw();
+
+  // 위치 보정값 (맞춤 모드에서 저장)
+  let adj = {};
+  try{ adj = JSON.parse(localStorage.getItem('vr360adj')||'{}'); }catch(e){}
+  const saveAdj = ()=>{ try{ localStorage.setItem('vr360adj', JSON.stringify(adj)); }catch(e){} };
+  const A = r => adj[r] || (adj[r] = {dx:0,dy:0,dw:0,dh:0});
+
+  const isX = u => u==='-x'||u==='+x';
+  const ext = s => s ? {x: isX(s.u)? s.h : s.w, z: isX(s.u)? s.w : s.h} : {x:0,z:0};
+  const UPV = {'-x':[-1,0,0], '+x':[1,0,0], '-z':[0,0,-1], '+z':[0,0,1]};
+  const LOOK = {front:[0,0,-1], left:[-1,0,0], right:[1,0,0]};
+
+  let wallFov = 90;
+  try{ wallFov = +localStorage.getItem('vr360fov') || 90; }catch(e){}
+  let views = [];
+  function buildViews(){
+  const list = cfg.s.map(s=>{ const a=A(s.r); return {...s, x:s.x+a.dx, y:s.y+a.dy, w:s.w+a.dw, h:s.h+a.dh}; });
+  const fl = list.find(s=>s.r==='floorL'), fr = list.find(s=>s.r==='floorR');
+  const X = ext(fl).x + ext(fr).x, Z = Math.max(ext(fl).z, ext(fr).z);
+  views = list.map(s=>{
+    const cam = new THREE.PerspectiveCamera(60, s.w/s.h, 0.1, 2000);
+    if(LOOK[s.r]){
+      const hf = wallFov*Math.PI/180, yw = ({front:0,left:-wallFov,right:wallFov})[s.r]*Math.PI/180;
+      cam.aspect = s.w/s.h;
+      cam.fov = 2*Math.atan(Math.tan(hf/2)/cam.aspect)*180/Math.PI;   // 가로 wallFov°
+      cam.lookAt(Math.sin(yw), 0, -Math.cos(yw));
+    } else {
+      const e = ext(s);
+      const xmin = s.r==='floorL' ? -X/2 : -X/2 + ext(fl).x;
+      const xmax = xmin + e.x;
+      cam.up.set(...UPV[s.u]); cam.lookAt(0,-1,0);
+      let fullW, fullH, offX, offY;
+      if(isX(s.u)){
+        fullW = Z; fullH = X; cam.fov = 90;
+        offX = (Z - e.z)/2;
+        offY = s.u==='-x' ? xmin + X/2 : X/2 - xmax;
+      } else {
+        fullW = X; fullH = Z; cam.fov = 2*Math.atan(Z/X)*180/Math.PI;
+        offX = s.u==='-z' ? xmin + X/2 : X/2 - xmax;
+        offY = (Z - e.z)/2;
+      }
+      cam.aspect = fullW/fullH;
+      cam.setViewOffset(fullW, fullH, offX, offY, s.w, s.h);
+    }
+    cam.updateProjectionMatrix();
+    return {s, cam};
+  });
+  }
+  buildViews();
+
+  // content origin in screen coords (mouse gives exact value)
+  let ox = window.screenX, oy = window.screenY + (window.outerHeight - window.innerHeight);
+  window.addEventListener('pointermove', e=>{ ox = e.screenX - e.clientX; oy = e.screenY - e.clientY; });
+
+  function resize(){ renderer.setSize(window.innerWidth, window.innerHeight, false); }
+  window.addEventListener('resize', resize); resize();
+
+  // HUD on front screen
+  const hud = document.getElementById('hud');
+  const front = cfg.s.find(s=>s.r==='front') || cfg.s[0];
+  hud.innerHTML = '<b>Y</b> 유튜브 링크 · <b>X</b> 유튜브 끄기<br><b>O</b> 영상 열기 (360° mp4) · 끌어다 놓기도 됨<br><b>Space</b> 재생/정지 · <b>← →</b> 방향 돌리기 · <b>[ ]</b> 10초 이동<br><b>- +</b> 시야 좁게/넓게 ·<b>D</b> 위치 맞춤 · <b>H</b> 안내 숨김 · <b>S</b> 설정';
+  hud.style.display='block';
+  const tst = document.createElement('div');
+  tst.style.cssText = 'position:fixed;z-index:10;display:none;padding:16px 24px;background:rgba(0,0,0,.75);border-radius:10px;font-size:32px;pointer-events:none';
+  document.body.appendChild(tst);
+  let tstT = 0;
+  function toast(t){
+    tst.textContent = t; tst.style.display = 'block';
+    tst.style.left = (front.x - ox + 40)+'px'; tst.style.top = (front.y - oy + 40)+'px';
+    clearTimeout(tstT); tstT = setTimeout(()=> tst.style.display='none', 1500);
+  }
+  function placeHud(){ hud.style.left = (front.x - ox + 40)+'px'; hud.style.top = (front.y - oy + 40)+'px'; }
+
+  // video
+  const video = document.createElement('video');
+  video.loop = true; video.playsInline = true; video.crossOrigin = 'anonymous';
+  function loadFile(f){
+    if(!f) return;
+    video.src = URL.createObjectURL(f);
+    video.play();
+    const tex = new THREE.VideoTexture(video);
+    tex.minFilter = THREE.LinearFilter;
+    mat.map = tex; mat.needsUpdate = true;
+    hud.style.display='none';
+  }
+  const fileIn = document.getElementById('file');
+  fileIn.onchange = ()=> loadFile(fileIn.files[0]);
+  window.addEventListener('dragover', e=>e.preventDefault());
+  window.addEventListener('drop', e=>{ e.preventDefault(); loadFile(e.dataTransfer.files[0]); });
+  // ---- 유튜브 모드 (Y) ----
+  let yt = null, ytYaw = 0;
+  const ytLayer = document.createElement('div');
+  ytLayer.style.cssText = 'position:fixed;inset:0;pointer-events:none;display:none';
+  document.body.appendChild(ytLayer);
+  const VIEWDIR = {front:{yaw:0,pitch:0}, left:{yaw:-90,pitch:0}, right:{yaw:90,pitch:0}, floorL:{yaw:-90,pitch:-63}, floorR:{yaw:90,pitch:-63}};
+  const ytId = u => { const m = u.match(/(?:v=|youtu\.be\/|shorts\/|embed\/|live\/)([\w-]{11})/); return m ? m[1] : (/^[\w-]{11}$/.test(u.trim()) ? u.trim() : null); };
+  function loadYTApi(){
+    return new Promise(res=>{
+      if(window.YT && YT.Player) return res();
+      window.onYouTubeIframeAPIReady = res;
+      const s = document.createElement('script'); s.src = 'https://www.youtube.com/iframe_api'; document.head.appendChild(s);
+    });
+  }
+  function aim(q){
+    if(!q || !q.p.setSphericalProperties) return;
+    const r = views[q.i].s.r, d = VIEWDIR[r];
+    const base = r==='left' ? -wallFov : r==='right' ? wallFov : d.yaw;
+    q.p.setSphericalProperties({yaw:((base+ytYaw)%360+360)%360, pitch:d.pitch, roll:0, fov:Math.min(120, wallFov)});
+  }
+  function stopYT(){
+    if(!yt) return;
+    yt.ps.forEach(q=>{ try{ q.p.destroy(); }catch(e){} });
+    yt = null; ytLayer.innerHTML = ''; ytLayer.style.display = 'none'; canvas.style.visibility = 'visible';
+  }
+  async function startYT(id){
+    await loadYTApi();
+    stopYT();
+    ytLayer.style.display = 'block'; canvas.style.visibility = 'hidden'; hud.style.display = 'none';
+    const hasFront = views.some(w=>w.s.r==='front');
+    const ps = [];
+    views.forEach((v,i)=>{
+      const box = document.createElement('div');
+      box.style.cssText = 'position:absolute;overflow:hidden;background:#000';
+      const inner = document.createElement('div'); box.appendChild(inner); ytLayer.appendChild(box);
+      const master = v.s.r==='front' || (!hasFront && i===0);
+      const q = {i, box, master};
+      q.p = new YT.Player(inner, {
+        videoId:id, width:v.s.w, height:v.s.h,
+        playerVars:{autoplay:1, controls:0, disablekb:1, fs:0, rel:0, playsinline:1, iv_load_policy:3, mute:master?0:1, loop:1, playlist:id},
+        events:{
+          onReady: e=>{ if(!master) e.target.mute(); e.target.playVideo(); },
+          onStateChange: e=>{ if(e.data===1) aim(q); },
+          onError: e=>{ if(master) alert('유튜브 오류 '+e.data+([101,150,152,153].includes(e.data)?'\n파일로 열면 막힘 → GitHub Pages 주소로 열기. 또는 소유자가 퍼가기 금지한 영상.':'')); }
+        }
+      });
+      ps.push(q);
+    });
+    yt = {ps, master: ps.find(q=>q.master)};
+  }
+  setInterval(()=>{
+    if(!yt || !yt.master.p.getCurrentTime) return;
+    const m = yt.master.p, t = m.getCurrentTime(), st = m.getPlayerState();
+    yt.ps.forEach(q=>{
+      aim(q);
+      if(q.master || !q.p.getCurrentTime) return;
+      const qs = q.p.getPlayerState();
+      if(st===1 && qs!==1 && qs!==3) q.p.playVideo();
+      if(st===2 && qs===1) q.p.pauseVideo();
+      if(st===1 && Math.abs(q.p.getCurrentTime()-t) > 0.35) q.p.seekTo(t+0.2, true);
+    });
+  }, 700);
+
+  // ---- 맞춤 모드 (D) ----
+  let fit = false, sel = 0;
+  const NAMES = {front:'정면', left:'좌측', right:'우측', floorL:'바닥 왼쪽', floorR:'바닥 오른쪽'};
+  const COLORS = ['#f33','#3f3','#39f','#ff3','#f3f'];
+  const boxes = views.map((v,i)=>{
+    const d = document.createElement('div');
+    d.style.cssText = `position:fixed;display:none;box-sizing:border-box;border:12px solid ${COLORS[i%5]};pointer-events:none;font:bold 40px "Malgun Gothic";color:#fff;padding:30px;text-shadow:0 0 6px #000`;
+    document.body.appendChild(d); return d;
+  });
+  const info = document.createElement('div');
+  info.style.cssText = 'position:fixed;display:none;background:rgba(0,0,0,.8);padding:12px 16px;font:16px/1.6 monospace;pointer-events:none;white-space:pre';
+  document.body.appendChild(info);
+  function drawFit(){
+    views.forEach((v,i)=>{
+      const b = boxes[i], s = v.s, a = A(s.r);
+      b.style.display = fit ? 'block' : 'none';
+      b.style.left = (s.x-ox)+'px'; b.style.top = (s.y-oy)+'px';
+      b.style.width = s.w+'px'; b.style.height = s.h+'px';
+      b.style.borderStyle = i===sel ? 'solid' : 'dashed';
+      b.innerHTML = `${NAMES[s.r]}${i===sel?' ◀ 선택':''}<br><span style="font-size:22px">위치 ${a.dx},${a.dy} · 크기 ${a.dw},${a.dh}</span>`;
+    });
+    info.style.display = fit ? 'block' : 'none';
+    const f = views[0].s;
+    info.style.left = (f.x-ox+40)+'px'; info.style.top = (f.y-oy+f.h/2)+'px';
+    info.textContent =
+`맞춤 모드 — 테두리를 실제 화면 가장자리에 맞추기
+Tab: 화면 선택 | 화살표: 이동 10px (Shift 1px)
+Ctrl+화살표: 크기 | R: 선택 화면 초기화 | D: 끝내기(저장)
+창 원점 ${ox},${oy}  창 크기 ${innerWidth}x${innerHeight}
+배율(dpr) ${devicePixelRatio}${devicePixelRatio!==1?'  ← 100% 아님!':''}`;
+  }
+
+  window.addEventListener('keydown', e=>{
+    const k = e.key.toLowerCase();
+    if(k==='d'){ fit = !fit; if(!fit){ saveAdj(); buildViews(); } drawFit(); return; }
+    if(fit){
+      const a = A(views[sel].s.r), st = e.shiftKey ? 1 : 10;
+      const dir = {ArrowLeft:[-1,0], ArrowRight:[1,0], ArrowUp:[0,-1], ArrowDown:[0,1]}[e.key];
+      if(e.key==='Tab'){ e.preventDefault(); sel = (sel+1) % views.length; }
+      else if(dir){ e.preventDefault();
+        if(e.ctrlKey){ a.dw += dir[0]*st; a.dh += dir[1]*st; } else { a.dx += dir[0]*st; a.dy += dir[1]*st; } }
+      else if(k==='r'){ a.dx=a.dy=a.dw=a.dh=0; }
+      else return;
+      buildViews(); saveAdj(); drawFit(); return;
+    }
+    if(k==='-' || k==='=' || k==='+'){
+      wallFov = Math.max(60, Math.min(120, wallFov + (k==='-' ? -5 : 5)));
+      try{ localStorage.setItem('vr360fov', wallFov); }catch(err){}
+      buildViews(); if(yt) yt.ps.forEach(aim);
+      toast('시야 '+wallFov+'° (벽 3면 합계 '+wallFov*3+'°)');
+      return;
+    }
+    if(k==='y'){
+      let last=''; try{ last = localStorage.getItem('vr360yt')||''; }catch(err){}
+      const u = prompt('유튜브 링크 (360° 영상이면 서라운드)', last);
+      if(!u) return;
+      const id = ytId(u); if(!id){ alert('링크 인식 못함'); return; }
+      try{ localStorage.setItem('vr360yt', u); }catch(err){}
+      startYT(id); return;
+    }
+    if(yt){
+      const m = yt.master.p;
+      if(k===' '){ e.preventDefault(); m.getPlayerState()===1 ? m.pauseVideo() : m.playVideo(); }
+      else if(e.key==='ArrowLeft'){ ytYaw -= 5; yt.ps.forEach(aim); }
+      else if(e.key==='ArrowRight'){ ytYaw += 5; yt.ps.forEach(aim); }
+      else if(k==='[') m.seekTo(Math.max(0, m.getCurrentTime()-10), true);
+      else if(k===']') m.seekTo(m.getCurrentTime()+10, true);
+      else if(k==='x' || e.key==='Escape') stopYT();
+      return;
+    }
+    if(k==='o') fileIn.click();
+    else if(k===' '){ e.preventDefault(); video.paused ? video.play() : video.pause(); }
+    else if(e.key==='ArrowLeft'){ yaw += Math.PI/36; applyYaw(); }
+    else if(e.key==='ArrowRight'){ yaw -= Math.PI/36; applyYaw(); }
+    else if(k==='[') video.currentTime = Math.max(0, video.currentTime-10);
+    else if(k===']') video.currentTime += 10;
+    else if(k==='h') hud.style.display = hud.style.display==='none' ? 'block' : 'none';
+    else if(k==='s'){ location.hash=''; location.reload(); }
+  });
+  let drag = null;
+  window.addEventListener('pointerdown', e=> drag = e.clientX);
+  window.addEventListener('pointerup', ()=> drag = null);
+  window.addEventListener('pointermove', e=>{ if(drag!==null){ yaw += (e.clientX-drag)*0.003; drag = e.clientX; applyYaw(); } });
+
+  function frame(){
+    const H = window.innerHeight;
+    renderer.setScissor(0,0,window.innerWidth,H); renderer.setViewport(0,0,window.innerWidth,H);
+    renderer.setClearColor(0x000000); renderer.clear();
+    for(const v of views){
+      const x = v.s.x - ox, y = H - (v.s.y - oy) - v.s.h;
+      renderer.setViewport(x, y, v.s.w, v.s.h);
+      renderer.setScissor(x, y, v.s.w, v.s.h);
+      renderer.render(scene, v.cam);
+    }
+    if(hud.style.display!=='none') placeHud();
+    if(fit) drawFit();
+    if(yt) yt.ps.forEach(q=>{ const s = views[q.i].s, b = q.box.style;
+      b.left = (s.x-ox)+'px'; b.top = (s.y-oy)+'px'; b.width = s.w+'px'; b.height = s.h+'px';
+      const f = q.box.querySelector('iframe'); if(f){ f.width = s.w; f.height = s.h; } });
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+/* 방향 확인용 테스트 무늬 */
+function testTexture(){
+  const c = document.createElement('canvas'); c.width=4096; c.height=2048;
+  const g = c.getContext('2d');
+  const grd = g.createLinearGradient(0,0,0,2048);
+  grd.addColorStop(0,'#1a3a6a'); grd.addColorStop(.5,'#3a6a3a'); grd.addColorStop(1,'#5a3a1a');
+  g.fillStyle=grd; g.fillRect(0,0,4096,2048);
+  g.strokeStyle='rgba(255,255,255,.35)'; g.lineWidth=3;
+  for(let i=0;i<=36;i++){ const x=i*4096/36; g.beginPath(); g.moveTo(x,0); g.lineTo(x,2048); g.stroke(); }
+  for(let i=0;i<=18;i++){ const y=i*2048/18; g.beginPath(); g.moveTo(0,y); g.lineTo(4096,y); g.stroke(); }
+  g.fillStyle='#fff'; g.textAlign='center'; g.textBaseline='middle';
+  g.font='bold 200px "Malgun Gothic",sans-serif';
+  [['뒤',0],['좌',.25],['정면',.5],['우',.75],['뒤',1]].forEach(([t,u])=>g.fillText(t,u*4096,1024));
+  // 바닥 쪽 표시 (위도 -60°)
+  g.font='bold 120px "Malgun Gothic",sans-serif'; g.fillStyle='#ff0';
+  [['바닥-뒤',0.02],['바닥-좌',.25],['바닥-앞',.5],['바닥-우',.75],['바닥-뒤',.98]].forEach(([t,u])=>g.fillText(t,u*4096,2048*(150/180)));
+  g.fillStyle='#0ff';
+  [['위-좌',.25],['위-앞',.5],['위-우',.75]].forEach(([t,u])=>g.fillText(t,u*4096,2048*(30/180)));
+  const tex = new THREE.CanvasTexture(c); return tex;
+}
+
+/* ---------- boot ---------- */
+const cfg = readHash();
+if(cfg) startPlay(cfg);
+else {
+  document.getElementById('setup').style.display='block';
+  try{ rows = JSON.parse(localStorage.getItem('vr360rows')||'[]'); }catch(e){ rows=[]; }
+  renderRows();
+}
+</script>
+</body>
+</html>
