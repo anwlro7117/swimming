@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>책과 함께하는 부모참여의 날 참석 신청</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fff4c9;
+  --panel:#ffffff;
+  --pill:#cfe3fb;
+  --pill-ink:#3e5f8a;
+  --ink:#3f3a33;
+  --ink-soft:#857c6d;
+  --line:#efe2b6;
+  --cta:#8a7ce0;
+  --cta-dark:#6e60c6;
+  --accent:#b36ad8;
+  --sky:#7fb3ec;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:'Gowun Dodum',system-ui,sans-serif;
+  font-size:16px;line-height:1.7;padding:0 0 60px;
+}
+.wrap{max-width:640px;margin:0 auto;padding:0 16px}
+
+header{text-align:center;padding:26px 0 22px}
+.cap{
+  display:inline-block;background:#fffaf0;border:2px dotted #4e5fb8;border-radius:28px;
+  padding:16px 24px 14px;
+}
+header h1{
+  font-family:'Jua',sans-serif;font-weight:400;font-size:30px;line-height:1.3;margin:0;
+}
+header h1 .a{color:var(--sky)}
+header h1 .b{color:var(--accent)}
+header .sub{margin:4px 0 0;font-size:14px;color:var(--ink)}
+.meta{
+  margin:16px auto 0;max-width:440px;background:#fff;border-radius:16px;
+  padding:12px 16px;font-size:14px;color:var(--ink-soft);border:1px solid var(--line);
+}
+.meta b{color:var(--ink);font-weight:400}
+
+.row{display:flex;gap:12px;margin:0 0 16px;align-items:stretch}
+.row > .tag{
+  flex:0 0 62px;background:var(--pill);border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Jua',sans-serif;font-size:17px;color:var(--pill-ink);
+  writing-mode:vertical-rl;letter-spacing:4px;padding:14px 0;
+}
+.row > .body{flex:1;background:var(--panel);border-radius:16px;padding:18px;border:1px solid var(--line);min-width:0}
+h2{font-family:'Jua',sans-serif;font-weight:400;font-size:18px;margin:0 0 10px}
+.hint{font-size:14px;color:var(--ink-soft);margin:-4px 0 12px}
+
+label.f{display:block;font-size:14px;color:var(--ink-soft);margin:14px 0 6px}
+label.f:first-of-type{margin-top:0}
+select,input[type=text],textarea{
+  width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:12px;
+  font-family:inherit;font-size:16px;background:#fffef8;color:var(--ink);
+}
+select:focus,input:focus,textarea:focus,button:focus-visible{outline:3px solid #c9c1f3;outline-offset:1px}
+textarea{min-height:70px;resize:vertical}
+
+/* 반별 일정 */
+.sched{width:100%;border-collapse:collapse;font-size:14px}
+.sched td{padding:8px 6px;border-bottom:1px dashed var(--line);vertical-align:top}
+.sched tr:last-child td{border-bottom:0}
+.sched td.t{white-space:nowrap;color:var(--ink-soft);width:94px}
+.sched .p{font-size:13px;color:var(--ink-soft)}
+.sched .hl{color:#5a4bc4}
+
+.choice{display:flex;gap:10px}
+.choice button{
+  flex:1;padding:15px 8px;border-radius:14px;border:2px solid var(--line);
+  background:#fffef8;font-family:'Jua',sans-serif;font-size:17px;color:var(--ink-soft);cursor:pointer;
+}
+.choice button[aria-pressed=true]{border-color:var(--cta);background:#f0edff;color:#4f42b0}
+.q{margin:0 0 8px;font-size:15px}
+.q + .choice{margin-bottom:18px}
+.choice:last-child{margin-bottom:0}
+
+.counters{display:flex;flex-direction:column;gap:2px}
+.cnt{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line)}
+.cnt:last-child{border-bottom:0}
+.cnt .who{flex:1}
+.cnt .emoji{width:26px;text-align:center;font-size:18px}
+.step{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:#fff;font-size:20px;line-height:1;color:var(--cta);cursor:pointer}
+.step:active{background:#f0edff}
+.num{width:34px;text-align:center;font-family:'Jua',sans-serif;font-size:19px}
+.num.zero{color:#d6ccb2}
+
+.submit{
+  width:100%;margin-top:8px;padding:18px;border:0;border-radius:18px;
+  background:var(--cta);color:#fff;font-family:'Jua',sans-serif;font-size:19px;
+  cursor:pointer;box-shadow:0 6px 0 var(--cta-dark);
+}
+.submit:active{transform:translateY(3px);box-shadow:0 3px 0 var(--cta-dark)}
+.submit[disabled]{background:#d8d2ee;box-shadow:0 6px 0 #c3bce0;cursor:default}
+.note{font-size:13px;color:var(--ink-soft);text-align:center;margin-top:14px}
+.err{color:#c0436a;font-size:14px;margin-top:10px;min-height:20px}
+
+footer{text-align:center;margin-top:34px;color:var(--ink-soft);font-size:13px}
+footer a{color:var(--ink-soft);text-decoration:underline;cursor:pointer}
+
+.done{display:none;text-align:center;background:#fff;border-radius:20px;padding:36px 20px;border:1px solid var(--line)}
+.done .big{font-family:'Jua',sans-serif;font-size:24px;color:#5a4bc4}
+.done .rainbow{font-size:40px}
+.done .recap{margin:14px auto 0;max-width:360px;text-align:left;font-size:15px;color:var(--ink-soft)}
+.done button{margin-top:20px;padding:12px 22px;border-radius:14px;border:1px solid var(--line);background:#fff;font-family:'Jua',sans-serif;font-size:15px;color:var(--ink-soft);cursor:pointer}
+
+/* 관리자 */
+#admin{display:none}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.tabs button{padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:#fff;font-family:inherit;font-size:14px;cursor:pointer}
+.tabs button[aria-pressed=true]{background:var(--cta);border-color:var(--cta);color:#fff}
+table.t{width:100%;border-collapse:collapse;font-size:13px;background:#fff}
+table.t th,table.t td{border:1px solid var(--line);padding:6px 8px;text-align:center;white-space:nowrap}
+table.t th{background:#f4f1ff;font-weight:400}
+table.t tr.none td{color:#b9ae94}
+.scroll{overflow-x:auto;border-radius:12px;margin-bottom:16px}
+.sum{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.sum div{background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 14px;font-size:14px}
+.sum b{font-family:'Jua',sans-serif;font-weight:400;color:#5a4bc4;font-size:18px}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.tools button{padding:10px 16px;border-radius:12px;border:1px solid var(--line);background:#fff;font-family:inherit;cursor:pointer}
+@media (max-width:420px){
+  header h1{font-size:25px}
+  .row>.tag{flex-basis:50px;font-size:15px}
+  .row>.body{padding:14px}
+  .sched td.t{width:80px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="cap">
+    <h1><span class="a">책과 함께하는</span> <span class="b">부모참여의 날</span></h1>
+    <p class="sub">부모님과 함께하는 독서교육의 날 · 특별활동 공개수업</p>
+  </div>
+  <div class="meta">
+    <b>2026년 11월 11일(수) 09:50 ~ 12:30</b><br>
+    부모참여수업 · 특별활동 공개수업 · 부모교육(지하놀이터)
+  </div>
+</header>
+
+<!-- ===== 학부모 폼 ===== -->
+<div id="form">
+  <div class="row">
+    <div class="tag">아동정보</div>
+    <div class="body">
+      <label class="f" for="fac">어린이집</label>
+      <select id="fac"><option value="">선택해 주세요</option></select>
+      <label class="f" for="cls">반</label>
+      <select id="cls" disabled><option value="">어린이집 먼저 선택</option></select>
+      <label class="f" for="kid">아동 이름</label>
+      <select id="kid" disabled><option value="">반 먼저 선택</option></select>
+    </div>
+  </div>
+
+  <div class="row" id="schedRow" style="display:none">
+    <div class="tag">우리반일정</div>
+    <div class="body">
+      <h2 id="schedTitle">프로그램 안내</h2>
+      <table class="sched" id="sched"></table>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="tag">참석여부</div>
+    <div class="body">
+      <p class="q">① 부모참여수업 · 특별활동 공개수업 <span class="p">(09:50~11:00)</span></p>
+      <div class="choice" data-q="cls">
+        <button type="button" data-v="1" aria-pressed="false">참석해요</button>
+        <button type="button" data-v="0" aria-pressed="false">어려워요</button>
+      </div>
+      <p class="q">② 부모교육 <span class="p">(11:20~12:30, 지하놀이터)</span></p>
+      <div class="choice" data-q="edu">
+        <button type="button" data-v="1" aria-pressed="false">참석해요</button>
+        <button type="button" data-v="0" aria-pressed="false">어려워요</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="row" id="peopleRow" style="display:none">
+    <div class="tag">참석인원</div>
+    <div class="body">
+      <h2>오시는 보호자를 눌러 주세요</h2>
+      <div class="counters" id="counters"></div>
+      <label class="f" for="etcName">기타 관계 (기타 인원이 있을 때만)</label>
+      <input type="text" id="etcName" placeholder="예) 할머니, 이모">
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="tag">도서기증</div>
+    <div class="body">
+      <p class="hint">다른 친구와 나누고 싶은 책을 1~2권 보내 주세요. 기증한 아이에게 책 교환 쿠폰을 드리고, 11월 12일(목) 친구들이 기증한 책과 교환해요.</p>
+      <div class="choice" data-q="book">
+        <button type="button" data-v="0" aria-pressed="false">없음</button>
+        <button type="button" data-v="1" aria-pressed="false">1권</button>
+        <button type="button" data-v="2" aria-pressed="false">2권</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="tag">남길말씀</div>
+    <div class="body">
+      <textarea id="memo" placeholder="전달할 내용이 있으면 적어 주세요 (선택)"></textarea>
+    </div>
+  </div>
+
+  <button class="submit" id="send">신청 보내기</button>
+  <div class="err" id="err"></div>
+  <p class="note">같은 아동으로 다시 보내면 마지막 응답으로 바뀝니다.<br>변동이 생기면 담임선생님께 알려 주세요.</p>
+</div>
+
+<div class="done" id="done">
+  <div class="rainbow">🌈</div>
+  <div class="big">신청을 받았어요</div>
+  <div class="recap" id="recap"></div>
+  <button type="button" onclick="location.reload()">다른 아동 신청하기</button>
+</div>
+
+<!-- ===== 관리자 ===== -->
+<div id="admin">
+  <h2>참석 현황</h2>
+  <div class="sum" id="sum"></div>
+  <div class="tools">
+    <button type="button" id="csv">CSV 내려받기</button>
+    <button type="button" id="back">신청 화면으로</button>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="scroll"><table class="t" id="byCls"></table></div>
+  <div class="scroll"><table class="t" id="tbl"></table></div>
+</div>
+
+<footer>
+  꿈꾸는 만큼 자라는 무지개어린이집 · 062-374-7117~8<br>
+  <a id="adminLink">관리자</a>
+</footer>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+/* ================= 파이어베이스 설정 (mujigae-swimming) ================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyDojXJ_9pOnla8uG240APwo3Ik9gBddMw4",
+  authDomain: "mujigae-swimming.firebaseapp.com",
+  databaseURL: "https://mujigae-swimming-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "mujigae-swimming",
+  storageBucket: "mujigae-swimming.firebasestorage.app",
+  messagingSenderId: "279953220805",
+  appId: "1:279953220805:web:b24cbe70f8556416c0bcac"
+};
+const DB_PATH = "parentday2026";
+const ADMIN_PW = "7117";
+/* ======================================================================== */
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+/* ---------- 명단 (2026 반 편성 명부, 방과후반 제외) ---------- */
+const ROSTER = {
+  "무지개어린이집": {
+    "아기참새": ["박범준","정윤하","고이솔","조은준"],
+    "초롱이슬": ["전유주","양선우","박하엘","박유하","정이안","정이준"],
+    "은빛물결": ["이재헌","박수현","김성원","정하준","송지우","박승빈","김정후","주현우","신승혁","김수호","정연우","최보민","한다윤"]
+  },
+  "우리무지개어린이집": {
+    "들꽃향기": ["한지후","박은진","곽시안","박찬율","설재은","류시환","강은호","박다엘","김사랑","손리완","이로아","이소민","방서윤","김인우","이은우","임서우","이하린","김동휘"],
+    "푸른하늘": ["김아린","김강준","박진우","한서후","윤태언","김서우","백민지","이하민","강태희","곽다온","박준","김세윤","김지민","이채민"],
+    "푸른바다": ["김평온","김별리","양준우","강지호","김도우","백이엘","이태헌","서연석","임하라","김태유","조믿음","유이서","윤예나","윤예지","조가온","곽시후","이소민"],
+    "아침햇살": ["정태호","고은호","김이안","전수호","위단우","서현우","김윤우","김지안","홍하루"],
+    "고운햇살": ["박재희","박지유","김민준","곽나율","김은서"],
+    "파도소리": ["윤지아","임라희","돌란샤나","권민서","최도윤","장시영"]
+  }
+};
+
+/* ---------- 반별 프로그램 (안내문 기준) ---------- */
+const P = (what, where) => ({what, where});
+const PARENT = "부모참여수업";
+const SCHED = {
+  "아기참새": [P("특별활동 공개수업 〈짐키즈〉","별관 체육실"), P(PARENT,"각 반 교실")],
+  "초롱이슬": [P("특별활동 공개수업 〈짐키즈〉","별관 체육실"), P(PARENT,"각 반 교실")],
+  "은빛물결": [P("특별활동 공개수업 〈브레인오감〉","별관 특활실"), P(PARENT,"은빛물결 교실")],
+  "들꽃향기": [P("특별활동 공개수업 〈코딩〉","들꽃향기 교실"), P(PARENT,"들꽃향기 교실")],
+  "푸른하늘": [P("특별활동 공개수업 〈영어〉","푸른하늘 교실"), P(PARENT,"푸른하늘 교실")],
+  "푸른바다": [P(PARENT,"푸른바다 교실"), P("특별활동 공개수업 〈창의수학블록〉","푸른바다 교실")],
+  "아침햇살": [P(PARENT,"아침햇살 교실"), P("특별활동 공개수업 〈오르프〉","아침햇살 교실")],
+  "고운햇살": [P(PARENT,"고운햇살 교실"), P("특별활동 공개수업 〈브레인오감〉","별관 특별활동실")],
+  "파도소리": [P(PARENT,"별관 체육실"), P("특별활동 공개수업 〈브레인오감〉","별관 특별활동실")]
+};
+
+const ROLES = [
+  {key:"father", label:"아버지", emoji:"👨"},
+  {key:"mother", label:"어머니", emoji:"👩"},
+  {key:"etc",    label:"기타 보호자", emoji:"🙂"}
+];
+
+const $ = id => document.getElementById(id);
+const fac=$("fac"), cls=$("cls"), kid=$("kid");
+const counts = {}; ROLES.forEach(r=>counts[r.key]=0);
+const ans = {cls:null, edu:null, book:null};
+const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ---------- 드롭다운 ---------- */
+Object.keys(ROSTER).forEach(f=>fac.add(new Option(f,f)));
+fac.onchange = () => {
+  cls.innerHTML = '<option value="">선택해 주세요</option>';
+  kid.innerHTML = '<option value="">반 먼저 선택</option>';
+  kid.disabled = true; $("schedRow").style.display="none";
+  if(!fac.value){ cls.disabled = true; return; }
+  Object.keys(ROSTER[fac.value]).forEach(c=>cls.add(new Option(c,c)));
+  cls.disabled = false;
+};
+cls.onchange = () => {
+  kid.innerHTML = '<option value="">선택해 주세요</option>';
+  if(!cls.value){ kid.disabled = true; $("schedRow").style.display="none"; return; }
+  ROSTER[fac.value][cls.value].forEach(n=>kid.add(new Option(n,n)));
+  kid.disabled = false;
+  showSched(cls.value);
+};
+function showSched(c){
+  const s = SCHED[c]; if(!s) return;
+  const rows = [
+    ["09:50~10:20", s[0]],
+    ["10:20~10:30", P("이동 및 쉬는시간","")],
+    ["10:30~11:00", s[1]],
+    ["11:00~11:20", P("이동 및 쉬는시간","")],
+    ["11:20~12:30", P("부모교육","지하놀이터")]
+  ];
+  $("schedTitle").textContent = "프로그램 안내 〈" + c + "〉";
+  $("sched").innerHTML = rows.map(([t,p])=>{
+    const hl = p.what===PARENT || p.what.startsWith("특별") || p.what==="부모교육";
+    return '<tr><td class="t">'+t+'</td><td><span class="'+(hl?"hl":"")+'">'+esc(p.what)+'</span>'+
+      (p.where?'<br><span class="p">'+esc(p.where)+'</span>':'')+'</td></tr>';
+  }).join("");
+  $("schedRow").style.display = "flex";
+}
+
+/* ---------- 선택 버튼 ---------- */
+document.querySelectorAll(".choice").forEach(g=>{
+  g.onclick = e => {
+    const b = e.target.closest("button"); if(!b) return;
+    ans[g.dataset.q] = Number(b.dataset.v);
+    g.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed", x===b));
+    $("peopleRow").style.display = (ans.cls===1 || ans.edu===1) ? "flex" : "none";
+  };
+});
+
+/* ---------- 카운터 ---------- */
+const box = $("counters");
+ROLES.forEach(r=>{
+  const row = document.createElement("div");
+  row.className = "cnt";
+  row.innerHTML =
+    '<span class="emoji">'+r.emoji+'</span><span class="who">'+r.label+'</span>'+
+    '<button type="button" class="step" data-k="'+r.key+'" data-d="-1" aria-label="'+r.label+' 줄이기">−</button>'+
+    '<span class="num zero" id="n-'+r.key+'">0</span>'+
+    '<button type="button" class="step" data-k="'+r.key+'" data-d="1" aria-label="'+r.label+' 늘리기">＋</button>';
+  box.appendChild(row);
+});
+box.onclick = e => {
+  const b = e.target.closest(".step"); if(!b) return;
+  const k = b.dataset.k;
+  counts[k] = Math.max(0, Math.min(5, counts[k] + Number(b.dataset.d)));
+  const n = $("n-"+k); n.textContent = counts[k]; n.classList.toggle("zero", counts[k]===0);
+};
+
+/* ---------- 저장 ---------- */
+$("send").onclick = () => {
+  const err = $("err"); err.textContent = "";
+  if(!fac.value || !cls.value || !kid.value){ err.textContent="어린이집·반·아동 이름을 선택해 주세요."; return; }
+  if(ans.cls===null){ err.textContent="① 부모참여수업 참석 여부를 선택해 주세요."; return; }
+  if(ans.edu===null){ err.textContent="② 부모교육 참석 여부를 선택해 주세요."; return; }
+  const going = ans.cls===1 || ans.edu===1;
+  const sum = ROLES.reduce((a,r)=>a+counts[r.key],0);
+  if(going && sum===0){ err.textContent="오시는 보호자 인원을 입력해 주세요."; return; }
+  if(ans.book===null){ err.textContent="도서 기증 권수를 선택해 주세요."; return; }
+
+  const key = (fac.value+"_"+cls.value+"_"+kid.value).replace(/[.#$/\[\]]/g,"");
+  const data = {
+    facility: fac.value, cls: cls.value, name: kid.value,
+    classAttend: ans.cls===1 ? "참석" : "불참",
+    eduAttend: ans.edu===1 ? "참석" : "불참",
+    father: going?counts.father:0, mother: going?counts.mother:0, etc: going?counts.etc:0,
+    etcName: going ? $("etcName").value.trim() : "",
+    people: going ? sum : 0,
+    books: ans.book,
+    memo: $("memo").value.trim(),
+    at: new Date().toLocaleString("ko-KR")
+  };
+  $("send").disabled = true; $("send").textContent = "보내는 중…";
+  db.ref(DB_PATH+"/"+key).set(data).then(()=>{
+    let r = "<b>"+esc(data.cls+" "+data.name)+"</b><br>부모참여·공개수업 "+data.classAttend+" · 부모교육 "+data.eduAttend;
+    if(going) r += "<br>"+ROLES.filter(x=>counts[x.key]>0).map(x=>x.label+" "+counts[x.key]+"명").join(" · ");
+    r += "<br>도서 기증 "+(data.books? data.books+"권" : "없음");
+    $("recap").innerHTML = r;
+    $("form").style.display="none"; $("done").style.display="block"; window.scrollTo(0,0);
+  }).catch(()=>{
+    err.textContent = "저장하지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.";
+    $("send").disabled = false; $("send").textContent = "신청 보내기";
+  });
+};
+
+/* ---------- 관리자 ---------- */
+let rows = [], tab = "전체";
+const CLASS_ORDER = Object.entries(ROSTER).flatMap(([f,c])=>Object.keys(c).map(k=>[f,k]));
+$("adminLink").onclick = () => {
+  if(prompt("관리자 비밀번호") !== ADMIN_PW) return;
+  $("form").style.display="none"; $("done").style.display="none"; $("admin").style.display="block";
+  $("tabs").innerHTML = ["전체",...CLASS_ORDER.map(x=>x[1])].map(t=>'<button type="button" data-t="'+t+'" aria-pressed="'+(t===tab)+'">'+t+'</button>').join("");
+  $("tabs").onclick = e => { const b=e.target.closest("button"); if(!b) return; tab=b.dataset.t;
+    $("tabs").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b)); render(); };
+  db.ref(DB_PATH).on("value", s=>{ rows = Object.values(s.val()||{}); render(); });
+};
+$("back").onclick = () => location.reload();
+
+function render(){
+  const total = CLASS_ORDER.reduce((a,[f,c])=>a+ROSTER[f][c].length,0);
+  const t = k => rows.reduce((a,r)=>a+(r[k]||0),0);
+  $("sum").innerHTML =
+    '<div>응답 <b>'+rows.length+'</b>/'+total+'</div>'+
+    '<div>수업 참석 <b>'+rows.filter(r=>r.classAttend==="참석").length+'</b>가정</div>'+
+    '<div>부모교육 <b>'+rows.filter(r=>r.eduAttend==="참석").length+'</b>가정</div>'+
+    '<div>보호자 <b>'+t("people")+'</b>명</div>'+
+    '<div>부 <b>'+t("father")+'</b> 모 <b>'+t("mother")+'</b> 기타 <b>'+t("etc")+'</b></div>'+
+    '<div>기증 도서 <b>'+t("books")+'</b>권</div>';
+
+  // 반별 요약
+  let h = "<tr><th>반</th><th>재원</th><th>응답</th><th>미응답</th><th>수업참석</th><th>부모교육</th><th>보호자</th><th>도서</th></tr>";
+  CLASS_ORDER.forEach(([f,c])=>{
+    const rs = rows.filter(r=>r.facility===f && r.cls===c);
+    h += "<tr><td>"+c+"</td><td>"+ROSTER[f][c].length+"</td><td>"+rs.length+"</td><td>"+(ROSTER[f][c].length-rs.length)+"</td><td>"+
+      rs.filter(r=>r.classAttend==="참석").length+"</td><td>"+rs.filter(r=>r.eduAttend==="참석").length+"</td><td>"+
+      rs.reduce((a,r)=>a+(r.people||0),0)+"</td><td>"+rs.reduce((a,r)=>a+(r.books||0),0)+"</td></tr>";
+  });
+  $("byCls").innerHTML = h;
+
+  // 아동별 (미응답 포함)
+  const list = [];
+  CLASS_ORDER.forEach(([f,c])=>{
+    if(tab!=="전체" && tab!==c) return;
+    ROSTER[f][c].forEach(n=>{
+      list.push(rows.find(r=>r.facility===f && r.cls===c && r.name===n) || {facility:f,cls:c,name:n,none:true});
+    });
+  });
+  // 명부에 없는 응답(이전 명부 등)
+  rows.forEach(r=>{ if(!list.includes(r) && (tab==="전체"||tab===r.cls) &&
+    !(ROSTER[r.facility]&&ROSTER[r.facility][r.cls]&&ROSTER[r.facility][r.cls].includes(r.name))) list.push(r); });
+
+  let d = "<tr><th>반</th><th>아동</th><th>수업</th><th>부모교육</th><th>부</th><th>모</th><th>기타</th><th>기타관계</th><th>도서</th><th>남긴말</th><th>시각</th></tr>";
+  list.forEach(r=>{
+    if(r.none){ d += '<tr class="none"><td>'+esc(r.cls)+'</td><td>'+esc(r.name)+'</td><td colspan="9">미응답</td></tr>'; return; }
+    d += "<tr><td>"+esc(r.cls)+"</td><td>"+esc(r.name)+"</td><td>"+r.classAttend+"</td><td>"+r.eduAttend+"</td><td>"+r.father+"</td><td>"+r.mother+"</td><td>"+r.etc+"</td><td>"+esc(r.etcName)+"</td><td>"+r.books+"</td><td>"+esc(r.memo)+"</td><td>"+esc(r.at)+"</td></tr>";
+  });
+  $("tbl").innerHTML = d;
+}
+
+$("csv").onclick = () => {
+  const head = ["어린이집","반","아동","부모참여·공개수업","부모교육","아버지","어머니","기타","기타관계","보호자수","기증도서","남긴말","응답시각"];
+  const body = [];
+  CLASS_ORDER.forEach(([f,c])=>ROSTER[f][c].forEach(n=>{
+    const r = rows.find(x=>x.facility===f && x.cls===c && x.name===n);
+    body.push(r ? [f,c,n,r.classAttend,r.eduAttend,r.father,r.mother,r.etc,r.etcName||"",r.people,r.books,(r.memo||"").replace(/[\r\n]+/g," "),r.at||""]
+                : [f,c,n,"미응답","","","","","","","","",""]);
+  }));
+  const csv = "﻿" + [head,...body].map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(",")).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download = "부모참여의날_참석조사.csv";
+  a.click();
+};
+</script>
+</body>
+</html>
