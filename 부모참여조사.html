@@ -81,9 +81,13 @@ textarea{min-height:70px;resize:vertical}
   background:#fffef8;font-family:'Jua',sans-serif;font-size:17px;color:var(--ink-soft);cursor:pointer;
 }
 .choice button[aria-pressed=true]{border-color:var(--cta);background:#f0edff;color:#4f42b0}
-.q{margin:0 0 8px;font-size:15px}
-.q + .choice{margin-bottom:18px}
-.choice:last-child{margin-bottom:0}
+.slot{padding:0 0 16px;margin:0 0 16px;border-bottom:1px dashed var(--line)}
+.slot:last-child{padding:0;margin:0;border:0}
+.slot .tm{font-size:13px;color:var(--ink-soft)}
+.slot .what{font-family:'Jua',sans-serif;font-size:17px;color:#4f42b0;line-height:1.4}
+.slot .where{font-size:14px;color:var(--ink-soft);margin:0 0 10px}
+.cls-title{font-family:'Jua',sans-serif;font-size:18px;margin:0 0 12px}
+.brk{font-size:13px;color:#b9ae94;margin:-8px 0 16px;padding-bottom:16px;border-bottom:1px dashed var(--line)}
 
 .counters{display:flex;flex-direction:column;gap:2px}
 .cnt{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line)}
@@ -164,27 +168,10 @@ table.t tr.none td{color:#b9ae94}
     </div>
   </div>
 
-  <div class="row" id="schedRow" style="display:none">
-    <div class="tag">우리반일정</div>
-    <div class="body">
-      <h2 id="schedTitle">프로그램 안내</h2>
-      <table class="sched" id="sched"></table>
-    </div>
-  </div>
-
   <div class="row">
     <div class="tag">참석여부</div>
     <div class="body">
-      <p class="q">① 부모참여수업 · 특별활동 공개수업 <span class="p">(09:50~11:00)</span></p>
-      <div class="choice" data-q="cls">
-        <button type="button" data-v="1" aria-pressed="false">참석해요</button>
-        <button type="button" data-v="0" aria-pressed="false">어려워요</button>
-      </div>
-      <p class="q">② 부모교육 <span class="p">(11:20~12:30, 지하놀이터)</span></p>
-      <div class="choice" data-q="edu">
-        <button type="button" data-v="1" aria-pressed="false">참석해요</button>
-        <button type="button" data-v="0" aria-pressed="false">어려워요</button>
-      </div>
+      <div id="qbox"><p class="hint" style="margin:0">반을 선택하면 우리 반 일정별로 참석 여부를 여쭤봐요.</p></div>
     </div>
   </div>
 
@@ -288,8 +275,8 @@ const ROSTER = {
 const P = (what, where) => ({what, where});
 const PARENT = "부모참여수업";
 const SCHED = {
-  "아기참새": [P("특별활동 공개수업 〈짐키즈〉","별관 체육실"), P(PARENT,"각 반 교실")],
-  "초롱이슬": [P("특별활동 공개수업 〈짐키즈〉","별관 체육실"), P(PARENT,"각 반 교실")],
+  "아기참새": [P("특별활동 공개수업 〈짐키즈〉","별관 체육실"), P(PARENT,"아기참새 교실")],
+  "초롱이슬": [P("특별활동 공개수업 〈짐키즈〉","별관 체육실"), P(PARENT,"초롱이슬 교실")],
   "은빛물결": [P("특별활동 공개수업 〈브레인오감〉","별관 특활실"), P(PARENT,"은빛물결 교실")],
   "들꽃향기": [P("특별활동 공개수업 〈코딩〉","들꽃향기 교실"), P(PARENT,"들꽃향기 교실")],
   "푸른하늘": [P("특별활동 공개수업 〈영어〉","푸른하늘 교실"), P(PARENT,"푸른하늘 교실")],
@@ -308,7 +295,8 @@ const ROLES = [
 const $ = id => document.getElementById(id);
 const fac=$("fac"), cls=$("cls"), kid=$("kid");
 const counts = {}; ROLES.forEach(r=>counts[r.key]=0);
-const ans = {cls:null, edu:null, book:null};
+const ans = {open:null, parent:null, edu:null, book:null};
+const isOpen = p => p.what.startsWith("특별활동");
 const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
 /* ---------- 드롭다운 ---------- */
@@ -316,44 +304,51 @@ Object.keys(ROSTER).forEach(f=>fac.add(new Option(f,f)));
 fac.onchange = () => {
   cls.innerHTML = '<option value="">선택해 주세요</option>';
   kid.innerHTML = '<option value="">반 먼저 선택</option>';
-  kid.disabled = true; $("schedRow").style.display="none";
+  kid.disabled = true; resetQ();
   if(!fac.value){ cls.disabled = true; return; }
   Object.keys(ROSTER[fac.value]).forEach(c=>cls.add(new Option(c,c)));
   cls.disabled = false;
 };
 cls.onchange = () => {
   kid.innerHTML = '<option value="">선택해 주세요</option>';
-  if(!cls.value){ kid.disabled = true; $("schedRow").style.display="none"; return; }
+  resetQ();
+  if(!cls.value){ kid.disabled = true; return; }
   ROSTER[fac.value][cls.value].forEach(n=>kid.add(new Option(n,n)));
   kid.disabled = false;
-  showSched(cls.value);
+  buildQ(cls.value);
 };
-function showSched(c){
+function resetQ(){
+  ans.open = ans.parent = ans.edu = null;
+  $("qbox").innerHTML = '<p class="hint" style="margin:0">반을 선택하면 우리 반 일정별로 참석 여부를 여쭤봐요.</p>';
+  $("peopleRow").style.display = "none";
+}
+/* 반 일정 순서대로 시간별 참석 문항 */
+function slotHTML(key, no, time, p){
+  return '<div class="slot"><div class="tm">'+no+' · '+time+'</div>'+
+    '<div class="what">'+esc(p.what)+'</div><div class="where">📍 '+esc(p.where)+'</div>'+
+    '<div class="choice" data-q="'+key+'">'+
+    '<button type="button" data-v="1" aria-pressed="false">참석해요</button>'+
+    '<button type="button" data-v="0" aria-pressed="false">어려워요</button></div></div>';
+}
+function buildQ(c){
   const s = SCHED[c]; if(!s) return;
-  const rows = [
-    ["09:50~10:20", s[0]],
-    ["10:20~10:30", P("이동 및 쉬는시간","")],
-    ["10:30~11:00", s[1]],
-    ["11:00~11:20", P("이동 및 쉬는시간","")],
-    ["11:20~12:30", P("부모교육","지하놀이터")]
-  ];
-  $("schedTitle").textContent = "프로그램 안내 〈" + c + "〉";
-  $("sched").innerHTML = rows.map(([t,p])=>{
-    const hl = p.what===PARENT || p.what.startsWith("특별") || p.what==="부모교육";
-    return '<tr><td class="t">'+t+'</td><td><span class="'+(hl?"hl":"")+'">'+esc(p.what)+'</span>'+
-      (p.where?'<br><span class="p">'+esc(p.where)+'</span>':'')+'</td></tr>';
-  }).join("");
-  $("schedRow").style.display = "flex";
+  const k = p => isOpen(p) ? "open" : "parent";
+  $("qbox").innerHTML =
+    '<div class="cls-title">〈'+esc(c)+'〉 일정</div>'+
+    slotHTML(k(s[0]), "①", "09:50~10:20", s[0]) +
+    '<div class="brk">10:20~10:30 이동 및 쉬는시간</div>'+
+    slotHTML(k(s[1]), "②", "10:30~11:00", s[1]) +
+    '<div class="brk">11:00~11:20 이동 및 쉬는시간</div>'+
+    slotHTML("edu", "③", "11:20~12:30", P("부모교육 · 그림책이 건네는 위로, 마음을 안아주는 순간","지하놀이터"));
 }
 
-/* ---------- 선택 버튼 ---------- */
-document.querySelectorAll(".choice").forEach(g=>{
-  g.onclick = e => {
-    const b = e.target.closest("button"); if(!b) return;
-    ans[g.dataset.q] = Number(b.dataset.v);
-    g.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed", x===b));
-    $("peopleRow").style.display = (ans.cls===1 || ans.edu===1) ? "flex" : "none";
-  };
+/* ---------- 선택 버튼 (동적 문항 포함) ---------- */
+document.addEventListener("click", e => {
+  const b = e.target.closest(".choice button"); if(!b) return;
+  const g = b.parentElement;
+  ans[g.dataset.q] = Number(b.dataset.v);
+  g.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed", x===b));
+  $("peopleRow").style.display = (ans.open===1 || ans.parent===1 || ans.edu===1) ? "flex" : "none";
 });
 
 /* ---------- 카운터 ---------- */
@@ -379,9 +374,10 @@ box.onclick = e => {
 $("send").onclick = () => {
   const err = $("err"); err.textContent = "";
   if(!fac.value || !cls.value || !kid.value){ err.textContent="어린이집·반·아동 이름을 선택해 주세요."; return; }
-  if(ans.cls===null){ err.textContent="① 부모참여수업 참석 여부를 선택해 주세요."; return; }
-  if(ans.edu===null){ err.textContent="② 부모교육 참석 여부를 선택해 주세요."; return; }
-  const going = ans.cls===1 || ans.edu===1;
+  if(ans.open===null || ans.parent===null || ans.edu===null){ err.textContent="①②③ 시간별 참석 여부를 모두 선택해 주세요."; return; }
+  const going = ans.open===1 || ans.parent===1 || ans.edu===1;
+  const s = SCHED[cls.value], op = s.find(isOpen);
+  const YN = v => v===1 ? "참석" : "불참";
   const sum = ROLES.reduce((a,r)=>a+counts[r.key],0);
   if(going && sum===0){ err.textContent="오시는 보호자 인원을 입력해 주세요."; return; }
   if(ans.book===null){ err.textContent="도서 기증 권수를 선택해 주세요."; return; }
@@ -389,8 +385,12 @@ $("send").onclick = () => {
   const key = (fac.value+"_"+cls.value+"_"+kid.value).replace(/[.#$/\[\]]/g,"");
   const data = {
     facility: fac.value, cls: cls.value, name: kid.value,
-    classAttend: ans.cls===1 ? "참석" : "불참",
-    eduAttend: ans.edu===1 ? "참석" : "불참",
+    openTime: isOpen(s[0]) ? "09:50" : "10:30",
+    openName: op.what.replace(/.*〈(.*)〉.*/,"$1"),
+    openAttend: YN(ans.open),
+    parentTime: isOpen(s[0]) ? "10:30" : "09:50",
+    parentAttend: YN(ans.parent),
+    eduAttend: YN(ans.edu),
     father: going?counts.father:0, mother: going?counts.mother:0, etc: going?counts.etc:0,
     etcName: going ? $("etcName").value.trim() : "",
     people: going ? sum : 0,
@@ -400,7 +400,10 @@ $("send").onclick = () => {
   };
   $("send").disabled = true; $("send").textContent = "보내는 중…";
   db.ref(DB_PATH+"/"+key).set(data).then(()=>{
-    let r = "<b>"+esc(data.cls+" "+data.name)+"</b><br>부모참여·공개수업 "+data.classAttend+" · 부모교육 "+data.eduAttend;
+    const first = data.openTime==="09:50"
+      ? [data.openTime+" 공개수업〈"+data.openName+"〉 "+data.openAttend, data.parentTime+" 부모참여수업 "+data.parentAttend]
+      : [data.parentTime+" 부모참여수업 "+data.parentAttend, data.openTime+" 공개수업〈"+data.openName+"〉 "+data.openAttend];
+    let r = "<b>"+esc(data.cls+" "+data.name)+"</b><br>"+first.map(esc).join("<br>")+"<br>11:20 부모교육 "+data.eduAttend;
     if(going) r += "<br>"+ROLES.filter(x=>counts[x.key]>0).map(x=>x.label+" "+counts[x.key]+"명").join(" · ");
     r += "<br>도서 기증 "+(data.books? data.books+"권" : "없음");
     $("recap").innerHTML = r;
@@ -429,18 +432,22 @@ function render(){
   const t = k => rows.reduce((a,r)=>a+(r[k]||0),0);
   $("sum").innerHTML =
     '<div>응답 <b>'+rows.length+'</b>/'+total+'</div>'+
-    '<div>수업 참석 <b>'+rows.filter(r=>r.classAttend==="참석").length+'</b>가정</div>'+
+    '<div>부모참여수업 <b>'+rows.filter(r=>r.parentAttend==="참석").length+'</b>가정</div>'+
+    '<div>공개수업 <b>'+rows.filter(r=>r.openAttend==="참석").length+'</b>가정</div>'+
     '<div>부모교육 <b>'+rows.filter(r=>r.eduAttend==="참석").length+'</b>가정</div>'+
     '<div>보호자 <b>'+t("people")+'</b>명</div>'+
     '<div>부 <b>'+t("father")+'</b> 모 <b>'+t("mother")+'</b> 기타 <b>'+t("etc")+'</b></div>'+
     '<div>기증 도서 <b>'+t("books")+'</b>권</div>';
 
   // 반별 요약
-  let h = "<tr><th>반</th><th>재원</th><th>응답</th><th>미응답</th><th>수업참석</th><th>부모교육</th><th>보호자</th><th>도서</th></tr>";
+  let h = "<tr><th>반</th><th>재원</th><th>응답</th><th>미응답</th><th>09:50</th><th>참석</th><th>10:30</th><th>참석</th><th>부모교육</th><th>보호자</th><th>도서</th></tr>";
+  const cnt = (rs,k) => rs.filter(r=>r[k]==="참석").length;
   CLASS_ORDER.forEach(([f,c])=>{
     const rs = rows.filter(r=>r.facility===f && r.cls===c);
+    const s = SCHED[c], label = p => isOpen(p) ? "공개〈"+p.what.replace(/.*〈(.*)〉.*/,"$1")+"〉" : "부모참여";
+    const key = p => isOpen(p) ? "openAttend" : "parentAttend";
     h += "<tr><td>"+c+"</td><td>"+ROSTER[f][c].length+"</td><td>"+rs.length+"</td><td>"+(ROSTER[f][c].length-rs.length)+"</td><td>"+
-      rs.filter(r=>r.classAttend==="참석").length+"</td><td>"+rs.filter(r=>r.eduAttend==="참석").length+"</td><td>"+
+      label(s[0])+"</td><td>"+cnt(rs,key(s[0]))+"</td><td>"+label(s[1])+"</td><td>"+cnt(rs,key(s[1]))+"</td><td>"+cnt(rs,"eduAttend")+"</td><td>"+
       rs.reduce((a,r)=>a+(r.people||0),0)+"</td><td>"+rs.reduce((a,r)=>a+(r.books||0),0)+"</td></tr>";
   });
   $("byCls").innerHTML = h;
@@ -457,21 +464,21 @@ function render(){
   rows.forEach(r=>{ if(!list.includes(r) && (tab==="전체"||tab===r.cls) &&
     !(ROSTER[r.facility]&&ROSTER[r.facility][r.cls]&&ROSTER[r.facility][r.cls].includes(r.name))) list.push(r); });
 
-  let d = "<tr><th>반</th><th>아동</th><th>수업</th><th>부모교육</th><th>부</th><th>모</th><th>기타</th><th>기타관계</th><th>도서</th><th>남긴말</th><th>시각</th></tr>";
+  let d = "<tr><th>반</th><th>아동</th><th>부모참여수업</th><th>공개수업</th><th>부모교육</th><th>부</th><th>모</th><th>기타</th><th>기타관계</th><th>도서</th><th>남긴말</th><th>시각</th></tr>";
   list.forEach(r=>{
-    if(r.none){ d += '<tr class="none"><td>'+esc(r.cls)+'</td><td>'+esc(r.name)+'</td><td colspan="9">미응답</td></tr>'; return; }
-    d += "<tr><td>"+esc(r.cls)+"</td><td>"+esc(r.name)+"</td><td>"+r.classAttend+"</td><td>"+r.eduAttend+"</td><td>"+r.father+"</td><td>"+r.mother+"</td><td>"+r.etc+"</td><td>"+esc(r.etcName)+"</td><td>"+r.books+"</td><td>"+esc(r.memo)+"</td><td>"+esc(r.at)+"</td></tr>";
+    if(r.none){ d += '<tr class="none"><td>'+esc(r.cls)+'</td><td>'+esc(r.name)+'</td><td colspan="10">미응답</td></tr>'; return; }
+    d += "<tr><td>"+esc(r.cls)+"</td><td>"+esc(r.name)+"</td><td>"+esc(r.parentAttend)+" ("+esc(r.parentTime)+")</td><td>"+esc(r.openAttend)+" ("+esc(r.openTime)+" "+esc(r.openName)+")</td><td>"+esc(r.eduAttend)+"</td><td>"+r.father+"</td><td>"+r.mother+"</td><td>"+r.etc+"</td><td>"+esc(r.etcName)+"</td><td>"+r.books+"</td><td>"+esc(r.memo)+"</td><td>"+esc(r.at)+"</td></tr>";
   });
   $("tbl").innerHTML = d;
 }
 
 $("csv").onclick = () => {
-  const head = ["어린이집","반","아동","부모참여·공개수업","부모교육","아버지","어머니","기타","기타관계","보호자수","기증도서","남긴말","응답시각"];
+  const head = ["어린이집","반","아동","부모참여수업 시간","부모참여수업","공개수업 시간","공개수업명","공개수업","부모교육(11:20)","아버지","어머니","기타","기타관계","보호자수","기증도서","남긴말","응답시각"];
   const body = [];
   CLASS_ORDER.forEach(([f,c])=>ROSTER[f][c].forEach(n=>{
     const r = rows.find(x=>x.facility===f && x.cls===c && x.name===n);
-    body.push(r ? [f,c,n,r.classAttend,r.eduAttend,r.father,r.mother,r.etc,r.etcName||"",r.people,r.books,(r.memo||"").replace(/[\r\n]+/g," "),r.at||""]
-                : [f,c,n,"미응답","","","","","","","","",""]);
+    body.push(r ? [f,c,n,r.parentTime,r.parentAttend,r.openTime,r.openName,r.openAttend,r.eduAttend,r.father,r.mother,r.etc,r.etcName||"",r.people,r.books,(r.memo||"").replace(/[\r\n]+/g," "),r.at||""]
+                : [f,c,n,"","미응답","","","","","","","","","","","",""]);
   }));
   const csv = "﻿" + [head,...body].map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(",")).join("\r\n");
   const a = document.createElement("a");
