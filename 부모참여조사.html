@@ -338,8 +338,8 @@ function buildQ(c){
     slotHTML(k(s[0]), "①", "09:50~10:20", s[0]) +
     '<div class="brk">10:20~10:30 이동 및 쉬는시간</div>'+
     slotHTML(k(s[1]), "②", "10:30~11:00", s[1]) +
-    '<div class="brk">11:00~11:20 이동 및 쉬는시간</div>'+
-    slotHTML("edu", "③", "11:20~12:30", P("부모교육 · 그림책이 건네는 위로, 마음을 안아주는 순간","지하놀이터"));
+    '<div class="brk">11:00~11:10 이동 및 쉬는시간</div>'+
+    slotHTML("edu", "③", "11:10~12:30", P("부모교육 · 그림책이 건네는 위로, 마음을 안아주는 순간","지하놀이터"));
 }
 
 /* ---------- 선택 버튼 (동적 문항 포함) ---------- */
@@ -403,7 +403,7 @@ $("send").onclick = () => {
     const first = data.openTime==="09:50"
       ? [data.openTime+" 공개수업〈"+data.openName+"〉 "+data.openAttend, data.parentTime+" 부모참여수업 "+data.parentAttend]
       : [data.parentTime+" 부모참여수업 "+data.parentAttend, data.openTime+" 공개수업〈"+data.openName+"〉 "+data.openAttend];
-    let r = "<b>"+esc(data.cls+" "+data.name)+"</b><br>"+first.map(esc).join("<br>")+"<br>11:20 부모교육 "+data.eduAttend;
+    let r = "<b>"+esc(data.cls+" "+data.name)+"</b><br>"+first.map(esc).join("<br>")+"<br>11:10 부모교육 "+data.eduAttend;
     if(going) r += "<br>"+ROLES.filter(x=>counts[x.key]>0).map(x=>x.label+" "+counts[x.key]+"명").join(" · ");
     r += "<br>도서 기증 "+(data.books? data.books+"권" : "없음");
     $("recap").innerHTML = r;
@@ -473,7 +473,7 @@ function render(){
 }
 
 $("csv").onclick = () => {
-  const head = ["어린이집","반","아동","부모참여수업 시간","부모참여수업","공개수업 시간","공개수업명","공개수업","부모교육(11:20)","아버지","어머니","기타","기타관계","보호자수","기증도서","남긴말","응답시각"];
+  const head = ["어린이집","반","아동","부모참여수업 시간","부모참여수업","공개수업 시간","공개수업명","공개수업","부모교육(11:10)","아버지","어머니","기타","기타관계","보호자수","기증도서","남긴말","응답시각"];
   const body = [];
   CLASS_ORDER.forEach(([f,c])=>ROSTER[f][c].forEach(n=>{
     const r = rows.find(x=>x.facility===f && x.cls===c && x.name===n);
