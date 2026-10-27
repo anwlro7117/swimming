@@ -32,7 +32,7 @@
   <canvas id="map" width="900" height="300"></canvas>
   <button id="make">실행 명령 만들기</button>
   <button id="preview">이 창에서 미리보기</button>
-  <p class="note">아래 내용을 <b>VR360.bat</b>으로 저장 → 더블클릭 실행. 창 위치·크기 자동. 크기가 덜 늘어나면 창 가장자리 끌어 화면들 덮으면 됨(위치 자동 보정).</p>
+  <p class="note">아래 내용을 <b>VR360.bat</b>으로 저장 → 더블클릭 실행. 창 위치·크기 자동. 실행 중엔 작업표시줄 숨김, 뷰어 창 닫으면 다시 나타남(윈도우 설정은 안 바뀜).</p>
   <textarea id="bat" readonly></textarea>
 </div>
 
@@ -105,12 +105,33 @@ document.getElementById('make').onclick = ()=>{
   if(!cfg.s.length){ alert('역할 지정된 화면 없음'); return; }
   const minX=Math.min(...cfg.s.map(r=>r.x)), minY=Math.min(...cfg.s.map(r=>r.y));
   const maxX=Math.max(...cfg.s.map(r=>r.x+r.w)), maxY=Math.max(...cfg.s.map(r=>r.y+r.h));
-  const url = (location.href.split('#')[0] + '#c=' + enc(cfg)).replace(/%/g,'%%');
+  const url = location.href.split('#')[0] + '#c=' + enc(cfg);
+  // 작업표시줄을 숨긴 채 실행 → 창 닫으면 다시 보이게 (윈도우 설정은 안 바꿈)
+  const ps =
+`Add-Type @"
+using System; using System.Text; using System.Runtime.InteropServices;
+public class VRTB {
+  public delegate bool EP(IntPtr h, IntPtr l);
+  [DllImport("user32.dll")] public static extern bool EnumWindows(EP f, IntPtr l);
+  [DllImport("user32.dll")] public static extern int GetClassName(IntPtr h, StringBuilder s, int n);
+  [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int c);
+  public static void Set(int c){
+    EnumWindows(delegate(IntPtr h, IntPtr l){
+      var s = new StringBuilder(64); GetClassName(h, s, 64); var n = s.ToString();
+      if(n == "Shell_TrayWnd" || n == "Shell_SecondaryTrayWnd") ShowWindow(h, c);
+      return true; }, IntPtr.Zero);
+  }
+}
+"@
+$c = @("$env:ProgramFiles\\Google\\Chrome\\Application\\chrome.exe","\${env:ProgramFiles(x86)}\\Google\\Chrome\\Application\\chrome.exe","$env:LOCALAPPDATA\\Google\\Chrome\\Application\\chrome.exe","\${env:ProgramFiles(x86)}\\Microsoft\\Edge\\Application\\msedge.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
+$a = '--user-data-dir="' + $env:LOCALAPPDATA + '\\vr360" --autoplay-policy=no-user-gesture-required --app="${url}" --window-position=${minX},${minY-32} --window-size=${maxX-minX},${maxY-minY+32}'
+[VRTB]::Set(0)
+try { Start-Process -FilePath $c -ArgumentList $a -Wait } finally { [VRTB]::Set(5) }
+`;
+  let bin = ''; for(const ch of ps){ const code = ch.charCodeAt(0); bin += String.fromCharCode(code & 255, code >> 8); }
   document.getElementById('bat').value =
 `@echo off
-set CHROME="C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
-if not exist %CHROME% set CHROME="C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
-start "" %CHROME% --user-data-dir="%TEMP%\\vr360" --autoplay-policy=no-user-gesture-required --app="${url}" --window-position=${minX},${minY-32} --window-size=${maxX-minX},${maxY-minY+32}
+powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -EncodedCommand ${btoa(bin)}
 `;
   try{ localStorage.setItem('vr360rows', JSON.stringify(rows)); }catch(e){}
 };
@@ -273,20 +294,53 @@ function startPlay(cfg){
       });
       ps.push(q);
     });
-    yt = {ps, master: ps.find(q=>q.master)};
+    yt = {ps, master: ps.find(q=>q.master), want:true, hold:false, grace: Date.now()+6000};
+  }
+  // 광고 대기 동기화: 한 화면이라도 광고·버퍼링이면 나머지 멈추고 기다렸다가 같은 시간에서 다시 출발
+  function ytSeekAll(t){ yt.ps.forEach(q=>{ q.p.seekTo(t, true); q.stall = 0; }); yt.grace = Date.now() + 3000; }
+  function ytDur(){
+    const c = {}; yt.ps.forEach(q=>{ const d = Math.round(q.p.getDuration ? q.p.getDuration() : 0); if(d>0) c[d] = (c[d]||0)+1; });
+    const ks = Object.keys(c).map(Number); if(!ks.length) return 0;
+    ks.sort((a,b)=> c[b]-c[a] || b-a); return ks[0];
   }
   setInterval(()=>{
-    if(!yt || !yt.master.p.getCurrentTime) return;
-    const m = yt.master.p, t = m.getCurrentTime(), st = m.getPlayerState();
+    if(!yt || !yt.ps.every(q=>q.p.getCurrentTime)) return;
+    yt.ps.forEach(aim);
+    const D = ytDur(), now = Date.now();
     yt.ps.forEach(q=>{
-      aim(q);
-      if(q.master || !q.p.getCurrentTime) return;
-      const qs = q.p.getPlayerState();
-      if(st===1 && qs!==1 && qs!==3) q.p.playVideo();
-      if(st===2 && qs===1) q.p.pauseVideo();
-      if(st===1 && Math.abs(q.p.getCurrentTime()-t) > 0.35) q.p.seekTo(t+0.2, true);
+      const t = q.p.getCurrentTime(), st = q.p.getPlayerState(), d = Math.round(q.p.getDuration());
+      const moved = q.lastT===undefined ? 0 : t - q.lastT; q.lastT = t;
+      const durOff = D>0 && d>0 && Math.abs(d-D) > 1;                 // 광고 영상 길이가 다름
+      const stuck = q.paused ? false : (st!==2 && st!==0 && moved < 0.05); // 재생해야 하는데 시간 안 감
+      q.stall = (durOff || stuck) ? (q.stall||0)+1 : 0;
+      q.ad = durOff || q.stall >= 3;
     });
-  }, 700);
+    if(!yt.want) return;
+    const anyAd = now > yt.grace && yt.ps.some(q=>q.ad);
+    if(anyAd){
+      if(!yt.hold){ yt.hold = true; toast('광고 끝날 때까지 대기'); }
+      yt.ps.forEach(q=>{ if(!q.ad && q.p.getPlayerState()===1){ q.p.pauseVideo(); q.paused = true; } });
+      return;
+    }
+    if(yt.hold){
+      yt.hold = false;
+      const t = Math.min(...yt.ps.map(q=>q.p.getCurrentTime()));
+      yt.ps.forEach(q=>{ q.paused = false; q.p.playVideo(); });
+      ytSeekAll(t);
+      return;
+    }
+    const m = yt.master.p, mt = m.getCurrentTime();
+    yt.ps.forEach(q=>{
+      const qs = q.p.getPlayerState();
+      if(qs!==1 && qs!==3){ q.paused = false; q.p.playVideo(); }
+      if(!q.master && qs===1 && now > yt.grace && Math.abs(q.p.getCurrentTime()-mt) > 0.35) q.p.seekTo(mt+0.2, true);
+    });
+  }, 500);
+  function ytPlayPause(){
+    yt.want = !yt.want;
+    if(yt.want){ yt.grace = Date.now()+3000; yt.ps.forEach(q=>{ q.paused=false; q.p.playVideo(); }); }
+    else { yt.hold = false; yt.ps.forEach(q=>{ q.paused=true; q.p.pauseVideo(); }); }
+  }
 
   // ---- 맞춤 모드 (D) ----
   let fit = false, sel = 0;
@@ -350,11 +404,11 @@ Ctrl+화살표: 크기 | R: 선택 화면 초기화 | D: 끝내기(저장)
     }
     if(yt){
       const m = yt.master.p;
-      if(k===' '){ e.preventDefault(); m.getPlayerState()===1 ? m.pauseVideo() : m.playVideo(); }
+      if(k===' '){ e.preventDefault(); ytPlayPause(); }
       else if(e.key==='ArrowLeft'){ ytYaw -= 5; yt.ps.forEach(aim); }
       else if(e.key==='ArrowRight'){ ytYaw += 5; yt.ps.forEach(aim); }
-      else if(k==='[') m.seekTo(Math.max(0, m.getCurrentTime()-10), true);
-      else if(k===']') m.seekTo(m.getCurrentTime()+10, true);
+      else if(k==='[') ytSeekAll(Math.max(0, m.getCurrentTime()-10));
+      else if(k===']') ytSeekAll(m.getCurrentTime()+10);
       else if(k==='x' || e.key==='Escape') stopYT();
       return;
     }
