@@ -182,6 +182,12 @@ table.t tr.none td{color:#b9ae94}
       <div class="counters" id="counters"></div>
       <label class="f" for="etcName">기타 관계 (기타 인원이 있을 때만)</label>
       <input type="text" id="etcName" placeholder="예) 할머니, 이모">
+      <label class="f">🚗 주차장 사용 (차량 대수)</label>
+      <div class="choice" data-q="car">
+        <button type="button" data-v="0" aria-pressed="false">사용 안 함</button>
+        <button type="button" data-v="1" aria-pressed="false">1대</button>
+        <button type="button" data-v="2" aria-pressed="false">2대</button>
+      </div>
     </div>
   </div>
 
@@ -295,7 +301,7 @@ const ROLES = [
 const $ = id => document.getElementById(id);
 const fac=$("fac"), cls=$("cls"), kid=$("kid");
 const counts = {}; ROLES.forEach(r=>counts[r.key]=0);
-const ans = {open:null, parent:null, edu:null, book:null};
+const ans = {open:null, parent:null, edu:null, book:null, car:null};
 const isOpen = p => p.what.startsWith("특별활동");
 const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
@@ -380,6 +386,7 @@ $("send").onclick = () => {
   const YN = v => v===1 ? "참석" : "불참";
   const sum = ROLES.reduce((a,r)=>a+counts[r.key],0);
   if(going && sum===0){ err.textContent="오시는 보호자 인원을 입력해 주세요."; return; }
+  if(going && ans.car===null){ err.textContent="주차장 사용 여부를 선택해 주세요."; return; }
   if(ans.book===null){ err.textContent="도서 기증 권수를 선택해 주세요."; return; }
 
   const key = (fac.value+"_"+cls.value+"_"+kid.value).replace(/[.#$/\[\]]/g,"");
@@ -394,6 +401,7 @@ $("send").onclick = () => {
     father: going?counts.father:0, mother: going?counts.mother:0, etc: going?counts.etc:0,
     etcName: going ? $("etcName").value.trim() : "",
     people: going ? sum : 0,
+    cars: going ? ans.car : 0,
     books: ans.book,
     memo: $("memo").value.trim(),
     at: new Date().toLocaleString("ko-KR")
@@ -404,7 +412,10 @@ $("send").onclick = () => {
       ? [data.openTime+" 공개수업〈"+data.openName+"〉 "+data.openAttend, data.parentTime+" 부모참여수업 "+data.parentAttend]
       : [data.parentTime+" 부모참여수업 "+data.parentAttend, data.openTime+" 공개수업〈"+data.openName+"〉 "+data.openAttend];
     let r = "<b>"+esc(data.cls+" "+data.name)+"</b><br>"+first.map(esc).join("<br>")+"<br>11:10 부모교육 "+data.eduAttend;
-    if(going) r += "<br>"+ROLES.filter(x=>counts[x.key]>0).map(x=>x.label+" "+counts[x.key]+"명").join(" · ");
+    if(going){
+      r += "<br>"+ROLES.filter(x=>counts[x.key]>0).map(x=>x.label+" "+counts[x.key]+"명").join(" · ");
+      r += "<br>주차장 "+(data.cars? data.cars+"대 사용" : "사용 안 함");
+    }
     r += "<br>도서 기증 "+(data.books? data.books+"권" : "없음");
     $("recap").innerHTML = r;
     $("form").style.display="none"; $("done").style.display="block"; window.scrollTo(0,0);
@@ -437,10 +448,11 @@ function render(){
     '<div>부모교육 <b>'+rows.filter(r=>r.eduAttend==="참석").length+'</b>가정</div>'+
     '<div>보호자 <b>'+t("people")+'</b>명</div>'+
     '<div>부 <b>'+t("father")+'</b> 모 <b>'+t("mother")+'</b> 기타 <b>'+t("etc")+'</b></div>'+
+    '<div>주차 <b>'+t("cars")+'</b>대 ('+rows.filter(r=>r.cars>0).length+'가정)</div>'+
     '<div>기증 도서 <b>'+t("books")+'</b>권</div>';
 
   // 반별 요약
-  let h = "<tr><th>반</th><th>재원</th><th>응답</th><th>미응답</th><th>09:50</th><th>참석</th><th>10:30</th><th>참석</th><th>부모교육</th><th>보호자</th><th>도서</th></tr>";
+  let h = "<tr><th>반</th><th>재원</th><th>응답</th><th>미응답</th><th>09:50</th><th>참석</th><th>10:30</th><th>참석</th><th>부모교육</th><th>보호자</th><th>주차</th><th>도서</th></tr>";
   const cnt = (rs,k) => rs.filter(r=>r[k]==="참석").length;
   CLASS_ORDER.forEach(([f,c])=>{
     const rs = rows.filter(r=>r.facility===f && r.cls===c);
@@ -448,7 +460,7 @@ function render(){
     const key = p => isOpen(p) ? "openAttend" : "parentAttend";
     h += "<tr><td>"+c+"</td><td>"+ROSTER[f][c].length+"</td><td>"+rs.length+"</td><td>"+(ROSTER[f][c].length-rs.length)+"</td><td>"+
       label(s[0])+"</td><td>"+cnt(rs,key(s[0]))+"</td><td>"+label(s[1])+"</td><td>"+cnt(rs,key(s[1]))+"</td><td>"+cnt(rs,"eduAttend")+"</td><td>"+
-      rs.reduce((a,r)=>a+(r.people||0),0)+"</td><td>"+rs.reduce((a,r)=>a+(r.books||0),0)+"</td></tr>";
+      rs.reduce((a,r)=>a+(r.people||0),0)+"</td><td>"+rs.reduce((a,r)=>a+(r.cars||0),0)+"</td><td>"+rs.reduce((a,r)=>a+(r.books||0),0)+"</td></tr>";
   });
   $("byCls").innerHTML = h;
 
@@ -464,21 +476,21 @@ function render(){
   rows.forEach(r=>{ if(!list.includes(r) && (tab==="전체"||tab===r.cls) &&
     !(ROSTER[r.facility]&&ROSTER[r.facility][r.cls]&&ROSTER[r.facility][r.cls].includes(r.name))) list.push(r); });
 
-  let d = "<tr><th>반</th><th>아동</th><th>부모참여수업</th><th>공개수업</th><th>부모교육</th><th>부</th><th>모</th><th>기타</th><th>기타관계</th><th>도서</th><th>남긴말</th><th>시각</th></tr>";
+  let d = "<tr><th>반</th><th>아동</th><th>부모참여수업</th><th>공개수업</th><th>부모교육</th><th>부</th><th>모</th><th>기타</th><th>기타관계</th><th>주차</th><th>도서</th><th>남긴말</th><th>시각</th></tr>";
   list.forEach(r=>{
-    if(r.none){ d += '<tr class="none"><td>'+esc(r.cls)+'</td><td>'+esc(r.name)+'</td><td colspan="10">미응답</td></tr>'; return; }
-    d += "<tr><td>"+esc(r.cls)+"</td><td>"+esc(r.name)+"</td><td>"+esc(r.parentAttend)+" ("+esc(r.parentTime)+")</td><td>"+esc(r.openAttend)+" ("+esc(r.openTime)+" "+esc(r.openName)+")</td><td>"+esc(r.eduAttend)+"</td><td>"+r.father+"</td><td>"+r.mother+"</td><td>"+r.etc+"</td><td>"+esc(r.etcName)+"</td><td>"+r.books+"</td><td>"+esc(r.memo)+"</td><td>"+esc(r.at)+"</td></tr>";
+    if(r.none){ d += '<tr class="none"><td>'+esc(r.cls)+'</td><td>'+esc(r.name)+'</td><td colspan="11">미응답</td></tr>'; return; }
+    d += "<tr><td>"+esc(r.cls)+"</td><td>"+esc(r.name)+"</td><td>"+esc(r.parentAttend)+" ("+esc(r.parentTime)+")</td><td>"+esc(r.openAttend)+" ("+esc(r.openTime)+" "+esc(r.openName)+")</td><td>"+esc(r.eduAttend)+"</td><td>"+r.father+"</td><td>"+r.mother+"</td><td>"+r.etc+"</td><td>"+esc(r.etcName)+"</td><td>"+(r.cars||0)+"</td><td>"+r.books+"</td><td>"+esc(r.memo)+"</td><td>"+esc(r.at)+"</td></tr>";
   });
   $("tbl").innerHTML = d;
 }
 
 $("csv").onclick = () => {
-  const head = ["어린이집","반","아동","부모참여수업 시간","부모참여수업","공개수업 시간","공개수업명","공개수업","부모교육(11:10)","아버지","어머니","기타","기타관계","보호자수","기증도서","남긴말","응답시각"];
+  const head = ["어린이집","반","아동","부모참여수업 시간","부모참여수업","공개수업 시간","공개수업명","공개수업","부모교육(11:10)","아버지","어머니","기타","기타관계","보호자수","주차(대)","기증도서","남긴말","응답시각"];
   const body = [];
   CLASS_ORDER.forEach(([f,c])=>ROSTER[f][c].forEach(n=>{
     const r = rows.find(x=>x.facility===f && x.cls===c && x.name===n);
-    body.push(r ? [f,c,n,r.parentTime,r.parentAttend,r.openTime,r.openName,r.openAttend,r.eduAttend,r.father,r.mother,r.etc,r.etcName||"",r.people,r.books,(r.memo||"").replace(/[\r\n]+/g," "),r.at||""]
-                : [f,c,n,"","미응답","","","","","","","","","","","",""]);
+    body.push(r ? [f,c,n,r.parentTime,r.parentAttend,r.openTime,r.openName,r.openAttend,r.eduAttend,r.father,r.mother,r.etc,r.etcName||"",r.people,r.cars||0,r.books,(r.memo||"").replace(/[\r\n]+/g," "),r.at||""]
+                : [f,c,n,"","미응답","","","","","","","","","","","","",""]);
   }));
   const csv = "﻿" + [head,...body].map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(",")).join("\r\n");
   const a = document.createElement("a");
