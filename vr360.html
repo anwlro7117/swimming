@@ -296,8 +296,8 @@ function startPlay(cfg){
     });
     yt = {ps, master: ps.find(q=>q.master), want:true, hold:false, grace: Date.now()+6000};
   }
-  // 광고 대기 동기화: 한 화면이라도 광고·버퍼링이면 나머지 멈추고 기다렸다가 같은 시간에서 다시 출발
-  function ytSeekAll(t){ yt.ps.forEach(q=>{ q.p.seekTo(t, true); q.stall = 0; }); yt.grace = Date.now() + 3000; }
+  // 동기화: 제일 늦은 화면(광고·버퍼링 중)에 나머지가 맞춰 기다림. 광고 길이 달라도 됨.
+  function ytSeekAll(t){ yt.ps.forEach(q=>{ q.p.seekTo(t, true); q.ct = t; q.held = false; }); yt.grace = Date.now() + 2500; }
   function ytDur(){
     const c = {}; yt.ps.forEach(q=>{ const d = Math.round(q.p.getDuration ? q.p.getDuration() : 0); if(d>0) c[d] = (c[d]||0)+1; });
     const ks = Object.keys(c).map(Number); if(!ks.length) return 0;
@@ -308,39 +308,41 @@ function startPlay(cfg){
     yt.ps.forEach(aim);
     const D = ytDur(), now = Date.now();
     yt.ps.forEach(q=>{
-      const t = q.p.getCurrentTime(), st = q.p.getPlayerState(), d = Math.round(q.p.getDuration());
-      const moved = q.lastT===undefined ? 0 : t - q.lastT; q.lastT = t;
-      const durOff = D>0 && d>0 && Math.abs(d-D) > 1;                 // 광고 영상 길이가 다름
-      const stuck = q.paused ? false : (st!==2 && st!==0 && moved < 0.05); // 재생해야 하는데 시간 안 감
-      q.stall = (durOff || stuck) ? (q.stall||0)+1 : 0;
-      q.ad = durOff || q.stall >= 3;
+      const t = q.p.getCurrentTime(), d = Math.round(q.p.getDuration());
+      q.ad = D>0 && d>0 && Math.abs(d-D) > 1;          // 광고가 자기 길이를 보고하는 경우
+      if(q.ct===undefined) q.ct = 0;
+      if(!q.ad) q.ct = t;                               // 본편 시간만 기록 (광고 중엔 그대로 멈춤)
     });
     if(!yt.want) return;
-    const anyAd = now > yt.grace && yt.ps.some(q=>q.ad);
-    if(anyAd){
-      if(!yt.hold){ yt.hold = true; toast('광고 끝날 때까지 대기'); }
-      yt.ps.forEach(q=>{ if(!q.ad && q.p.getPlayerState()===1){ q.p.pauseVideo(); q.paused = true; } });
-      return;
-    }
-    if(yt.hold){
-      yt.hold = false;
-      const t = Math.min(...yt.ps.map(q=>q.p.getCurrentTime()));
-      yt.ps.forEach(q=>{ q.paused = false; q.p.playVideo(); });
-      ytSeekAll(t);
-      return;
-    }
-    const m = yt.master.p, mt = m.getCurrentTime();
+    if(now < yt.grace){ yt.ps.forEach(q=>{ const st=q.p.getPlayerState(); if(st!==1 && st!==3) q.p.playVideo(); }); return; }
+    const low = Math.min(...yt.ps.map(q=>q.ct));
+    const lag = yt.ps.find(q=>q.ct===low);
+    let waiting = false;
     yt.ps.forEach(q=>{
-      const qs = q.p.getPlayerState();
-      if(qs!==1 && qs!==3){ q.paused = false; q.p.playVideo(); }
-      if(!q.master && qs===1 && now > yt.grace && Math.abs(q.p.getCurrentTime()-mt) > 0.35) q.p.seekTo(mt+0.2, true);
+      const st = q.p.getPlayerState();
+      if(q.ad || q===lag){ if(st!==1 && st!==3) q.p.playVideo(); q.held = false; return; }
+      if(!q.held && q.ct > low + 0.4){ q.held = true; q.heldAt = now; q.p.pauseVideo(); }
+      else if(q.held && q.ct <= low + 0.1){ q.held = false; q.p.playVideo(); }
+      else if(!q.held && st!==1 && st!==3) q.p.playVideo();
+      if(q.held){ waiting = true; if(st===1) q.p.pauseVideo(); }
     });
-  }, 500);
+    if(waiting && !yt.waiting) toast('다른 화면 광고 끝날 때까지 대기');
+    yt.waiting = waiting;
+    // 3분 넘게 기다리면 포기하고 늦은 화면을 앞으로 당김
+    const old = yt.ps.find(q=>q.held && now - q.heldAt > 180000);
+    if(old){ lag.p.seekTo(old.ct, true); yt.grace = now + 2500; }
+  }, 400);
   function ytPlayPause(){
     yt.want = !yt.want;
-    if(yt.want){ yt.grace = Date.now()+3000; yt.ps.forEach(q=>{ q.paused=false; q.p.playVideo(); }); }
-    else { yt.hold = false; yt.ps.forEach(q=>{ q.paused=true; q.p.pauseVideo(); }); }
+    if(yt.want){ yt.grace = Date.now()+2500; yt.ps.forEach(q=>{ q.held=false; q.p.playVideo(); }); }
+    else { yt.ps.forEach(q=>{ q.held=false; q.p.pauseVideo(); }); }
   }
+  // 광고 '건너뛰기'를 화면 터치·클릭으로 누를 수 있게. 누른 뒤 키보드는 다시 뷰어로.
+  ytLayer.style.pointerEvents = 'auto';
+  const keyCatcher = document.createElement('button');
+  keyCatcher.style.cssText = 'position:fixed;left:-50px;top:-50px;width:1px;height:1px;opacity:0';
+  document.body.appendChild(keyCatcher);
+  window.addEventListener('blur', ()=> setTimeout(()=>{ if(yt) keyCatcher.focus(); }, 400));
 
   // ---- 맞춤 모드 (D) ----
   let fit = false, sel = 0;
