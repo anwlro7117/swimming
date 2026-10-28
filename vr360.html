@@ -264,7 +264,7 @@ function startPlay(cfg){
     if(!q || !q.p.setSphericalProperties) return;
     const r = views[q.i].s.r, d = VIEWDIR[r];
     const base = r==='left' ? -wallFov : r==='right' ? wallFov : d.yaw;
-    q.p.setSphericalProperties({yaw:((base+ytYaw)%360+360)%360, pitch:d.pitch, roll:0, fov:Math.min(120, wallFov)});
+    q.p.setSphericalProperties({yaw:((-(base+ytYaw))%360+360)%360, pitch:d.pitch, roll:0, fov:Math.min(120, wallFov)});
   }
   function stopYT(){
     if(!yt) return;
