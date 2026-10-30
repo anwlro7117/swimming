@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>VR실 센서 관제</title>
+<style>
+  :root{--bg:#f5f6f8;--card:#fff;--ink:#1c2230;--mute:#6b7385;--line:#dde1e8;--acc:#2f6fed;--ok:#1e9e5a;--bad:#d64545}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Malgun Gothic',system-ui,sans-serif;font-size:15px}
+  header{display:flex;align-items:center;gap:16px;padding:12px 20px;background:var(--card);border-bottom:1px solid var(--line)}
+  h1{font-size:18px;margin:0}
+  .pill{padding:4px 10px;border-radius:99px;font-size:13px;background:#eee}
+  .pill.ok{background:#dff5e8;color:var(--ok)} .pill.bad{background:#fbe3e3;color:var(--bad)}
+  main{display:grid;grid-template-columns:1fr 420px;gap:16px;padding:16px 20px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
+  h2{font-size:15px;margin:0 0 10px}
+  canvas{width:100%;background:#10131a;border-radius:8px;display:block}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  td,th{padding:4px 3px;border-bottom:1px solid var(--line);text-align:left}
+  input[type=number]{width:58px;font:inherit;padding:2px}
+  button{font:inherit;padding:7px 12px;border-radius:7px;border:1px solid var(--line);background:#fff;cursor:pointer}
+  button.pri{background:var(--acc);color:#fff;border-color:var(--acc)}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
+  #calMsg{margin-top:10px;padding:10px;border-radius:8px;background:#fff7dd;display:none;font-weight:700}
+  #list{font-family:Consolas,monospace;font-size:13px;max-height:180px;overflow:auto;white-space:pre}
+  .mute{color:var(--mute);font-size:13px}
+</style>
+</head>
+<body>
+<header>
+  <h1>VR실 센서 관제</h1>
+  <span id="conn" class="pill">브리지 연결 중…</span>
+  <span id="pkt" class="pill">TUIO 패킷 없음</span>
+  <span class="mute" id="cnt"></span>
+</header>
+<main>
+  <section>
+    <div class="card">
+      <h2>센서 전체 좌표 (0~1) — 화면 구역 표시</h2>
+      <canvas id="map" width="1500" height="450"></canvas>
+      <p class="mute">카메라 5대를 이어 붙인 TUIO 좌표다. 색 상자가 각 화면 구역이다. 실제 터치한 점이 상자 안에 들어와야 정상이다.</p>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h2>현재 터치점</h2>
+      <div id="list"></div>
+    </div>
+  </section>
+  <aside>
+    <div class="card">
+      <h2>화면 구역 (config.json)</h2>
+      <table id="zones"></table>
+      <div class="row">
+        <label>머무름 무시(ms) <input type="number" id="dwell" step="100" style="width:80px"></label>
+        <button class="pri" id="save">저장</button>
+        <span id="saved" class="mute"></span>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h2>모서리 보정</h2>
+      <p class="mute">화면 고르고 시작. 그 화면 노란 원 2개를 차례로 터치(좌상단 → 우하단). 손을 떼면 기록된다.</p>
+      <div class="row">
+        <select id="calSel"></select>
+        <button class="pri" id="calGo">보정 시작</button>
+        <button id="calStop">취소</button>
+      </div>
+      <div id="calMsg"></div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h2>화면 테스트 링크</h2>
+      <div id="links" class="mute"></div>
+    </div>
+  </aside>
+</main>
+<script>
+let config, cursors = [], lastPos = new Map();
+const cv = document.getElementById('map'), g = cv.getContext('2d');
+const COLORS = ['#ff6b6b','#ffd23f','#4ecdc4','#6c8cff','#c77dff','#8ac926'];
+
+fetch('/config').then(r=>r.json()).then(c=>{ config=c; renderZones(); });
+
+function renderZones(){
+  const tb = document.getElementById('zones');
+  tb.innerHTML = '<tr><th>화면</th><th>모니터</th><th>x0</th><th>y0</th><th>x1</th><th>y1</th></tr>' +
+    config.displays.map((d,i)=>`<tr><td><span style="color:${COLORS[i]}">■</span> ${d.name}<br><span class="mute">${d.id}</span></td>
+    <td><input type="number" data-i="${i}" data-k="monitor" value="${d.monitor}" style="width:40px"></td>
+    ${['x0','y0','x1','y1'].map(k=>`<td><input type="number" step="0.01" data-i="${i}" data-k="${k}" value="${d.tuio[k]}"></td>`).join('')}</tr>`).join('');
+  tb.querySelectorAll('input').forEach(inp=>inp.oninput=()=>{
+    const d=config.displays[inp.dataset.i], v=parseFloat(inp.value);
+    if (inp.dataset.k==='monitor') d.monitor=v; else d.tuio[inp.dataset.k]=v;
+  });
+  document.getElementById('dwell').value = config.dwellIgnoreMs;
+  document.getElementById('calSel').innerHTML = config.displays.map((d,i)=>`<option value="${i}">${d.name}</option>`).join('');
+  document.getElementById('links').innerHTML = config.displays.map(d=>`<a href="/display.html?d=${d.id}" target="_blank">${d.name}</a>`).join(' · ');
+}
+document.getElementById('dwell').oninput = e => config.dwellIgnoreMs = +e.target.value;
+document.getElementById('save').onclick = async () => {
+  const r = await fetch('/config',{method:'POST',body:JSON.stringify(config,null,2)});
+  document.getElementById('saved').textContent = r.ok ? '저장됨 · 화면 페이지 새로고침(F5) 필요' : '저장 실패';
+};
+
+// ---- 보정 ----
+let cal = null; // {i, step, pts:[]}
+const calMsg = document.getElementById('calMsg');
+document.getElementById('calGo').onclick = () => { cal = { i:+document.getElementById('calSel').value, step:0, pts:[] }; showCal(); };
+document.getElementById('calStop').onclick = () => { cal=null; calMsg.style.display='none'; };
+function showCal(){
+  calMsg.style.display='block';
+  const d = config.displays[cal.i];
+  calMsg.textContent = cal.step===0 ? `[${d.name}] 좌상단 노란 원 터치 후 손 떼기` : `[${d.name}] 우하단 노란 원 터치 후 손 떼기`;
+}
+function onUp(pos){
+  if (!cal) return;
+  cal.pts.push(pos); cal.step++;
+  if (cal.step < 2) return showCal();
+  const [a,b] = cal.pts, d = config.displays[cal.i];
+  d.tuio = { x0:+a.x.toFixed(4), y0:+a.y.toFixed(4), x1:+b.x.toFixed(4), y1:+b.y.toFixed(4) };
+  calMsg.textContent = `[${d.name}] 완료 → x0 ${d.tuio.x0}, y0 ${d.tuio.y0}, x1 ${d.tuio.x1}, y1 ${d.tuio.y1}. "저장" 누르기`;
+  cal = null; renderZones();
+}
+
+// ---- 수신 ----
+function connect(){
+  const es = new EventSource('/events');
+  const conn = document.getElementById('conn');
+  es.onopen = () => { conn.textContent='브리지 연결됨'; conn.className='pill ok'; };
+  es.onerror = () => { conn.textContent='브리지 끊김'; conn.className='pill bad'; es.close(); setTimeout(connect,1000); };
+  es.onmessage = e => {
+    cursors = JSON.parse(e.data).c;
+    const now = new Set(cursors.map(c=>c.id));
+    for (const [id,p] of lastPos) if (!now.has(id)) { lastPos.delete(id); onUp(p); }
+    for (const c of cursors) lastPos.set(c.id, c);
+    document.getElementById('list').textContent = cursors.map(c=>`#${c.id}  x ${c.x.toFixed(3)}  y ${c.y.toFixed(3)}  → ${zoneOf(c)?.name ?? '구역 밖'}`).join('\n') || '(없음)';
+  };
+}
+connect();
+setInterval(async ()=>{
+  try { const s = await (await fetch('/status')).json(); const el=document.getElementById('pkt');
+    const age = s.lastPacket ? (Date.now()-s.lastPacket)/1000 : null;
+    if (age===null){ el.textContent='TUIO 패킷 없음 — YTS 실행·TUIO 켜짐 확인'; el.className='pill bad'; }
+    else if (age>3){ el.textContent=`TUIO ${age.toFixed(0)}초 전 마지막`; el.className='pill bad'; }
+    else { el.textContent='TUIO 수신 중'; el.className='pill ok'; }
+    document.getElementById('cnt').textContent = `패킷 ${s.packetCount} · 연결된 화면 ${s.clients}`;
+  } catch {}
+}, 1000);
+
+function zoneOf(c){
+  if (!config) return null;
+  return config.displays.find(d=>{ const r=d.tuio;
+    return c.x>=Math.min(r.x0,r.x1)&&c.x<=Math.max(r.x0,r.x1)&&c.y>=Math.min(r.y0,r.y1)&&c.y<=Math.max(r.y0,r.y1); });
+}
+function draw(){
+  const W=cv.width,H=cv.height; g.clearRect(0,0,W,H);
+  g.strokeStyle='rgba(255,255,255,.08)';
+  for(let i=1;i<10;i++){ g.beginPath(); g.moveTo(W*i/10,0); g.lineTo(W*i/10,H); g.stroke(); }
+  if (config) config.displays.forEach((d,i)=>{ const r=d.tuio;
+    const x=Math.min(r.x0,r.x1)*W, y=Math.min(r.y0,r.y1)*H, w=Math.abs(r.x1-r.x0)*W, h=Math.abs(r.y1-r.y0)*H;
+    g.fillStyle=COLORS[i]+'22'; g.fillRect(x,y,w,h); g.strokeStyle=COLORS[i]; g.lineWidth=3; g.strokeRect(x,y,w,h);
+    g.fillStyle=COLORS[i]; g.font='bold 26px Malgun Gothic'; g.fillText(d.name,x+10,y+34);
+    // 좌상단 지점 표시(뒤집힘 확인용)
+    g.beginPath(); g.arc(r.x0*W, r.y0*H, 9, 0, 7); g.fill(); });
+  for (const c of cursors){ g.fillStyle='#fff'; g.beginPath(); g.arc(c.x*W,c.y*H,14,0,7); g.fill();
+    g.fillStyle='#000'; g.font='bold 16px sans-serif'; g.textAlign='center'; g.fillText(c.id,c.x*W,c.y*H+6); g.textAlign='left'; }
+  requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>

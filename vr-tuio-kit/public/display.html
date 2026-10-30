@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>화면 테스트</title>
+<style>
+  html,body{margin:0;height:100%;background:#0b0d12;color:#e8ecf3;font-family:'Malgun Gothic',sans-serif;overflow:hidden;cursor:none;user-select:none}
+  canvas{position:fixed;inset:0}
+  #hud{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none}
+  #name{font-size:9vh;font-weight:700;letter-spacing:.05em}
+  #info{font-size:2.6vh;opacity:.7;margin-top:1vh}
+  .corner{position:fixed;width:6vh;height:6vh;border:4px solid #ffd23f;border-radius:50%;box-sizing:border-box}
+  .corner::after{content:'';position:absolute;left:50%;top:50%;width:8px;height:8px;margin:-4px;background:#ffd23f;border-radius:50%}
+  #tl{left:0;top:0} #br{right:0;bottom:0}
+  #err{position:fixed;left:0;right:0;top:0;background:#c0392b;color:#fff;font-size:3vh;padding:1vh;text-align:center;display:none}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="corner" id="tl"></div><div class="corner" id="br"></div>
+<div id="hud"><div id="name">…</div><div id="info"></div></div>
+<div id="err"></div>
+<script src="/tuio-client.js"></script>
+<script>
+const cv = document.getElementById('c'), g = cv.getContext('2d');
+function fit(){ cv.width = innerWidth; cv.height = innerHeight; }
+fit(); addEventListener('resize', fit);
+
+const t = new TuioTouch();
+const live = new Map(), fx = [];
+const color = id => `hsl(${(String(id).split('').reduce((a,c)=>a*31+c.charCodeAt(0),7)%360)},90%,60%)`;
+
+t.ready.then(c => {
+  if (!t.display) { const e=document.getElementById('err'); e.style.display='block'; e.textContent='주소에 ?d=화면id 필요 (예: display.html?d=front)'; return; }
+  document.getElementById('name').textContent = t.display.name;
+  document.title = t.display.name;
+}).catch(() => { const e=document.getElementById('err'); e.style.display='block'; e.textContent='브리지 연결 실패 — bridge.js 실행 확인'; });
+
+t.on('down', p => { live.set(p.id, { ...p, trail: [[p.x,p.y]] }); fx.push({ x:p.x, y:p.y, r:10, a:1, c:color(p.id) }); });
+t.on('move', p => { const s = live.get(p.id); if (!s) return; Object.assign(s, p); s.trail.push([p.x,p.y]); if (s.trail.length > 40) s.trail.shift(); });
+t.on('up',   p => { live.delete(p.id); if (p.dwell) fx.push({ x:p.x, y:p.y, r:30, a:1, c:'#777', dwell:true }); });
+
+function draw(){
+  g.clearRect(0,0,cv.width,cv.height);
+  // 격자
+  g.strokeStyle='rgba(255,255,255,.07)'; g.lineWidth=1;
+  for (let i=1;i<10;i++){ g.beginPath(); g.moveTo(cv.width*i/10,0); g.lineTo(cv.width*i/10,cv.height); g.stroke(); g.beginPath(); g.moveTo(0,cv.height*i/10); g.lineTo(cv.width,cv.height*i/10); g.stroke(); }
+  for (let i=fx.length-1;i>=0;i--){ const f=fx[i]; f.r+=6; f.a-=.025; if(f.a<=0){fx.splice(i,1);continue;}
+    g.globalAlpha=f.a; g.strokeStyle=f.c; g.lineWidth=5; g.beginPath(); g.arc(f.x,f.y,f.r,0,7); g.stroke();
+    if (f.dwell){ g.font='bold 28px sans-serif'; g.fillStyle='#aaa'; g.fillText('머무름 무시', f.x+20, f.y); } }
+  g.globalAlpha=1;
+  for (const s of live.values()){
+    const c = color(s.id);
+    g.strokeStyle=c; g.lineWidth=8; g.lineCap='round'; g.beginPath();
+    s.trail.forEach(([x,y],i)=> i? g.lineTo(x,y) : g.moveTo(x,y)); g.stroke();
+    g.fillStyle=c; g.beginPath(); g.arc(s.x,s.y,28,0,7); g.fill();
+    g.fillStyle='#fff'; g.font='bold 22px sans-serif'; g.fillText(`${s.id}  ${s.nx.toFixed(2)}, ${s.ny.toFixed(2)}`, s.x+36, s.y-20);
+  }
+  document.getElementById('info').textContent = `터치 ${live.size}개`;
+  requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>

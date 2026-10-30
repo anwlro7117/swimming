@@ -1,0 +1,41 @@
+{
+  "tuioPort": 3333,
+  "httpPort": 8080,
+  "dwellIgnoreMs": 1500,
+  "displays": [
+    {
+      "id": "left",
+      "name": "좌측 벽",
+      "monitor": 4,
+      "tuio": {
+        "x0": 0.0,
+        "y0": 0.0,
+        "x1": 0.2,
+        "y1": 1.0
+      }
+    },
+    {
+      "id": "front",
+      "name": "정면 벽",
+      "monitor": 5,
+      "tuio": {
+        "x0": 0.2,
+        "y0": 0.0,
+        "x1": 0.4,
+        "y1": 1.0
+      }
+    },
+    {
+      "id": "right",
+      "name": "우측 벽",
+      "monitor": 6,
+      "tuio": {
+        "x0": 0.4,
+        "y0": 0.0,
+        "x1": 0.6,
+        "y1": 1.0
+      }
+    }
+  ],
+  "operatorMonitor": 3
+}
