@@ -84,6 +84,10 @@ canvas#cv{position:fixed;left:0;top:0;width:100%;height:100%;display:block}
       <button class="opt" data-k="ht" data-v="1">보통</button>
       <button class="opt" data-k="ht" data-v="2">높게</button>
     </div>
+    <div class="row" id="pwRow"><span class="lbl">투수 벽</span>
+      <button class="opt" data-k="pwall" data-v="left">⬅️ 왼쪽 벽에서 던지기</button>
+      <button class="opt" data-k="pwall" data-v="right">오른쪽 벽에서 던지기 ➡️</button>
+    </div>
     <button id="startBtn">플레이 볼! ▶</button>
   </section>
   <div id="hud"><span id="hudA"></span><span id="hudB"></span><span id="hudC"></span></div>
@@ -104,7 +108,11 @@ const $=s=>document.querySelector(s);
 const LS='baseballvr.';
 function load(k,d){try{const v=localStorage.getItem(LS+k);return v==null?d:JSON.parse(v)}catch(e){return d}}
 function save(k,v){try{localStorage.setItem(LS+k,JSON.stringify(v))}catch(e){}}
-const CFG=Object.assign({part:'bat',mode:'solo',lv:0,ht:1},load('cfg',{}));
+const CFG=Object.assign({part:'bat',mode:'solo',lv:0,ht:1,pwall:'left'},load('cfg',{}));
+// 투수 파트는 정면 가운데 터치가 약해서 옆 벽(왼쪽/오른쪽)에서 던진다
+const PITCHING=()=>CFG.part==='pitch'&&G.phase!=='home';
+const MW=()=>PITCHING()?CFG.pwall:'front';           // 지금 조작하는 벽
+const OW=()=>CFG.pwall==='left'?'right':'left';       // 투수 파트에서 남는 옆 벽
 
 /* ---------- 규칙 값 ---------- */
 // 타자 파트: T=공이 홈까지 오는 시간, win=칠 수 있는 시간 폭, mark=도착 표시 미리 보이는 비율, ball=볼(존 밖) 비율
@@ -293,29 +301,33 @@ function updFW(dt){for(const f of FW){if(f.d<=0)continue;f.t+=dt;if(f.t<0)contin
 /* ---------- 카메라 ---------- */
 const BAT_EYE=new THREE.Vector3(0,1.35,2.4);
 let zoneY=ZB[1];
-function setCams(){const r=RECTS;const pv=CFG.part==='pitch'&&G.phase!=='home';catcher.visible=ump.visible=pv;if(window.__net)window.__net.visible=!chase.on;
+function setCams(){const r=RECTS;const pv=CFG.part==='pitch'&&G.phase!=='home';catcher.visible=ump.visible=pv;if(window.__net)window.__net.visible=!chase.on&&!pv;
   if(CFG.part==='bat'||G.phase==='home'){
     // 타자 시점: 홈플레이트 뒤, 세 벽이 90도씩 이어짐. 정면 화면 = 홈플레이트 면 (폭 4.8m, 높이 2.7m)
     for(const [k,yaw] of [['left',Math.PI/2],['front',0],['right',-Math.PI/2]]){const c=cams[k],a=r[k].w/r[k].h;c.aspect=a;c.fov=THREE.MathUtils.radToDeg(2*Math.atan(1/a));c.position.copy(BAT_EYE);c.rotation.set(0,yaw,0);c.updateProjectionMatrix()}
   }else{
     // 투수 시점: 마운드에서 홈을 당겨서 봄. 옆 벽은 마운드에서 본 1루·3루 쪽
-    const f=cams.front,a=r.front.w/r.front.h,eye=new THREE.Vector3(0,1.7,-MOUND+.6);f.aspect=a;f.fov=10.5;f.position.copy(eye);
+    // 던지는 벽(왼쪽 또는 오른쪽) = 마운드에서 홈을 당겨 본 화면
+    const pw=CFG.pwall,f=cams[pw],a=r[pw].w/r[pw].h,eye=new THREE.Vector3(0,1.7,-MOUND+.6);f.aspect=a;f.fov=10.5;f.position.copy(eye);
     const look=new THREE.Vector3(0,zoneY+ZH/2+[.55,.05,-.35][CFG.ht],0);f.lookAt(look);f.updateProjectionMatrix();
-    for(const [k,yaw] of [['left',Math.PI+Math.PI/2],['right',Math.PI-Math.PI/2]]){const c=cams[k],a2=r[k].w/r[k].h;c.aspect=a2;c.fov=THREE.MathUtils.radToDeg(2*Math.atan(1/a2));c.position.copy(eye);c.rotation.set(-.05,yaw,0);c.updateProjectionMatrix()}
+    // 정면 = 중계 화면 (홈 뒤 위에서 경기장 전체)
+    const fc=cams.front,fa=r.front.w/r.front.h;fc.aspect=fa;fc.fov=42;fc.position.set(0,7.5,11);fc.lookAt(0,0,-16);fc.updateProjectionMatrix();
+    // 남는 옆 벽 = 마운드에서 본 1루 또는 3루 쪽
+    const ow=OW(),c=cams[ow],a2=r[ow].w/r[ow].h;c.aspect=a2;c.fov=THREE.MathUtils.radToDeg(2*Math.atan(1/a2));c.position.copy(eye);c.rotation.set(-.05,ow==='left'?Math.PI+Math.PI/2:Math.PI-Math.PI/2,0);c.updateProjectionMatrix()
   }}
 const chase={on:false,pos:new THREE.Vector3(),look:new THREE.Vector3()};
-function startChase(){chase.on=true;if(window.__net)window.__net.visible=false;chase.pos.copy(cams.front.position);chase.look.copy(ball.position);chase.fov=cams.front.fov}
-function updChase(dt){if(!chase.on)return;const f=cams.front,target=new THREE.Vector3(ball.position.x*.35,Math.max(6,ball.position.y*.5+5),6.5);
+function startChase(){chase.on=true;if(window.__net)window.__net.visible=false;chase.pos.copy(cams[MW()].position);chase.look.copy(ball.position);chase.fov=cams[MW()].fov}
+function updChase(dt){if(!chase.on)return;const f=cams[MW()],target=new THREE.Vector3(ball.position.x*.35,Math.max(6,ball.position.y*.5+5),6.5);
   chase.pos.lerp(target,Math.min(1,dt*1.8));chase.look.lerp(ball.position,Math.min(1,dt*5));f.position.copy(chase.pos);f.lookAt(chase.look);
   f.fov+=(55-f.fov)*Math.min(1,dt*2);f.updateProjectionMatrix()}
 
 /* ---------- 입력 ---------- */
 const G={on:false,phase:'home',t:0};
-function inFront(x,y){const r=RECTS.front;return x>=r.x&&x<r.x+r.w&&y>=r.y&&y<r.y+r.h}
+function inFront(x,y){const r=RECTS[MW()];return x>=r.x&&x<r.x+r.w&&y>=r.y&&y<r.y+r.h}
 cv.addEventListener('pointerdown',e=>{ac();if(!G.on||!inFront(e.clientX,e.clientY))return;
   if(CFG.part==='bat')onSwing(e.clientX,e.clientY);else onThrow(e.clientX,e.clientY)});
-function toScreen(v){cams.front.updateMatrixWorld();const r=RECTS.front,p=v.clone().project(cams.front);return {x:r.x+(p.x+1)/2*r.w,y:r.y+(1-p.y)/2*r.h}}
-function rayToPlate(x,y){cams.front.updateMatrixWorld();const r=RECTS.front,ndc=new THREE.Vector2((x-r.x)/r.w*2-1,-((y-r.y)/r.h*2-1)),rc=new THREE.Raycaster();rc.setFromCamera(ndc,cams.front);
+function toScreen(v){const k=MW(),c=cams[k];c.updateMatrixWorld();const r=RECTS[k],p=v.clone().project(c);return {x:r.x+(p.x+1)/2*r.w,y:r.y+(1-p.y)/2*r.h}}
+function rayToPlate(x,y){const k=MW(),cm=cams[k];cm.updateMatrixWorld();const r=RECTS[k],ndc=new THREE.Vector2((x-r.x)/r.w*2-1,-((y-r.y)/r.h*2-1)),rc=new THREE.Raycaster();rc.setFromCamera(ndc,cm);
   const d=rc.ray.direction,o=rc.ray.origin;if(Math.abs(d.z)<1e-6)return null;const t=(0-o.z)/d.z;return o.clone().addScaledVector(d,t)}
 const inZone=p=>Math.abs(p.x)<=ZW/2+BR*.6&&p.y>=zoneY-BR*.6&&p.y<=zoneY+ZH+BR*.6;
 
@@ -326,12 +338,12 @@ function start(){ac();relayout();zoneY=ZB[CFG.ht];zone.position.set(0,zoneY,0);
   G.on=true;G.T=teams();G.turn=0;G.n=0;chase.on=false;
   if(CFG.part==='bat'){G.total=CFG.mode==='duo'?10:10;batter.visible=false;pitcher.visible=true}
   else{G.batters=CFG.mode==='duo'?6:5;G.bIdx=0;G.cnt={b:0,s:0};G.outs=0;batter.visible=true;pitcher.visible=false;G.T.forEach(t=>Object.assign(t,{k:0,strikes:0,hits:0}))}
-  G.phase='count';setCams();updHud();let n=3;$('#count').textContent=n;$('#countOv').classList.add('on');sfx.tick();speak(CFG.part==='bat'?'타자 준비!':'투수 준비!');
+  G.phase='count';relayout();updHud();let n=3;$('#count').textContent=n;$('#countOv').classList.add('on');sfx.tick();speak(CFG.part==='bat'?'타자 준비!':'투수 준비!');
   const iv=setInterval(()=>{if(!G.on||G.phase!=='count'){clearInterval(iv);return}n--;if(n>0){$('#count').textContent=n;sfx.tick()}else{clearInterval(iv);$('#countOv').classList.remove('on');sfx.go();flash('플레이 볼!','','#fff');setTimeout(()=>G.on&&nextPlay(),900)}},800)}
 function team(){return G.T[G.turn]}
 function flash(t,sub,color){const m=$('#msg');m.innerHTML=t+(sub?`<small>${sub}</small>`:'');m.style.color=color||'#fff';m.classList.remove('show');void m.offsetWidth;m.classList.add('show')}
 function hint(t){const h=$('#hint');if(t){h.textContent=t;h.classList.add('on')}else h.classList.remove('on')}
-function boom(x,y,e){const r=RECTS.front,d=document.createElement('div');d.className='boom';d.textContent=e;d.style.left=(x-r.x)+'px';d.style.top=(y-r.y)+'px';$('#ui').appendChild(d);setTimeout(()=>d.remove(),850)}
+function boom(x,y,e){const r=RECTS[MW()],d=document.createElement('div');d.className='boom';d.textContent=e;d.style.left=(x-r.x)+'px';d.style.top=(y-r.y)+'px';$('#ui').appendChild(d);setTimeout(()=>d.remove(),850)}
 function resetField(){for(const f of Object.values(fielders)){f.position.copy(f.userData.home);f.lookAt(0,0,0);f.userData.legs.forEach(l=>l.rotation.x=0)}
   trail.forEach(t=>t.visible=false);marker.material.opacity=0;zone.visible=true;zone.userData.tgt.material.opacity=0;chase.on=false;setCams()}
 function nextPlay(){if(!G.on)return;resetField();G.t=0;ball.visible=false;
@@ -351,7 +363,7 @@ function prepPitch(){const L=BAT[CFG.lv],s={};s.T=rnd(...L.T);const isBall=Math.
 function pitchAt(s,u){const p=s.R.clone().lerp(s.P,u);p.y+=s.arc*4*u*(1-u);p.x+=s.brk*4*u*(1-u);return p}
 function onSwing(x,y){if(G.phase!=='flight'||G.swung)return;const s=G.pitch,L=BAT[CFG.lv],dt=G.t-s.T;
   if(dt<-L.win-.15)return;  // 너무 일찍 누른 건 무시 (공이 아직 멀리)
-  G.swung=true;const ar=toScreen(s.P),r=RECTS.front,d=Math.hypot(x-ar.x,y-ar.y)/(L.tol*r.h);
+  G.swung=true;const ar=toScreen(s.P),r=RECTS[MW()],d=Math.hypot(x-ar.x,y-ar.y)/(L.tol*r.h);
   const qt=1-Math.abs(dt)/L.win,qp=1-d/1.6;
   if(qt<=0||qp<=0){G.whiff=true;boom(x,y,'💨');sfx.whoosh();return}
   const q=qt*.5+qp*.5,kind=q>.72?'hr':q>.5?'hit':q>.3?'fly':'ground';
@@ -359,7 +371,7 @@ function onSwing(x,y){if(G.phase!=='flight'||G.swung)return;const s=G.pitch,L=BA
   launchBatted(kind,(x-ar.x)/(r.w*.1));G.kind=kind}
 /* ----- 투수 파트 ----- */
 function onThrow(x,y){if(G.phase!=='ready')return;const p=rayToPlate(x,y);if(!p)return;p.y=clamp(p.y,.08,3.5);p.x=clamp(p.x,-3,3);
-  const s={R:cams.front.position.clone().add(new THREE.Vector3(.35,-.45,.9)),P:p,T:.62,arc:.18,brk:0};G.pitch=s;G.phase='throw';G.t=0;ball.visible=true;sfx.whoosh();hint('')}
+  const s={R:cams[MW()].position.clone().add(new THREE.Vector3(.35,-.45,.9)),P:p,T:.62,arc:.18,brk:0};G.pitch=s;G.phase='throw';G.t=0;ball.visible=true;sfx.whoosh();hint('')}
 function cpuBat(){const s=G.pitch,P=PIT[CFG.lv],inz=inZone(s.P);
   const cx=Math.abs(s.P.x)/(ZW/2),cy=Math.abs(s.P.y-(zoneY+ZH/2))/(ZH/2),central=1-Math.min(1,Math.max(cx,cy));
   const swing=inz?Math.random()<P.swing:Math.random()<P.chase;if(!swing)return {swing:false,inz};
@@ -467,17 +479,19 @@ function finish(){G.on=false;G.phase='end';hint('');$('#hud').classList.remove('
   $('#endOv').classList.add('on');sfx.win();cheerT=3}
 function goHome(){G.on=false;G.phase='home';try{speechSynthesis.cancel()}catch(e){}hint('');
   ['#endOv','#countOv'].forEach(s=>$(s).classList.remove('on'));$('#homeBtn').classList.remove('on');$('#hud').classList.remove('on');['#sbL','#sbR'].forEach(s=>$(s).classList.remove('on'));
-  $('#home').classList.add('on');ball.visible=false;resetField();zone.position.set(0,ZB[CFG.ht],0);zone.visible=false;setCams()}
+  $('#home').classList.add('on');ball.visible=false;resetField();zone.position.set(0,ZB[CFG.ht],0);zone.visible=false;relayout()}
 const NORENDER=/norender/.test(location.search);
 function render(){for(const k of WALLS){const r=RECTS[k];if(!r)continue;renderer.setViewport(r.x,H-r.y-r.h,r.w,r.h);renderer.setScissor(r.x,H-r.y-r.h,r.w,r.h);renderer.render(scene,cams[k])}}
 function loop(now){const dt=Math.min(.05,(now-last)/1000);last=now;update(dt);if(!NORENDER)render();requestAnimationFrame(loop)}
 function placeUI(id,r){Object.assign($(id).style,{left:r.x+'px',top:r.y+'px',width:r.w+'px',height:r.h+'px'})}
-function relayout(){RECTS=computeRects();placeUI('#ui',RECTS.front);placeUI('#uiL',RECTS.left);placeUI('#uiR',RECTS.right);document.documentElement.style.setProperty('--u',(RECTS.front.w/100)+'px');if(!chase.on)setCams()}
+function relayout(){RECTS=computeRects();
+  if(PITCHING()){placeUI('#ui',RECTS[CFG.pwall]);placeUI('#uiL',RECTS.front);placeUI('#uiR',RECTS[OW()])}   // 투수: 조작 화면은 옆 벽, 점수판은 정면
+  else{placeUI('#ui',RECTS.front);placeUI('#uiL',RECTS.left);placeUI('#uiR',RECTS.right)}document.documentElement.style.setProperty('--u',(RECTS.front.w/100)+'px');if(!chase.on)setCams()}
 function resize(){W=innerWidth;H=innerHeight;renderer.setSize(W,H,false);relayout()}
 addEventListener('resize',resize);
 let lastPos='';setInterval(()=>{const p=screenX+','+screenY;if(p!==lastPos){lastPos=p;relayout()}},1000);
-function syncOpts(){document.querySelectorAll('.opt').forEach(b=>b.classList.toggle('sel',String(CFG[b.dataset.k])===b.dataset.v))}
-document.querySelectorAll('.opt').forEach(b=>b.addEventListener('click',()=>{ac();const k=b.dataset.k;CFG[k]=(k==='mode'||k==='part')?b.dataset.v:+b.dataset.v;save('cfg',CFG);syncOpts();sfx.tick()}));
+function syncOpts(){document.querySelectorAll('.opt').forEach(b=>b.classList.toggle('sel',String(CFG[b.dataset.k])===b.dataset.v));$('#pwRow').style.display=CFG.part==='pitch'?'':'none'}
+document.querySelectorAll('.opt').forEach(b=>b.addEventListener('click',()=>{ac();const k=b.dataset.k;CFG[k]=(k==='mode'||k==='part'||k==='pwall')?b.dataset.v:+b.dataset.v;save('cfg',CFG);syncOpts();sfx.tick()}));
 $('#startBtn').addEventListener('click',start);$('#againBtn').addEventListener('click',start);$('#toHome').addEventListener('click',goHome);$('#homeBtn').addEventListener('click',goHome);
 addEventListener('keydown',e=>{if(e.key==='Escape')goHome()});document.addEventListener('contextmenu',e=>e.preventDefault());
 Object.assign(window,{G,CFG,ball,toScreen,rayToPlate,__render:render,cams,THREE,zone,launchBatted});
