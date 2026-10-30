@@ -13,7 +13,9 @@
   1. YTS.exe 실행. TUIO 켜짐 확인 ("TUIO UDP (T)" 버튼).
   2. 1_bridge_start.bat  → 검은 창 그대로 둔다. 닫으면 끊긴다.
   3. 0_monitor_number.bat → 모니터마다 큰 번호가 뜬다. 번호를 적는다.
-  4. config.json 열고 화면마다 "monitor" 번호를 고친다. "operatorMonitor" = 조작 모니터 번호.
+  4. config.json 화면마다 "screen": {"x": 왼쪽 픽셀, "y": 위 픽셀} 이 있으면 그 위치 화면에 띄운다.
+     (vr360 "화면 감지" 표의 left/top 값). "screen" 지우면 "monitor" 번호(윈도우 DISPLAY 번호)로 찾는다.
+     조작 모니터 = "operatorScreen" 또는 "operatorMonitor".
      (조작 화면 표에서 고치고 "저장"을 눌러도 된다)
   5. 2_screens_open.bat  → 벽 화면 3개에 테스트 화면, 조작 모니터에 관제 화면.
   6. 관제 화면 "모서리 보정": 화면 골라 시작 → 그 화면 노란 원 좌상단 → 우하단 순서로 손바닥 대고 떼기.

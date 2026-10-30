@@ -59,6 +59,8 @@ function open(url, mon, tag, kiosk = true) {
 const cmd = process.argv[2];
 const mons = monitors();
 const byN = (n) => mons.find((m) => m.n === n);
+// 화면 위치(x,y 픽셀)가 있으면 위치로 찾는다. 윈도우 번호보다 확실하다.
+const pick = (o, n) => (o && o.x != null ? mons.find((m) => m.x === o.x && (o.y == null || m.y === o.y)) : byN(n));
 
 if (cmd === 'list') {
   mons.forEach((m) => console.log(`${m.n}: ${m.dev}  위치 ${m.x},${m.y}  크기 ${m.w}x${m.h}${m.primary ? '  (주 모니터)' : ''}`));
@@ -68,10 +70,10 @@ if (cmd === 'list') {
 } else {
   const page = cmd || 'display.html';
   for (const d of config.displays) {
-    const m = byN(d.monitor);
-    if (!m) { console.log(`!! ${d.name}: 모니터 ${d.monitor} 없음`); continue; }
+    const m = pick(d.screen, d.monitor);
+    if (!m) { console.log(`!! ${d.name}: 화면 못 찾음 (screen ${JSON.stringify(d.screen)} / monitor ${d.monitor}) — node launch.js list 로 확인`); continue; }
     open(`${BASE}/${page}?d=${d.id}`, m, d.id);
   }
-  const op = byN(config.operatorMonitor);
+  const op = pick(config.operatorScreen, config.operatorMonitor);
   if (!cmd && op) open(`${BASE}/`, op, 'operator', false);
 }
