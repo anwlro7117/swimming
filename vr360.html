@@ -115,6 +115,8 @@ public class VRTB {
   [DllImport("user32.dll")] public static extern bool EnumWindows(EP f, IntPtr l);
   [DllImport("user32.dll")] public static extern int GetClassName(IntPtr h, StringBuilder s, int n);
   [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int c);
+  [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr a, int x, int y, int cx, int cy, uint f);
+  public static void Top(IntPtr h){ SetWindowPos(h, new IntPtr(-1), 0, 0, 0, 0, 0x13); }
   public static void Set(int c){
     EnumWindows(delegate(IntPtr h, IntPtr l){
       var s = new StringBuilder(64); GetClassName(h, s, 64); var n = s.ToString();
@@ -126,7 +128,14 @@ public class VRTB {
 $c = @("$env:ProgramFiles\\Google\\Chrome\\Application\\chrome.exe","\${env:ProgramFiles(x86)}\\Google\\Chrome\\Application\\chrome.exe","$env:LOCALAPPDATA\\Google\\Chrome\\Application\\chrome.exe","\${env:ProgramFiles(x86)}\\Microsoft\\Edge\\Application\\msedge.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
 $a = '--user-data-dir="' + $env:LOCALAPPDATA + '\\vr360" --autoplay-policy=no-user-gesture-required --app="${url}" --window-position=${minX},${minY-32} --window-size=${maxX-minX},${maxY-minY+32}'
 [VRTB]::Set(0)
-try { Start-Process -FilePath $c -ArgumentList $a -Wait } finally { [VRTB]::Set(5) }
+try {
+  $p = Start-Process -FilePath $c -ArgumentList $a -PassThru
+  while (-not $p.HasExited) {
+    [VRTB]::Set(0)
+    $p.Refresh(); if ($p.MainWindowHandle -ne [IntPtr]::Zero) { [VRTB]::Top($p.MainWindowHandle) }
+    Start-Sleep -Milliseconds 700
+  }
+} finally { [VRTB]::Set(5) }
 `;
   let bin = ''; for(const ch of ps){ const code = ch.charCodeAt(0); bin += String.fromCharCode(code & 255, code >> 8); }
   document.getElementById('bat').value =
