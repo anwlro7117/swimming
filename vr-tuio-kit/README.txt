@@ -50,6 +50,9 @@
           타이밍 + 위치 정확도 → 홈런(+10) / 안타(+5) / 플라이(+2) / 땅볼(+1). 볼은 참으면 +2.
           친 공은 카메라가 따라가며 수비수가 잡거나 공이 담장을 넘어간다(불꽃놀이).
     놀이: 혼자·다 같이 / 번갈아 대결(빨강·파랑). 난이도·존 높이 선택.
+  8_baseball_duo.bat → 야구왕 2인 동시. 정면 벽을 반으로 나눠 왼쪽 = 빨강, 오른쪽 = 파랑 선수.
+    벽 가운데 터치가 약해서 각자 자기 반쪽 가운데에서 한다. 각자 투수/타자·난이도 따로 고르고 따로 시작.
+    왼쪽 벽 = 빨강 점수판, 오른쪽 벽 = 파랑 점수판. 둘 다 끝나면 승리 표시 (둘이 같은 파트일 때).
 
 센서 없이 시험
   9_simulator.bat → 가짜 터치 신호를 보낸다. 집 PC에서 게임 만들 때 쓴다.
@@ -73,6 +76,7 @@
   public/ghost-vr.html  유령 잡기 대작전
   public/keeper-vr.html 슈퍼 골키퍼 (3D, public/lib/three.module.min.js 사용)
   public/baseball-vr.html 무지개 야구왕 (3D)
+  public/baseball-duo.html 야구왕 2인 (정면 반반, 안에 baseball-vr 두 개)
   public/tuio-pointer.js 창 하나 게임용: TUIO를 진짜 터치처럼 넣어 줌 (게임 코드 수정 없이 한 줄 추가)
   public/          관제(operator) · 화면 테스트(display) · 모니터 번호(identify) · tuio-client.js
   sim.js           가짜 TUIO 송신기

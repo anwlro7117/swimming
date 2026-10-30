@@ -71,7 +71,7 @@ canvas#cv{position:fixed;left:0;top:0;width:100%;height:100%;display:block}
       <button class="opt big" data-k="part" data-v="pitch">🤾 투수<small>스트라이크 존에 공 던지기</small></button>
       <button class="opt big" data-k="part" data-v="bat">🏏 타자<small>날아오는 공 치기</small></button>
     </div>
-    <div class="row"><span class="lbl">놀이</span>
+    <div class="row" id="modeRow"><span class="lbl">놀이</span>
       <button class="opt" data-k="mode" data-v="solo">🙋 혼자 / 다 같이</button>
       <button class="opt" data-k="mode" data-v="duo">🔴 번갈아 대결 🔵</button>
     </div>
@@ -101,17 +101,20 @@ canvas#cv{position:fixed;left:0;top:0;width:100%;height:100%;display:block}
   <button id="homeBtn">🏠</button>
 </div>
 <script>window.TUIO_DWELL_MS=4000;</script>
-<script src="/tuio-pointer.js"></script>
+<script>/* 2인 나눔 화면(iframe) 안에서는 바깥 페이지가 터치를 넘겨준다 */if(window===top){const s=document.createElement('script');s.src='/tuio-pointer.js';document.head.appendChild(s)}</script>
 <script type="module">
 import * as THREE from '/lib/three.module.min.js';
 const $=s=>document.querySelector(s);
-const LS='baseballvr.';
+const Q=new URLSearchParams(location.search),EMBED=Q.has('embed'),TEAM=Q.get('team')||'';   // EMBED: 정면 벽 반쪽용
+const TEAMDEF={red:{name:'빨강',color:'#ef4444',e:'🔴'},blue:{name:'파랑',color:'#3b82f6',e:'🔵'}}[TEAM]||{name:'우리',color:'#16a34a',e:''};
+const LS='baseballvr.'+(TEAM?TEAM+'.':'');
 function load(k,d){try{const v=localStorage.getItem(LS+k);return v==null?d:JSON.parse(v)}catch(e){return d}}
 function save(k,v){try{localStorage.setItem(LS+k,JSON.stringify(v))}catch(e){}}
 const CFG=Object.assign({part:'bat',mode:'solo',lv:0,ht:1,pwall:'left'},load('cfg',{}));
 // 투수 파트는 정면 가운데 터치가 약해서 옆 벽(왼쪽/오른쪽)에서 던진다
 const PITCHING=()=>CFG.part==='pitch'&&G.phase!=='home';
-const MW=()=>PITCHING()?CFG.pwall:'front';           // 지금 조작하는 벽
+if(EMBED)CFG.mode='solo';
+const MW=()=>PITCHING()&&!EMBED?CFG.pwall:'front';           // 지금 조작하는 벽
 const OW=()=>CFG.pwall==='left'?'right':'left';       // 투수 파트에서 남는 옆 벽
 
 /* ---------- 규칙 값 ---------- */
@@ -150,7 +153,7 @@ const sfx={
   tick(){tone(1000,0,.04,'square',.06)},
   go(){tone(523,0,.15,'triangle');tone(784,.12,.3,'triangle')},
   win(){[523,659,784,1047,784,1047].forEach((f,i)=>tone(f,i*.12,.25,'triangle',.18))}};
-function speak(t){try{const u=new SpeechSynthesisUtterance(t);u.lang='ko-KR';u.rate=1.08;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
+function speak(t){if(EMBED)return;try{const u=new SpeechSynthesisUtterance(t);u.lang='ko-KR';u.rate=1.08;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
 const rnd=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),pick=a=>a[Math.random()*a.length|0];
 
 /* ---------- 화면 배치 ---------- */
@@ -160,7 +163,7 @@ const WALLS=['left','front','right'];
   const w={};WALLS.forEach((k,i)=>w[k]={x:p[i][0],y:p[i][1],w:p[i][2],h:p[i][3]});save('walls',w)})();
 let W=0,H=0,RECTS={};
 function viewportOrigin(){const bx=Math.max(0,(outerWidth-innerWidth)/2);return {x:screenX+bx,y:screenY+Math.max(0,outerHeight-innerHeight-bx)}}
-function computeRects(){const walls=load('walls',null),R={};
+function computeRects(){if(EMBED)return {front:{x:0,y:0,w:W,h:H},left:null,right:null};const walls=load('walls',null),R={};
   if(walls&&walls.left&&walls.front&&walls.right){const o=viewportOrigin();
     for(const k of WALLS){const s=walls[k];let x0=s.x-o.x,y0=s.y-o.y,x1=x0+s.w,y1=y0+s.h;x0=Math.max(0,x0);y0=Math.max(0,y0);x1=Math.min(W,x1);y1=Math.min(H,y1);
       R[k]=x1-x0>50&&y1-y0>50?{x:x0,y:y0,w:x1-x0,h:y1-y0}:null}
@@ -304,12 +307,13 @@ let zoneY=ZB[1];
 function setCams(){const r=RECTS;const pv=CFG.part==='pitch'&&G.phase!=='home';catcher.visible=ump.visible=pv;if(window.__net)window.__net.visible=!chase.on&&!pv;
   if(CFG.part==='bat'||G.phase==='home'){
     // 타자 시점: 홈플레이트 뒤, 세 벽이 90도씩 이어짐. 정면 화면 = 홈플레이트 면 (폭 4.8m, 높이 2.7m)
-    for(const [k,yaw] of [['left',Math.PI/2],['front',0],['right',-Math.PI/2]]){const c=cams[k],a=r[k].w/r[k].h;c.aspect=a;c.fov=THREE.MathUtils.radToDeg(2*Math.atan(1/a));c.position.copy(BAT_EYE);c.rotation.set(0,yaw,0);c.updateProjectionMatrix()}
+    for(const [k,yaw] of [['left',Math.PI/2],['front',0],['right',-Math.PI/2]]){if(!r[k])continue;const c=cams[k],a=r[k].w/r[k].h;c.aspect=a;c.fov=EMBED?58.7:THREE.MathUtils.radToDeg(2*Math.atan(1/a));c.position.copy(BAT_EYE);c.rotation.set(0,yaw,0);c.updateProjectionMatrix()}
   }else{
     // 투수 시점: 마운드에서 홈을 당겨서 봄. 옆 벽은 마운드에서 본 1루·3루 쪽
     // 던지는 벽(왼쪽 또는 오른쪽) = 마운드에서 홈을 당겨 본 화면
-    const pw=CFG.pwall,f=cams[pw],a=r[pw].w/r[pw].h,eye=new THREE.Vector3(0,1.7,-MOUND+.6);f.aspect=a;f.fov=10.5;f.position.copy(eye);
+    const pw=EMBED?'front':CFG.pwall,f=cams[pw],a=r[pw].w/r[pw].h,eye=new THREE.Vector3(0,1.7,-MOUND+.6);f.aspect=a;f.fov=10.5;f.position.copy(eye);
     const look=new THREE.Vector3(0,zoneY+ZH/2+[.55,.05,-.35][CFG.ht],0);f.lookAt(look);f.updateProjectionMatrix();
+    if(EMBED)return;
     // 정면 = 중계 화면 (홈 뒤 위에서 경기장 전체)
     const fc=cams.front,fa=r.front.w/r.front.h;fc.aspect=fa;fc.fov=42;fc.position.set(0,7.5,11);fc.lookAt(0,0,-16);fc.updateProjectionMatrix();
     // 남는 옆 벽 = 마운드에서 본 1루 또는 3루 쪽
@@ -468,7 +472,10 @@ function updHud(){const T=team?.()||G.T[0];if(!T)return;
     $('#bso').innerHTML=`<span>B</span><span>${L(G.cnt.b,3,'b')}</span><span>S</span><span>${L(G.cnt.s,2,'s')}</span>`;$('#nxSub').textContent=CFG.mode==='duo'?`${T.name} 투수 차례`:`삼진 ${G.T[0].k}개`}
   if(CFG.mode==='duo'){$('#hudB').innerHTML=`<b style="color:#fca5a5">빨강 ${G.T[0].score}</b> : <b style="color:#93c5fd">${G.T[1].score} 파랑</b>`;$('#hudC').textContent=`${T.name} 차례`;$('#hudC').style.background=T.color;$('#hudC').style.display='';
     $('#sbBig').textContent=`${G.T[0].score} : ${G.T[1].score}`;$('#sbSub').innerHTML='<span style="color:#fca5a5">빨강</span> 점수 <span style="color:#93c5fd">파랑</span>';$('#sbLog').innerHTML=G.T.map(t=>`<div style="color:${t.color}">${t.log.join('')||'-'}</div>`).join('')}
-  else{$('#hudB').textContent=`⭐ ${T.score}점`;$('#hudC').style.display='none';$('#sbBig').textContent=T.score;$('#sbSub').textContent='점';$('#sbLog').textContent=T.log.join('')}}
+  else{$('#hudB').textContent=`⭐ ${T.score}점`;if(EMBED){$('#hudC').textContent=`${TEAMDEF.e} ${TEAMDEF.name}`;$('#hudC').style.background=TEAMDEF.color;$('#hudC').style.display=''}else $('#hudC').style.display='none';$('#sbBig').textContent=T.score;$('#sbSub').textContent='점';$('#sbLog').textContent=T.log.join('')}
+  report(false)}
+// 바깥(2인 나눔) 페이지에 점수 알려 주기
+function report(done){if(!EMBED||!G.T)return;const T=G.T[0];try{parent.postMessage({bb:1,team:TEAM,score:T.score,log:T.log.join(''),part:CFG.part,done,k:T.k||0},'*')}catch(e){}}
 function finish(){G.on=false;G.phase='end';hint('');$('#hud').classList.remove('on');$('#homeBtn').classList.remove('on');ball.visible=false;trail.forEach(t=>t.visible=false);chase.on=false;setCams();
   const box=$('#endRes');box.innerHTML='';const cnt=(t,i)=>t.log.filter(x=>x===i).length;
   for(const t of G.T){const d=document.createElement('div');d.style.background=t.color;
@@ -476,7 +483,7 @@ function finish(){G.on=false;G.phase='end';hint('');$('#hud').classList.remove('
       :`${CFG.mode==='duo'?t.name+' 팀':'점수'}<b>${t.score}점</b><small>🔥삼진 ${t.k} · 스트라이크 ${t.strikes}<br>🔒잡은 아웃 ${cnt(t,'🔒')} · 맞은 안타 ${cnt(t,'⚾')+cnt(t,'💥')}</small>`;box.appendChild(d)}
   if(CFG.mode==='duo'){const [a,b]=G.T;if(a.score===b.score){$('#endT').textContent='비겼어요! 🤝';speak('비겼어요!')}else{const w=a.score>b.score?a:b;$('#endT').innerHTML=`<span style="color:${w.color}">${w.name}</span> 팀 승리! 🏆`;speak(`${w.name} 팀 승리!`)}$('#endP').textContent='모두 멋진 야구 선수예요!'}
   else{const t=G.T[0];$('#endT').textContent=`${t.score}점! 🎉`;$('#endP').textContent=CFG.part==='bat'?(cnt(t,'💥')?'홈런 타자 탄생!':'멋진 타자예요!'):(t.k?'삼진왕 투수예요!':'멋진 투수예요!');speak(`${t.score}점! ${$('#endP').textContent}`)}
-  $('#endOv').classList.add('on');sfx.win();cheerT=3}
+  $('#endOv').classList.add('on');sfx.win();cheerT=3;report(true)}
 function goHome(){G.on=false;G.phase='home';try{speechSynthesis.cancel()}catch(e){}hint('');
   ['#endOv','#countOv'].forEach(s=>$(s).classList.remove('on'));$('#homeBtn').classList.remove('on');$('#hud').classList.remove('on');['#sbL','#sbR'].forEach(s=>$(s).classList.remove('on'));
   $('#home').classList.add('on');ball.visible=false;resetField();zone.position.set(0,ZB[CFG.ht],0);zone.visible=false;relayout()}
@@ -485,15 +492,23 @@ function render(){for(const k of WALLS){const r=RECTS[k];if(!r)continue;renderer
 function loop(now){const dt=Math.min(.05,(now-last)/1000);last=now;update(dt);if(!NORENDER)render();requestAnimationFrame(loop)}
 function placeUI(id,r){Object.assign($(id).style,{left:r.x+'px',top:r.y+'px',width:r.w+'px',height:r.h+'px'})}
 function relayout(){RECTS=computeRects();
-  if(PITCHING()){placeUI('#ui',RECTS[CFG.pwall]);placeUI('#uiL',RECTS.front);placeUI('#uiR',RECTS[OW()])}   // 투수: 조작 화면은 옆 벽, 점수판은 정면
+  if(EMBED){placeUI('#ui',RECTS.front);$('#uiL').style.display=$('#uiR').style.display='none'}
+  else if(PITCHING()){placeUI('#ui',RECTS[CFG.pwall]);placeUI('#uiL',RECTS.front);placeUI('#uiR',RECTS[OW()])}   // 투수: 조작 화면은 옆 벽, 점수판은 정면
   else{placeUI('#ui',RECTS.front);placeUI('#uiL',RECTS.left);placeUI('#uiR',RECTS.right)}document.documentElement.style.setProperty('--u',(RECTS.front.w/100)+'px');if(!chase.on)setCams()}
 function resize(){W=innerWidth;H=innerHeight;renderer.setSize(W,H,false);relayout()}
 addEventListener('resize',resize);
 let lastPos='';setInterval(()=>{const p=screenX+','+screenY;if(p!==lastPos){lastPos=p;relayout()}},1000);
-function syncOpts(){document.querySelectorAll('.opt').forEach(b=>b.classList.toggle('sel',String(CFG[b.dataset.k])===b.dataset.v));$('#pwRow').style.display=CFG.part==='pitch'?'':'none'}
+function syncOpts(){document.querySelectorAll('.opt').forEach(b=>b.classList.toggle('sel',String(CFG[b.dataset.k])===b.dataset.v));$('#pwRow').style.display=CFG.part==='pitch'&&!EMBED?'':'none';if(EMBED)$('#modeRow').style.display='none'}
 document.querySelectorAll('.opt').forEach(b=>b.addEventListener('click',()=>{ac();const k=b.dataset.k;CFG[k]=(k==='mode'||k==='part'||k==='pwall')?b.dataset.v:+b.dataset.v;save('cfg',CFG);syncOpts();sfx.tick()}));
 $('#startBtn').addEventListener('click',start);$('#againBtn').addEventListener('click',start);$('#toHome').addEventListener('click',goHome);$('#homeBtn').addEventListener('click',goHome);
 addEventListener('keydown',e=>{if(e.key==='Escape')goHome()});document.addEventListener('contextmenu',e=>e.preventDefault());
+if(EMBED&&TEAMDEF.e){const h=$('#home h1');h.insertAdjacentHTML('afterbegin',`<div style="display:inline-block;font-size:4vh;background:${TEAMDEF.color};color:#fff;border-radius:4vh;padding:.6vh 3vh;margin-bottom:1vh;text-shadow:none">${TEAMDEF.e} ${TEAMDEF.name} 선수</div><br>`);h.style.fontSize='7vh'}
+// 바깥 페이지가 넘겨준 터치를 진짜 터치처럼 넣기
+{const inj=new Map();addEventListener('message',e=>{const d=e.data;if(!d||d.vrptr!==1)return;let st=inj.get(d.id);
+  if(d.type==='pointerdown'){st={t0:performance.now(),x0:d.x,y0:d.y,moved:false,target:document.elementFromPoint(d.x,d.y)||document.body};inj.set(d.id,st)}
+  if(!st)return;if(Math.hypot(d.x-st.x0,d.y-st.y0)>40)st.moved=true;const up=d.type==='pointerup'||d.type==='pointercancel';
+  st.target.dispatchEvent(new PointerEvent(d.type,{bubbles:true,cancelable:true,pointerId:d.id,pointerType:'touch',clientX:d.x,clientY:d.y,buttons:up?0:1}));
+  if(up){inj.delete(d.id);if(d.type==='pointerup'&&!st.moved&&performance.now()-st.t0<1200){const el=document.elementFromPoint(d.x,d.y),b=el&&el.closest&&el.closest('button');if(b)b.click()}}})}
 Object.assign(window,{G,CFG,ball,toScreen,rayToPlate,__render:render,cams,THREE,zone,launchBatted});
 resize();syncOpts();goHome();requestAnimationFrame(loop);
 </script>
