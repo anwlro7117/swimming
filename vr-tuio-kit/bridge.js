@@ -67,12 +67,18 @@ function handle(msgs) {
   if (changed) broadcast();
 }
 
-const udp = dgram.createSocket({ type: 'udp4', reuseAddr: true });
+const udp = dgram.createSocket({ type: 'udp4' });
 udp.on('message', (buf) => {
   lastPacket = Date.now(); packetCount++;
   try { handle(parsePacket(buf)); } catch (e) { /* 깨진 패킷 무시 */ }
 });
-udp.on('error', (e) => { console.error('UDP 오류:', e.message); });
+function already(what) {
+  console.error('\n[멈춤] ' + what + ' 이미 사용 중이다.');
+  console.error('  → 브리지가 이미 켜져 있다. 작업표시줄의 다른 "VR TUIO bridge" 창(옛 폴더 것)을 모두 닫고 이 파일을 다시 실행한다.');
+  console.error('  → 씽킹플레이 콘텐츠가 켜져 있어도 이렇게 된다. 끄고 다시 실행한다.\n');
+  process.exit(1);
+}
+udp.on('error', (e) => { if (e.code === 'EADDRINUSE') already(`UDP ${config.tuioPort} 포트가`); console.error('UDP 오류:', e.message); });
 udp.bind(config.tuioPort, () => console.log(`TUIO 수신: UDP ${config.tuioPort}`));
 
 // ---------- HTTP ----------
@@ -116,7 +122,7 @@ http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': MIME[path.extname(file).toLowerCase()] || 'application/octet-stream' });
     res.end(data);
   });
-}).listen(config.httpPort, () => console.log(`웹: http://localhost:${config.httpPort}/  (조작 화면)`));
+}).on('error', (e) => { if (e.code === 'EADDRINUSE') already(`웹 ${config.httpPort} 포트가`); throw e; }).listen(config.httpPort, () => console.log(`웹: http://localhost:${config.httpPort}/  (조작 화면)`));
 
 // SSE 연결 유지
 setInterval(() => { for (const res of clients) res.write(': ping\n\n'); }, 15000);
