@@ -67,6 +67,22 @@ if (cmd === 'list') {
 } else if (cmd === 'identify') {
   mons.forEach((m) => open(`${BASE}/identify.html?n=${m.n}&info=${encodeURIComponent(`${m.w}x${m.h} @ ${m.x},${m.y}`)}`, m, 'id' + m.n));
   console.log('각 모니터에 번호 표시함. 아무 키 누르면 닫힘 (안 닫히면 Alt+F4)');
+} else if (cmd === 'span') {
+  // 창 하나를 벽 화면 전체에 걸쳐 띄움:  node launch.js span fruit-vr.html
+  const page = process.argv[3] || 'fruit-vr.html';
+  const S = config.displays.map((d) => d.screen).filter((s) => s && s.w);
+  const x0 = Math.min(...S.map((s) => s.x)), y0 = Math.min(...S.map((s) => s.y));
+  const x1 = Math.max(...S.map((s) => s.x + s.w)), y1 = Math.max(...S.map((s) => s.y + s.h));
+  const order = ['left', 'front', 'right'].map((k) => config.displays.find((d) => d.id === k)?.screen);
+  const hash = order.every(Boolean) ? '#walls=' + order.map((s) => [s.x, s.y, s.w, s.h].join(',')).join(';') : '';
+  const dir = path.join(os.tmpdir(), 'vrtuio_span');
+  spawn(browser(), [`--user-data-dir=${dir}`, '--no-first-run', '--no-default-browser-check', '--disable-session-crashed-bubble',
+    '--disable-features=TranslateUI', '--overscroll-history-navigation=0', '--disable-pinch', '--autoplay-policy=no-user-gesture-required',
+    `--window-position=${x0},${y0}`, `--window-size=${x1 - x0},${y1 - y0}`, `--app=${BASE}/${page}${hash}`],
+    { detached: true, stdio: 'ignore' }).unref();
+  console.log(`벽 전체 (${x0},${y0} ${x1 - x0}x${y1 - y0}) ← ${page}`);
+  const op = pick(config.operatorScreen, config.operatorMonitor);
+  if (op) open(`${BASE}/`, op, 'operator', false);
 } else {
   const page = cmd || 'display.html';
   for (const d of config.displays) {
