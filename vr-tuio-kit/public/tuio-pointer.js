@@ -73,7 +73,7 @@
     es.onerror = () => { es.close(); setTimeout(connect, 1000); };
   }
   fetch('/config').then((r) => r.json()).then((c) => {
-    config = c; dwell = c.dwellIgnoreMs || 0;
+    config = c; dwell = window.TUIO_DWELL_MS != null ? window.TUIO_DWELL_MS : (c.dwellIgnoreMs || 0);
     if (!c.displays.some((d) => d.screen && d.screen.w)) console.warn('config.json screen.w/h 없음 → TUIO 입력 못 씀');
     connect();
   }).catch(() => console.warn('브리지 없음 — 마우스/터치만 사용'));
