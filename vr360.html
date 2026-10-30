@@ -275,6 +275,11 @@ function startPlay(cfg){
     const base = r==='left' ? -wallFov : r==='right' ? wallFov : d.yaw;
     q.p.setSphericalProperties({yaw:((-(base+ytYaw))%360+360)%360, pitch:d.pitch, roll:0, fov:Math.min(120, wallFov)});
   }
+  function noCC(p){   // 자막 끄기
+    try{ p.setOption('captions','track',{}); }catch(e){}
+    try{ p.unloadModule('captions'); }catch(e){}
+    try{ p.unloadModule('cc'); }catch(e){}
+  }
   function stopYT(){
     if(!yt) return;
     yt.ps.forEach(q=>{ try{ q.p.destroy(); }catch(e){} });
@@ -294,10 +299,10 @@ function startPlay(cfg){
       const q = {i, box, master};
       q.p = new YT.Player(inner, {
         videoId:id, width:v.s.w, height:v.s.h,
-        playerVars:{autoplay:1, controls:0, disablekb:1, fs:0, rel:0, playsinline:1, iv_load_policy:3, mute:master?0:1, loop:1, playlist:id},
+        playerVars:{autoplay:1, controls:0, disablekb:1, fs:0, rel:0, playsinline:1, iv_load_policy:3, cc_load_policy:0, mute:master?0:1, loop:1, playlist:id},
         events:{
           onReady: e=>{ e.target.mute(); e.target.playVideo(); },
-          onStateChange: e=>{ if(e.data===1) aim(q); },
+          onStateChange: e=>{ if(e.data===1){ aim(q); noCC(q.p); } },
           onError: e=>{ if(master) alert('유튜브 오류 '+e.data+([101,150,152,153].includes(e.data)?'\n파일로 열면 막힘 → GitHub Pages 주소로 열기. 또는 소유자가 퍼가기 금지한 영상.':'')); }
         }
       });
@@ -312,6 +317,7 @@ function startPlay(cfg){
   setInterval(()=>{
     if(!yt || !yt.ps.every(q=>q.p.getCurrentTime)) return;
     yt.ps.forEach(aim);
+    if(!yt.ccTick || Date.now() - yt.ccTick > 3000){ yt.ccTick = Date.now(); yt.ps.forEach(q=>noCC(q.p)); }
     const now = Date.now();
 
     if(yt.phase==='prep'){
