@@ -287,52 +287,59 @@ function startPlay(cfg){
         videoId:id, width:v.s.w, height:v.s.h,
         playerVars:{autoplay:1, controls:0, disablekb:1, fs:0, rel:0, playsinline:1, iv_load_policy:3, mute:master?0:1, loop:1, playlist:id},
         events:{
-          onReady: e=>{ if(!master) e.target.mute(); e.target.playVideo(); },
+          onReady: e=>{ e.target.mute(); e.target.playVideo(); },
           onStateChange: e=>{ if(e.data===1) aim(q); },
           onError: e=>{ if(master) alert('유튜브 오류 '+e.data+([101,150,152,153].includes(e.data)?'\n파일로 열면 막힘 → GitHub Pages 주소로 열기. 또는 소유자가 퍼가기 금지한 영상.':'')); }
         }
       });
       ps.push(q);
     });
-    yt = {ps, master: ps.find(q=>q.master), want:true, hold:false, grace: Date.now()+6000};
+    yt = {ps, master: ps.find(q=>q.master), want:true, phase:'prep', t0: Date.now(), grace: 0};
+    toast('버퍼링 준비 중…');
   }
-  // 동기화: 제일 늦은 화면(광고·버퍼링 중)에 나머지가 맞춰 기다림. 광고 길이 달라도 됨.
-  function ytSeekAll(t){ yt.ps.forEach(q=>{ q.p.seekTo(t, true); q.ct = t; q.held = false; }); yt.grace = Date.now() + 2500; }
-  function ytDur(){
-    const c = {}; yt.ps.forEach(q=>{ const d = Math.round(q.p.getDuration ? q.p.getDuration() : 0); if(d>0) c[d] = (c[d]||0)+1; });
-    const ks = Object.keys(c).map(Number); if(!ks.length) return 0;
-    ks.sort((a,b)=> c[b]-c[a] || b-a); return ks[0];
-  }
+  // 시작 전 미리 받기(최대 30초) → 모든 화면 0초에서 동시 출발. 재생 중엔 제일 늦은 화면에 맞춤.
+  const PREP_MAX = 30000, PREP_AHEAD = 30;
+  function ytSeekAll(t){ yt.ps.forEach(q=>{ q.p.seekTo(t, true); q.held = false; }); yt.grace = Date.now() + 2500; }
   setInterval(()=>{
     if(!yt || !yt.ps.every(q=>q.p.getCurrentTime)) return;
     yt.ps.forEach(aim);
-    const D = ytDur(), now = Date.now();
+    const now = Date.now();
+
+    if(yt.phase==='prep'){
+      let ok = true;
+      yt.ps.forEach(q=>{
+        const st = q.p.getPlayerState();
+        if(!q.primed){ if(st===1){ q.p.pauseVideo(); q.primed = true; } else { q.p.playVideo(); ok = false; } return; }
+        if(st===1) q.p.pauseVideo();
+        const d = q.p.getDuration(), buf = (q.p.getVideoLoadedFraction()||0) * d;
+        if(!(d>0) || buf < Math.min(PREP_AHEAD, d - 1)) ok = false;
+      });
+      const left = Math.ceil((PREP_MAX - (now - yt.t0))/1000);
+      if(ok || left <= 0){
+        yt.phase = 'play';
+        yt.ps.forEach(q=>{ if(q.master) q.p.unMute(); q.p.seekTo(0, true); q.p.playVideo(); });
+        yt.grace = now + 2500;
+        toast('재생');
+      } else if(left !== yt.lastLeft){ yt.lastLeft = left; toast('버퍼링 준비 중… ' + left + '초'); }
+      return;
+    }
+
+    if(!yt.want || now < yt.grace){
+      if(yt.want) yt.ps.forEach(q=>{ const st=q.p.getPlayerState(); if(st!==1 && st!==3) q.p.playVideo(); });
+      return;
+    }
+    const ct = q=> q.p.getCurrentTime();
+    const low = Math.min(...yt.ps.map(ct));
     yt.ps.forEach(q=>{
-      const t = q.p.getCurrentTime(), d = Math.round(q.p.getDuration());
-      q.ad = D>0 && d>0 && Math.abs(d-D) > 1;          // 광고가 자기 길이를 보고하는 경우
-      if(q.ct===undefined) q.ct = 0;
-      if(!q.ad) q.ct = t;                               // 본편 시간만 기록 (광고 중엔 그대로 멈춤)
-    });
-    if(!yt.want) return;
-    if(now < yt.grace){ yt.ps.forEach(q=>{ const st=q.p.getPlayerState(); if(st!==1 && st!==3) q.p.playVideo(); }); return; }
-    const low = Math.min(...yt.ps.map(q=>q.ct));
-    const lag = yt.ps.find(q=>q.ct===low);
-    let waiting = false;
-    yt.ps.forEach(q=>{
-      const st = q.p.getPlayerState();
-      if(q.ad || q===lag){ if(st!==1 && st!==3) q.p.playVideo(); q.held = false; return; }
-      if(!q.held && q.ct > low + 0.4){ q.held = true; q.heldAt = now; q.p.pauseVideo(); }
-      else if(q.held && q.ct <= low + 0.1){ q.held = false; q.p.playVideo(); }
+      const st = q.p.getPlayerState(), t = ct(q);
+      if(!q.held && t > low + 0.4){ q.held = true; q.p.pauseVideo(); }
+      else if(q.held && t <= low + 0.1){ q.held = false; q.p.playVideo(); }
       else if(!q.held && st!==1 && st!==3) q.p.playVideo();
-      if(q.held){ waiting = true; if(st===1) q.p.pauseVideo(); }
+      else if(q.held && st===1) q.p.pauseVideo();
     });
-    if(waiting && !yt.waiting) toast('다른 화면 광고 끝날 때까지 대기');
-    yt.waiting = waiting;
-    // 3분 넘게 기다리면 포기하고 늦은 화면을 앞으로 당김
-    const old = yt.ps.find(q=>q.held && now - q.heldAt > 180000);
-    if(old){ lag.p.seekTo(old.ct, true); yt.grace = now + 2500; }
   }, 400);
   function ytPlayPause(){
+    if(yt.phase==='prep') return;
     yt.want = !yt.want;
     if(yt.want){ yt.grace = Date.now()+2500; yt.ps.forEach(q=>{ q.held=false; q.p.playVideo(); }); }
     else { yt.ps.forEach(q=>{ q.held=false; q.p.pauseVideo(); }); }
