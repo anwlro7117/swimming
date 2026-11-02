@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>터치 감도 지도</title>
+<style>
+html,body{margin:0;height:100%;background:#0b0d12;color:#fff;font-family:'Malgun Gothic',sans-serif;overflow:hidden;user-select:none;cursor:none}
+#g{position:fixed;inset:0;display:grid;gap:4px;padding:4px;box-sizing:border-box}
+.c{border-radius:10px;background:#1f2430;display:flex;align-items:center;justify-content:center;flex-direction:column;font-weight:900;font-size:5vh;transition:background .2s}
+.c small{font-size:2vh;opacity:.7;font-weight:700}
+.c.flash{outline:6px solid #fff}
+#top{position:fixed;left:50%;top:1vh;transform:translateX(-50%);background:rgba(0,0,0,.6);padding:1vh 3vh;border-radius:3vh;font-size:2.6vh;font-weight:700;pointer-events:none;white-space:nowrap}
+</style>
+</head>
+<body>
+<div id="g"></div>
+<div id="top"></div>
+<script src="/tuio-client.js"></script>
+<script>
+// 칸마다 손바닥으로 3번씩 톡톡 → 몇 번 잡혔는지 색으로 보임. 초록 = 잘 됨, 노랑 = 가끔, 빨강 = 안 됨
+const COLS=8,ROWS=4,G=document.getElementById('g');
+G.style.gridTemplateColumns=`repeat(${COLS},1fr)`;G.style.gridTemplateRows=`repeat(${ROWS},1fr)`;
+const cnt=new Array(COLS*ROWS).fill(0),cells=[];
+for(let i=0;i<COLS*ROWS;i++){const d=document.createElement('div');d.className='c';G.appendChild(d);cells.push(d)}
+function paint(){cells.forEach((d,i)=>{const n=cnt[i];d.style.background=n===0?'#1f2430':n===1?'#b91c1c':n===2?'#ca8a04':'#15803d';d.innerHTML=n?`${n}<small>번</small>`:''})}
+const t=new TuioTouch({dwellIgnoreMs:0});
+t.ready.then(()=>{document.getElementById('top').textContent=`${t.display?t.display.name:'?'} · 칸마다 손바닥으로 3번씩 톡톡 · 초록 잘 됨 / 노랑 가끔 / 빨강·회색 안 됨 · R 키 = 지우기`;document.title=(t.display?t.display.name:'')+' 감도'});
+t.on('down',p=>{const c=Math.min(COLS-1,Math.floor(p.nx*COLS)),r=Math.min(ROWS-1,Math.floor(p.ny*ROWS)),i=r*COLS+c;cnt[i]++;paint();
+  cells[i].classList.add('flash');setTimeout(()=>cells[i].classList.remove('flash'),150)});
+addEventListener('keydown',e=>{if(e.key==='r'||e.key==='R'){cnt.fill(0);paint()}});
+paint();
+</script>
+</body>
+</html>
