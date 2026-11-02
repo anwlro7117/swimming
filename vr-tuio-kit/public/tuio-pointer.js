@@ -18,8 +18,9 @@
       if (!s || s.w == null) continue;
       const nx = (x - r.x0) / (r.x1 - r.x0), ny = (y - r.y0) / (r.y1 - r.y0);
       if (nx < 0 || nx > 1 || ny < 0 || ny > 1) continue;
-      const o = origin();
-      return { cx: s.x + nx * s.w - o.x, cy: s.y + ny * s.h - o.y };
+      const o = origin(), cx = s.x + nx * s.w - o.x, cy = s.y + ny * s.h - o.y;
+      if (cx < 0 || cy < 0 || cx > innerWidth || cy > innerHeight) return null;   // 이 창 밖 화면(바닥 등)
+      return { cx, cy };
     }
     return null;
   }

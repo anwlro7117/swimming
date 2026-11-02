@@ -70,7 +70,8 @@ if (cmd === 'list') {
 } else if (cmd === 'span') {
   // 창 하나를 벽 화면 전체에 걸쳐 띄움:  node launch.js span fruit-vr.html
   const page = process.argv[3] || 'fruit-vr.html';
-  const S = config.displays.map((d) => d.screen).filter((s) => s && s.w);
+  const walls = config.displays.filter((d) => ['left', 'front', 'right'].includes(d.id));   // 바닥은 빼고 벽만
+  const S = (walls.length ? walls : config.displays).map((d) => d.screen).filter((s) => s && s.w);
   const x0 = Math.min(...S.map((s) => s.x)), y0 = Math.min(...S.map((s) => s.y));
   const x1 = Math.max(...S.map((s) => s.x + s.w)), y1 = Math.max(...S.map((s) => s.y + s.h));
   const order = ['left', 'front', 'right'].map((k) => config.displays.find((d) => d.id === k)?.screen);

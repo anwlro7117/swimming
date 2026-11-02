@@ -6,12 +6,12 @@ VR실 고속 터치 트래커 (YTS 대신 사용). 카메라 5대를 60~120fps �
   점검: python tracker.py --probe    (카메라별 실제 fps 측정)
 YTS 설정 파일은 읽지도 쓰지도 않는다. 설정은 tracker.json 에만 저장.
 미리보기 창 키:
-  1~5 / Tab  카메라 선택        l f r  선택 카메라 = 좌/정면/우 벽     n  선택 카메라 끄기(바닥 등)   u  지정 해제
+  1~5 / Tab  카메라 선택        l f r  선택 카메라 = 좌/정면/우 벽   a d  바닥 왼쪽/오른쪽     n  선택 카메라 끄기(바닥 등)   u  지정 해제
   c  선택 카메라 터치 보정(벽에 점 표시)     b  배경 다시 찍기(손 떼고)
   t / g  감도 문턱 +/-     ] / [  최소 크기 +/-     m  흑백/검출 화면 전환
   x / y  선택 카메라 좌우/상하 뒤집기     s  저장     q / Esc  종료
 """
-import argparse, json, math, os, socket, struct, sys, threading, time
+import argparse, json, math, os, socket, struct, sys, threading, time, urllib.request
 
 import cv2
 import numpy as np
@@ -70,9 +70,38 @@ class Kit:
             with open(KIT_PATH, encoding='utf-8-sig') as f:
                 c = json.load(f)
             self.displays = {d['id']: d for d in c.get('displays', [])}
-            self.port = c.get('tuioPort', 3333)
+            self.port = c.get('tuioPort', 3333); self.http = c.get('httpPort', 8080)
         except Exception as e:
             print('config.json 읽기 실패:', e)
+
+    FLOORS = {
+        'floorL': {'name': '바닥 왼쪽', 'monitor': 1, 'screen': {'x': 5760, 'y': 0, 'w': 1920, 'h': 1080}},
+        'floorR': {'name': '바닥 오른쪽', 'monitor': 2, 'screen': {'x': 7680, 'y': 0, 'w': 1920, 'h': 1080}},
+    }
+
+    def ensure(self, did):
+        """바닥 화면이 config.json 에 없으면 추가 (브리지 켜져 있으면 브리지 통해 저장)."""
+        if did not in self.FLOORS: return
+        self.load()
+        if did in self.displays: return
+        url = f'http://127.0.0.1:{getattr(self, "http", 8080)}/config'
+        try:
+            with urllib.request.urlopen(url, timeout=2) as r: c = json.loads(r.read().decode('utf-8'))
+            via = 'bridge'
+        except Exception:
+            with open(KIT_PATH, encoding='utf-8-sig') as f: c = json.load(f)
+            via = 'file'
+        ds = c.setdefault('displays', [])
+        x0 = max([0.6] + [d['tuio']['x1'] for d in ds if 'tuio' in d])
+        d = {'id': did, **json.loads(json.dumps(self.FLOORS[did])), 'tuio': {'x0': round(x0, 4), 'y0': 0, 'x1': round(x0 + 0.2, 4), 'y1': 1}}
+        ds.append(d)
+        body = json.dumps(c, ensure_ascii=False, indent=2)
+        if via == 'bridge':
+            urllib.request.urlopen(urllib.request.Request(url, body.encode('utf-8'), {'Content-Type': 'application/json'}), timeout=2).read()
+        else:
+            with open(KIT_PATH, 'w', encoding='utf-8') as f: f.write(body)
+        print(f'config.json 에 {d["name"]} 추가함 (화면 x={d["screen"]["x"]}). 위치 다르면 config.json "screen" 고칠 것')
+        self.load()
 
     def get(self, did):
         if time.time() - self.t > 2: self.load()
@@ -416,7 +445,7 @@ def preview_img(cams, sel, show_mask, cfg):
         tiles.append(cv2.resize(t, (320, 240)))
     row = np.hstack(tiles)
     bar = np.zeros((44, row.shape[1], 3), np.uint8)
-    cv2.putText(bar, f'thr {cfg["threshold"]} (t/g)  min {cfg["min_area"]} ([/])  sel {sel+1} (1-5)  wall l/f/r  off n  calib c  bg b  mask m  flip x/y  save s  quit q',
+    cv2.putText(bar, f'thr {cfg["threshold"]} (t/g)  min {cfg["min_area"]} ([/])  sel {sel+1} (1-5)  wall l/f/r floor a/d  off n  calib c  bg b  mask m  flip x/y  save s  quit q',
                 (6, 18), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (220, 220, 220), 1)
     return np.vstack([row, bar])
 
@@ -474,8 +503,10 @@ def main():
             if k in (27,) or ch == 'q': break
             elif k == 9: sel = (sel + 1) % len(cams)
             elif ch.isdigit() and 1 <= int(ch) <= len(cams): sel = int(ch) - 1
-            elif ch in 'lfr':
-                did = {'l': 'left', 'f': 'front', 'r': 'right'}[ch]
+            elif ch in 'lfrad':
+                did = {'l': 'left', 'f': 'front', 'r': 'right', 'a': 'floorL', 'd': 'floorR'}[ch]
+                try: kit.ensure(did)
+                except Exception as e: print('바닥 화면 추가 실패:', e)
                 if cur.cc.get('display') != did: cur.cc.pop('calib', None); cur.set_calib(None)
                 cur.cc['display'] = did; print(f'카메라 {sel+1} = {did} (보정 필요: c)')
             elif ch == 'n': cur.cc['display'] = 'off'; print(f'카메라 {sel+1} 끔')
