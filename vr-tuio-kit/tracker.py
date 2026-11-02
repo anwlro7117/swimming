@@ -21,8 +21,10 @@ CFG_PATH = os.path.join(HERE, 'tracker.json')
 KIT_PATH = os.path.join(HERE, 'config.json')
 
 DEFAULT = {
-    "width": 320, "height": 240, "fps": 60, "fourcc": "MJPG",
-    "exposure": -6,          # None 이면 카메라 기본값. 120fps 면 -7 권장
+    "cap_width": 640, "cap_height": 480,   # 카메라에서 받는 크기 (이 카메라는 640x480 MJPG 가 ~100fps)
+    "width": 320, "height": 240,           # 검출용으로 줄인 크기
+    "fps": 120, "fourcc": "MJPG",
+    "exposure": None,        # None = 카메라 그대로. 숫자(-6, -7)를 넣으면 고정. -6 이면 최대 60fps
     "threshold": 30,         # 배경과 밝기 차이 문턱 (YTS Threshold 와 다른 값)
     "blur": 5,               # 잡티 제거 (홀수)
     "highpass": 0,           # 0=끔. 넓게 번진 빛 제거하려면 15~31
@@ -165,7 +167,7 @@ class Cam(threading.Thread):
             self.err = '열기 실패 (YTS 켜져 있나?)'; print(f'카메라 {self.slot+1} (번호 {idx}) {self.err}'); return
         fcc = cv2.VideoWriter_fourcc(*cfg['fourcc'])
         cap.set(cv2.CAP_PROP_FOURCC, fcc)
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.W); cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.H)
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, cfg.get('cap_width', self.W)); cap.set(cv2.CAP_PROP_FRAME_HEIGHT, cfg.get('cap_height', self.H))
         cap.set(cv2.CAP_PROP_FPS, cfg['fps'])
         cap.set(cv2.CAP_PROP_FOURCC, fcc)
         try: cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
@@ -187,7 +189,7 @@ class Cam(threading.Thread):
                 self.err = '영상 끊김'; time.sleep(0.05); continue
             now = time.time()
             g = img if img.ndim == 2 else cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            if g.shape[1] != self.W or g.shape[0] != self.H: g = cv2.resize(g, (self.W, self.H))
+            if g.shape[1] != self.W or g.shape[0] != self.H: g = cv2.resize(g, (self.W, self.H), interpolation=cv2.INTER_AREA)
             if self.cc.get('flip_x') and self.cc.get('flip_y'): g = cv2.flip(g, -1)
             elif self.cc.get('flip_x'): g = cv2.flip(g, 1)
             elif self.cc.get('flip_y'): g = cv2.flip(g, 0)
@@ -425,7 +427,7 @@ def probe():
         cap = cv2.VideoCapture(idx, cv2.CAP_DSHOW) if os.name == 'nt' else cv2.VideoCapture(idx)
         if not cap.isOpened(): continue
         for fcc in ('MJPG', 'YUY2'):
-            for (w, h, fps) in ((320, 240, 120), (320, 240, 60), (640, 480, 60)):
+            for (w, h, fps) in ((640, 480, 120), (640, 480, 60), (320, 240, 120)):
                 cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*fcc))
                 cap.set(cv2.CAP_PROP_FRAME_WIDTH, w); cap.set(cv2.CAP_PROP_FRAME_HEIGHT, h)
                 cap.set(cv2.CAP_PROP_FPS, fps); cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*fcc))

@@ -47,7 +47,7 @@
   준비 (1회)
     1. Python 3 설치 (python.org). 설치 첫 화면 "Add python.exe to PATH" 체크.
     2. 10_tracker_setup.bat → opencv·numpy 설치 (인터넷 필요).
-    3. 12_tracker_fps_check.bat → 카메라마다 "MJPG 320x240@120 → 실제 ...fps" 확인. 60 이상이면 성공.
+    3. 12_tracker_fps_check.bat → 카메라마다 "MJPG 640x480 → 실제 ...fps" 확인. 60 이상이면 성공.
   사용
     1_bridge_start.bat → 11_tracker_start.bat (YTS 켜져 있으면 끄고 시작) → 게임.
     시작 후 1초 손 떼기 = 배경 찍기. 미리보기 창에 카메라 5칸.
@@ -62,7 +62,7 @@
     t / g  문턱 올림/내림. 안 만지는데 점 뜨면 t, 터치가 안 잡히면 g.
     ] / [  최소 크기. 작은 잡티 점이 뜨면 ].
     b 배경 다시 (손 떼고)   m 검출 화면 보기   x / y 카메라 뒤집기 (움직임이 반대일 때)   q 종료
-  fps 를 120 으로: tracker.json "fps": 120, "exposure": -7. 화면이 어두우면 "threshold" 내림.
+  카메라는 640x480 MJPG 로 받아(실측 약 100fps) 320x240 으로 줄여 검출. 320x240 직접은 이 카메라에서 25fps 라 안 씀.
   공이 1프레임만 찍혀도 "hold_ms"(60ms) 동안 터치로 유지해 게임이 받는다.
 
 게임
