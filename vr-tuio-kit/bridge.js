@@ -44,8 +44,32 @@ let alive = new Set();
 const clients = new Set();
 let lastPacket = 0, packetCount = 0;
 
+// ---------- 가짜 터치 거르기 ----------
+// 고장 난 바닥 센서 등에서 계속 찍히는 점을 게임에 안 보낸다. (관제 화면에는 회색으로 보임)
+//  dead : 관제 화면에서 "무시 점"으로 등록한 자리 (config.deadSpots)
+//  stuck: 한자리에 config.stuckMs 넘게 그대로 있는 점 (사라질 때까지 무시)
+//  out  : 벽 화면 구역 밖 (config.dropOutside 가 true 일 때)
+const track = new Map(); // id -> {t0,x0,y0,stuck}
+function inRect(c, r) { return c.x >= Math.min(r.x0, r.x1) && c.x <= Math.max(r.x0, r.x1) && c.y >= Math.min(r.y0, r.y1) && c.y <= Math.max(r.y0, r.y1); }
+function classify(c, now) {
+  let t = track.get(c.id);
+  if (!t) { t = { t0: now, x0: c.x, y0: c.y }; track.set(c.id, t); }
+  if (Math.hypot(c.x - t.x0, c.y - t.y0) > 0.012 && !t.stuck) { t.t0 = now; t.x0 = c.x; t.y0 = c.y; }
+  const stuckMs = config.stuckMs ?? 8000;
+  if (stuckMs > 0 && now - t.t0 > stuckMs) t.stuck = true;
+  if ((config.deadSpots || []).some((d) => Math.hypot(c.x - d.x, c.y - d.y) < (d.r || 0.02))) return 'dead';
+  if (t.stuck) return 'stuck';
+  if (config.dropOutside !== false && !(config.displays || []).some((d) => inRect(c, d.tuio))) return 'out';
+  return null;
+}
+function frameJSON() {
+  const now = Date.now();
+  for (const id of [...track.keys()]) if (!cursors.has(id)) track.delete(id);
+  const list = [...cursors.values()].map((c) => { const ign = classify(c, now); return ign ? { ...c, ign } : c; });
+  return JSON.stringify({ t: now, c: list });
+}
 function broadcast() {
-  const frame = JSON.stringify({ t: Date.now(), c: [...cursors.values()] });
+  const frame = frameJSON();
   for (const res of clients) res.write(`data: ${frame}\n\n`);
 }
 
@@ -88,7 +112,7 @@ http.createServer((req, res) => {
   const url = new URL(req.url, 'http://x');
   if (url.pathname === '/events') {
     res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive', 'Access-Control-Allow-Origin': '*' });
-    res.write(`data: ${JSON.stringify({ t: Date.now(), c: [...cursors.values()] })}\n\n`);
+    res.write(`data: ${frameJSON()}\n\n`);
     clients.add(res);
     req.on('close', () => clients.delete(res));
     return;
@@ -124,5 +148,7 @@ http.createServer((req, res) => {
   });
 }).on('error', (e) => { if (e.code === 'EADDRINUSE') already(`웹 ${config.httpPort} 포트가`); throw e; }).listen(config.httpPort, () => console.log(`웹: http://localhost:${config.httpPort}/  (조작 화면)`));
 
+// 고정 점 판정이 바뀌도록 1초마다 다시 보냄
+setInterval(() => { if (cursors.size) broadcast(); }, 1000);
 // SSE 연결 유지
 setInterval(() => { for (const res of clients) res.write(': ping\n\n'); }, 15000);

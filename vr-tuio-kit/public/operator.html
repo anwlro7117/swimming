@@ -61,6 +61,22 @@
       </div>
     </div>
     <div class="card" style="margin-top:16px">
+      <h2>가짜 터치 거르기</h2>
+      <p class="mute">아무도 안 만지는데 계속 찍히는 점(고장 난 바닥 센서, 반사광)을 게임에 안 보낸다. 지도에서 회색 점 = 걸러진 점.</p>
+      <div class="row">
+        <label><input type="checkbox" id="dropOut"> 벽 구역 밖 점 버리기 (바닥 등)</label>
+      </div>
+      <div class="row">
+        <label>한자리에 <input type="number" id="stuckS" step="1" style="width:56px">초 넘게 있으면 버리기 (0 = 끔)</label>
+      </div>
+      <div class="row">
+        <button id="deadAdd">📍 지금 찍힌 점 모두 무시 등록</button>
+        <button id="deadClr">무시 점 지우기</button>
+        <span id="deadCnt" class="mute"></span>
+      </div>
+      <p class="mute">아무도 벽·바닥을 안 만질 때 "무시 등록"을 누른 뒤 위쪽 "저장".</p>
+    </div>
+    <div class="card" style="margin-top:16px">
       <h2>모서리 보정</h2>
       <p class="mute">화면 고르고 시작. 그 화면 노란 원 2개를 차례로 터치(좌상단 → 우하단). 손을 떼면 기록된다.</p>
       <div class="row">
@@ -94,10 +110,18 @@ function renderZones(){
     if (inp.dataset.k==='monitor') d.monitor=v; else d.tuio[inp.dataset.k]=v;
   });
   document.getElementById('dwell').value = config.dwellIgnoreMs;
+  config.deadSpots=config.deadSpots||[];if(config.dropOutside==null)config.dropOutside=true;if(config.stuckMs==null)config.stuckMs=8000;
+  document.getElementById('dropOut').checked=config.dropOutside;document.getElementById('stuckS').value=Math.round(config.stuckMs/1000);
+  document.getElementById('deadCnt').textContent=`무시 점 ${config.deadSpots.length}개`;
   document.getElementById('calSel').innerHTML = config.displays.map((d,i)=>`<option value="${i}">${d.name}</option>`).join('');
   document.getElementById('links').innerHTML = config.displays.map(d=>`<a href="/display.html?d=${d.id}" target="_blank">${d.name}</a>`).join(' · ');
 }
 document.getElementById('dwell').oninput = e => config.dwellIgnoreMs = +e.target.value;
+document.getElementById('dropOut').onchange = e => config.dropOutside = e.target.checked;
+document.getElementById('stuckS').oninput = e => config.stuckMs = Math.max(0,+e.target.value)*1000;
+document.getElementById('deadAdd').onclick = () => { for (const c of cursors) if (!config.deadSpots.some(d=>Math.hypot(d.x-c.x,d.y-c.y)<.02)) config.deadSpots.push({x:+c.x.toFixed(4),y:+c.y.toFixed(4),r:.025});
+  document.getElementById('deadCnt').textContent=`무시 점 ${config.deadSpots.length}개 · "저장" 눌러야 적용`; };
+document.getElementById('deadClr').onclick = () => { config.deadSpots=[]; document.getElementById('deadCnt').textContent='무시 점 0개 · "저장" 눌러야 적용'; };
 document.getElementById('save').onclick = async () => {
   const r = await fetch('/config',{method:'POST',body:JSON.stringify(config,null,2)});
   document.getElementById('saved').textContent = r.ok ? '저장됨 · 화면 페이지 새로고침(F5) 필요' : '저장 실패';
@@ -133,9 +157,9 @@ function connect(){
     cursors = JSON.parse(e.data).c;
     const now = new Set(cursors.map(c=>c.id));
     const tnow = performance.now();
-    for (const [id,p] of lastPos) if (!now.has(id)) { lastPos.delete(id); onUp(p); logHit(p, tnow); }
+    for (const [id,p] of lastPos) if (!now.has(id)) { lastPos.delete(id); if(!p.ign||p.ign==='out') onUp(p); if(!p.ign) logHit(p, tnow); }
     for (const c of cursors) { const o=lastPos.get(c.id); lastPos.set(c.id, Object.assign(c,{t0:o?o.t0:tnow,n:(o?o.n:0)+1})); }
-    document.getElementById('list').textContent = cursors.map(c=>`#${c.id}  x ${c.x.toFixed(3)}  y ${c.y.toFixed(3)}  → ${zoneOf(c)?.name ?? '구역 밖'}`).join('\n') || '(없음)';
+    document.getElementById('list').textContent = cursors.map(c=>`#${c.id}  x ${c.x.toFixed(3)}  y ${c.y.toFixed(3)}  → ${zoneOf(c)?.name ?? '구역 밖'}${c.ign?'   [걸러짐: '+({dead:'무시 점',stuck:'고정 점',out:'구역 밖'}[c.ign])+']':''}`).join('\n') || '(없음)';
   };
 }
 let hitN=0;const hitLines=[];
@@ -169,7 +193,8 @@ function draw(){
     g.fillStyle=COLORS[i]; g.font='bold 26px Malgun Gothic'; g.fillText(d.name,x+10,y+34);
     // 좌상단 지점 표시(뒤집힘 확인용)
     g.beginPath(); g.arc(r.x0*W, r.y0*H, 9, 0, 7); g.fill(); });
-  for (const c of cursors){ g.fillStyle='#fff'; g.beginPath(); g.arc(c.x*W,c.y*H,14,0,7); g.fill();
+  if (config) for (const d of config.deadSpots||[]){ g.strokeStyle='rgba(255,80,80,.9)'; g.lineWidth=2; g.setLineDash([6,4]); g.beginPath(); g.ellipse(d.x*W,d.y*H,(d.r||.02)*W,(d.r||.02)*H,0,0,7); g.stroke(); g.setLineDash([]); }
+  for (const c of cursors){ g.fillStyle=c.ign?'#777':'#fff'; g.beginPath(); g.arc(c.x*W,c.y*H,14,0,7); g.fill();
     g.fillStyle='#000'; g.font='bold 16px sans-serif'; g.textAlign='center'; g.fillText(c.id,c.x*W,c.y*H+6); g.textAlign='left'; }
   requestAnimationFrame(draw);
 }

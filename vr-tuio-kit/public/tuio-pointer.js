@@ -37,6 +37,7 @@
   function frame(list) {
     const now = performance.now(), seen = new Set();
     for (const c of list) {
+      if (c.ign) continue;   // 브리지가 가짜 터치로 판정한 점
       const p = toClient(c.x, c.y);
       if (!p) continue;
       seen.add(c.id);

@@ -46,6 +46,7 @@
     _frame(list) {
       const now = performance.now(), seen = new Set();
       for (const c of list) {
+      if (c.ign) continue;   // 브리지가 가짜 터치로 판정한 점
         const m = this.map(c.x, c.y);
         if (!m) continue;
         const id = 't' + c.id;
