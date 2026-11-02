@@ -143,7 +143,7 @@ http.createServer((req, res) => {
   if (!file.startsWith(PUBLIC)) { res.writeHead(403); return res.end(); }
   fs.readFile(file, (err, data) => {
     if (err) { res.writeHead(404); return res.end('not found'); }
-    res.writeHead(200, { 'Content-Type': MIME[path.extname(file).toLowerCase()] || 'application/octet-stream' });
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(file).toLowerCase()] || 'application/octet-stream', 'Cache-Control': 'no-store' });
     res.end(data);
   });
 }).on('error', (e) => { if (e.code === 'EADDRINUSE') already(`웹 ${config.httpPort} 포트가`); throw e; }).listen(config.httpPort, () => console.log(`웹: http://localhost:${config.httpPort}/  (조작 화면)`));

@@ -157,14 +157,14 @@ function connect(){
     cursors = JSON.parse(e.data).c;
     const now = new Set(cursors.map(c=>c.id));
     const tnow = performance.now();
-    for (const [id,p] of lastPos) if (!now.has(id)) { lastPos.delete(id); if(!p.ign||p.ign==='out') onUp(p); if(!p.ign) logHit(p, tnow); }
+    for (const [id,p] of lastPos) if (!now.has(id)) { lastPos.delete(id); if(!p.ign||p.ign==='out') onUp(p); logHit(p, tnow); }
     for (const c of cursors) { const o=lastPos.get(c.id); lastPos.set(c.id, Object.assign(c,{t0:o?o.t0:tnow,n:(o?o.n:0)+1})); }
     document.getElementById('list').textContent = cursors.map(c=>`#${c.id}  x ${c.x.toFixed(3)}  y ${c.y.toFixed(3)}  → ${zoneOf(c)?.name ?? '구역 밖'}${c.ign?'   [걸러짐: '+({dead:'무시 점',stuck:'고정 점',out:'구역 밖'}[c.ign])+']':''}`).join('\n') || '(없음)';
   };
 }
 let hitN=0;const hitLines=[];
 function logHit(p,tnow){hitN++;const d=Math.round(tnow-p.t0),z=zoneOf(p);
-  hitLines.unshift(`${new Date().toLocaleTimeString()}  ${String(d).padStart(5)}ms  ${String(p.n).padStart(3)}프레임  ${z?z.name:'구역 밖'}  (${p.x.toFixed(2)}, ${p.y.toFixed(2)})${d<=30?'  ← 아주 짧음':''}`);
+  hitLines.unshift(`${new Date().toLocaleTimeString()}  ${String(d).padStart(5)}ms  ${String(p.n).padStart(3)}프레임  ${z?z.name:'구역 밖'}  (${p.x.toFixed(2)}, ${p.y.toFixed(2)})${d<=30?'  ← 아주 짧음':''}${p.ign?'  [게임엔 안 감: '+({dead:'무시 점',stuck:'고정 점',out:'벽 구역 밖 → 모서리 보정 필요'}[p.ign])+']':''}`);
   if(hitLines.length>60)hitLines.pop();document.getElementById('hits').textContent=hitLines.join('\n');document.getElementById('hitCnt').textContent=hitN+'번'}
 document.getElementById('hitClr').onclick=()=>{hitN=0;hitLines.length=0;document.getElementById('hits').textContent='';document.getElementById('hitCnt').textContent='0번'};
 connect();
