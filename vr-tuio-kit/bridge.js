@@ -62,10 +62,42 @@ function classify(c, now) {
   if (config.dropOutside !== false && !(config.displays || []).some((d) => inRect(c, d.tuio))) return 'out';
   return null;
 }
+// ---------- 깜빡임·겹침 정리 ----------
+// 센서가 한 번 터치를 "끊겼다 다시 잡음"(→ 2~3번 눌린 것처럼 됨) 하거나, 손바닥 하나를 점 두 개로 보는 경우를 합친다.
+//  · 끊긴 점은 config.mergeMs(기본 150ms) 동안 붙잡아 두고, 그 사이 근처에 새 점이 생기면 같은 터치로 이어 준다.
+//  · 이미 눌린 점 바로 옆(config.mergeDist, 벽 크기 대비 기본 0.08)에 새 점이 또 생기면 'dup'으로 버린다.
+const outs = new Map();   // 내보내는 번호 -> {id,x,y,raw,lost}
+const alias = new Map();  // 센서 번호 -> 내보내는 번호
+let nextOut = 1;
+function wallPos(c) { for (const d of config.displays || []) { const r = d.tuio; if (inRect(c, r)) return { k: d.id, nx: (c.x - r.x0) / (r.x1 - r.x0), ny: (c.y - r.y0) / (r.y1 - r.y0) }; } return null; }
+function near(a, b) {
+  const A = wallPos(a), B = wallPos(b), md = config.mergeDist ?? 0.08;
+  if (A && B) return A.k === B.k && Math.hypot(A.nx - B.nx, A.ny - B.ny) < md;
+  return Math.hypot((a.x - b.x) * 5, a.y - b.y) < md;   // 구역 밖: 가로는 카메라 5대라 5배
+}
+function mergeStep(now) {
+  const grace = config.mergeMs ?? 150;
+  // 사라진 센서 점 → 잠깐 붙잡기
+  for (const [rid, oid] of [...alias]) if (!cursors.has(rid)) { alias.delete(rid); const o = outs.get(oid); if (o) o.lost = now; }
+  for (const c of cursors.values()) {
+    let oid = alias.get(c.id);
+    if (oid == null) {
+      const ghost = [...outs.values()].find((o) => o.lost && now - o.lost <= grace && near(o, c));
+      if (ghost) { oid = ghost.id; ghost.lost = 0; }                       // 끊겼다 다시 잡힌 같은 터치
+      else if ([...outs.values()].some((o) => !o.lost && !o.dup && near(o, c))) { oid = nextOut++; outs.set(oid, { id: oid, dup: true }); } // 옆에 붙은 두 번째 점
+      else { oid = nextOut++; outs.set(oid, { id: oid }); }
+      alias.set(c.id, oid);
+    }
+    Object.assign(outs.get(oid), { x: c.x, y: c.y, raw: c.id });
+  }
+  for (const [oid, o] of [...outs]) if (o.lost && now - o.lost > grace) outs.delete(oid);
+  else if (!o.lost && ![...alias.values()].includes(oid)) outs.delete(oid);
+}
 function frameJSON() {
   const now = Date.now();
-  for (const id of [...track.keys()]) if (!cursors.has(id)) track.delete(id);
-  const list = [...cursors.values()].map((c) => { const ign = classify(c, now); return ign ? { ...c, ign } : c; });
+  mergeStep(now);
+  const list = [...outs.values()].map((o) => { const c = { id: o.id, x: o.x, y: o.y }; const ign = o.dup ? 'dup' : classify(c, now); return ign ? { ...c, ign } : c; });
+  for (const id of [...track.keys()]) if (!outs.has(id)) track.delete(id);
   return JSON.stringify({ t: now, c: list });
 }
 function broadcast() {
@@ -150,5 +182,7 @@ http.createServer((req, res) => {
 
 // 고정 점 판정이 바뀌도록 1초마다 다시 보냄
 setInterval(() => { if (cursors.size) broadcast(); }, 1000);
+// 붙잡아 둔 점이 놓아지면 바로 알려 줌
+setInterval(() => { if ([...outs.values()].some((o) => o.lost)) broadcast(); }, 40);
 // SSE 연결 유지
 setInterval(() => { for (const res of clients) res.write(': ping\n\n'); }, 15000);
