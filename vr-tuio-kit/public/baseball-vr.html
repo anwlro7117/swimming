@@ -84,9 +84,9 @@ canvas#cv{position:fixed;left:0;top:0;width:100%;height:100%;display:block}
       <button class="opt" data-k="ht" data-v="1">보통</button>
       <button class="opt" data-k="ht" data-v="2">높게</button>
     </div>
-    <div class="row" id="pwRow"><span class="lbl">투수 벽</span>
-      <button class="opt" data-k="pwall" data-v="left">⬅️ 왼쪽 벽에서 던지기</button>
-      <button class="opt" data-k="pwall" data-v="right">오른쪽 벽에서 던지기 ➡️</button>
+    <div class="row" id="pwRow"><span class="lbl">플레이 벽</span>
+      <button class="opt" data-k="pwall" data-v="left">⬅️ 왼쪽 벽에서 하기</button>
+      <button class="opt" data-k="pwall" data-v="right">오른쪽 벽에서 하기 ➡️</button>
     </div>
     <button id="startBtn">플레이 볼! ▶</button>
   </section>
@@ -112,7 +112,7 @@ function load(k,d){try{const v=localStorage.getItem(LS+k);return v==null?d:JSON.
 function save(k,v){try{localStorage.setItem(LS+k,JSON.stringify(v))}catch(e){}}
 const CFG=Object.assign({part:'bat',mode:'solo',lv:0,ht:1,pwall:'left'},load('cfg',{}));
 // 투수 파트는 정면 가운데 터치가 약해서 옆 벽(왼쪽/오른쪽)에서 던진다
-const PITCHING=()=>CFG.part==='pitch'&&G.phase!=='home';
+const PITCHING=()=>G.phase!=='home';   // 투수·타자 모두 옆 벽에서 (정면 가운데 터치가 약함)
 if(EMBED)CFG.mode='solo';
 const MW=()=>PITCHING()&&!EMBED?CFG.pwall:'front';           // 지금 조작하는 벽
 const OW=()=>CFG.pwall==='left'?'right':'left';       // 투수 파트에서 남는 옆 벽
@@ -304,10 +304,15 @@ function updFW(dt){for(const f of FW){if(f.d<=0)continue;f.t+=dt;if(f.t<0)contin
 /* ---------- 카메라 ---------- */
 const BAT_EYE=new THREE.Vector3(0,1.35,2.4);
 let zoneY=ZB[1];
-function setCams(){const r=RECTS;const pv=CFG.part==='pitch'&&G.phase!=='home';catcher.visible=ump.visible=pv;if(window.__net)window.__net.visible=!chase.on&&!pv;
-  if(CFG.part==='bat'||G.phase==='home'){
+function setCams(){const r=RECTS;const pv=CFG.part==='pitch'&&G.phase!=='home';catcher.visible=ump.visible=pv;if(window.__net)window.__net.visible=!chase.on&&!pv&&!(G.phase!=='home'&&!EMBED);
+  if(G.phase==='home'||(CFG.part==='bat'&&EMBED)){
     // 타자 시점: 홈플레이트 뒤, 세 벽이 90도씩 이어짐. 정면 화면 = 홈플레이트 면 (폭 4.8m, 높이 2.7m)
     for(const [k,yaw] of [['left',Math.PI/2],['front',0],['right',-Math.PI/2]]){if(!r[k])continue;const c=cams[k],a=r[k].w/r[k].h;c.aspect=a;c.fov=EMBED?58.7:THREE.MathUtils.radToDeg(2*Math.atan(1/a));c.position.copy(BAT_EYE);c.rotation.set(0,yaw,0);c.updateProjectionMatrix()}
+  }else if(CFG.part==='bat'){
+    // 타자: 고른 옆 벽 = 홈플레이트 뒤 타자 시점 (높이 2.7m 화면)
+    const pw=CFG.pwall,f=cams[pw],a=r[pw].w/r[pw].h;f.aspect=a;f.fov=58.7;f.position.copy(BAT_EYE);f.rotation.set(0,0,0);f.updateProjectionMatrix();
+    const fc=cams.front,fa=r.front.w/r.front.h;fc.aspect=fa;fc.fov=42;fc.position.set(0,7.5,11);fc.lookAt(0,0,-16);fc.updateProjectionMatrix();
+    const ow=OW(),c=cams[ow],a2=r[ow].w/r[ow].h;c.aspect=a2;c.fov=THREE.MathUtils.radToDeg(2*Math.atan(1/a2));c.position.copy(BAT_EYE);c.rotation.set(0,ow==='left'?Math.PI/2:-Math.PI/2,0);c.updateProjectionMatrix();
   }else{
     // 투수 시점: 마운드에서 홈을 당겨서 봄. 옆 벽은 마운드에서 본 1루·3루 쪽
     // 던지는 벽(왼쪽 또는 오른쪽) = 마운드에서 홈을 당겨 본 화면
@@ -498,7 +503,7 @@ function relayout(){RECTS=computeRects();
 function resize(){W=innerWidth;H=innerHeight;renderer.setSize(W,H,false);relayout()}
 addEventListener('resize',resize);
 let lastPos='';setInterval(()=>{const p=screenX+','+screenY;if(p!==lastPos){lastPos=p;relayout()}},1000);
-function syncOpts(){document.querySelectorAll('.opt').forEach(b=>b.classList.toggle('sel',String(CFG[b.dataset.k])===b.dataset.v));$('#pwRow').style.display=CFG.part==='pitch'&&!EMBED?'':'none';if(EMBED)$('#modeRow').style.display='none'}
+function syncOpts(){document.querySelectorAll('.opt').forEach(b=>b.classList.toggle('sel',String(CFG[b.dataset.k])===b.dataset.v));$('#pwRow').style.display=!EMBED?'':'none';if(EMBED)$('#modeRow').style.display='none'}
 document.querySelectorAll('.opt').forEach(b=>b.addEventListener('click',()=>{ac();const k=b.dataset.k;CFG[k]=(k==='mode'||k==='part'||k==='pwall')?b.dataset.v:+b.dataset.v;save('cfg',CFG);syncOpts();sfx.tick()}));
 $('#startBtn').addEventListener('click',start);$('#againBtn').addEventListener('click',start);$('#toHome').addEventListener('click',goHome);$('#homeBtn').addEventListener('click',goHome);
 addEventListener('keydown',e=>{if(e.key==='Escape')goHome()});document.addEventListener('contextmenu',e=>e.preventDefault());

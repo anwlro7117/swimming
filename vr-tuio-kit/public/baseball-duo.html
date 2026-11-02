@@ -31,7 +31,7 @@ iframe{position:fixed;border:0;display:block;background:#000}
 <script>window.TUIO_DWELL_MS=4000;</script>
 <script src="/tuio-pointer.js"></script>
 <script>
-// 정면 벽을 반으로 나눠 왼쪽 = 빨강, 오른쪽 = 파랑. 왼쪽 벽 = 빨강 점수판, 오른쪽 벽 = 파랑 점수판
+// 왼쪽 벽 = 빨강 선수 게임, 오른쪽 벽 = 파랑 선수 게임, 정면 = 두 선수 점수판(반반)
 const $=s=>document.querySelector(s);
 const LS='baseballduo.',WALLS=['left','front','right'];
 function load(k,d){try{const v=localStorage.getItem(LS+k);return v==null?d:JSON.parse(v)}catch(e){return d}}
@@ -48,8 +48,9 @@ function rects(){const W=innerWidth,H=innerHeight,walls=load('walls',null),R={};
 if(/norender/.test(location.search))for(const id of ['#fL','#fR'])$(id).src+='&norender';   // 시험용
 const place=(el,r)=>Object.assign(el.style,{left:r.x+'px',top:r.y+'px',width:r.w+'px',height:r.h+'px'});
 function layout(){const R=rects(),f=R.front,hw=Math.floor(f.w/2);
-  place($('#fL'),{x:f.x,y:f.y,w:hw,h:f.h});place($('#fR'),{x:f.x+hw,y:f.y,w:f.w-hw,h:f.h});
-  place($('#divider'),{x:f.x+hw-3,y:f.y,w:6,h:f.h});place($('#sL'),R.left);place($('#sR'),R.right)}
+  // 게임 = 좌우 벽 (정면 가운데 터치가 약해서), 정면 = 두 선수 점수판 반반
+  place($('#fL'),R.left);place($('#fR'),R.right);
+  place($('#divider'),{x:f.x+hw-3,y:f.y,w:6,h:f.h});place($('#sL'),{x:f.x,y:f.y,w:hw,h:f.h});place($('#sR'),{x:f.x+hw,y:f.y,w:f.w-hw,h:f.h})}
 addEventListener('resize',layout);let lp='';setInterval(()=>{const p=screenX+','+screenY;if(p!==lp){lp=p;layout()}},1000);layout();
 
 // 센서 터치 → 해당 반쪽 게임으로 넘겨주기
