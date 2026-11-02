@@ -43,6 +43,12 @@
       <h2>현재 터치점</h2>
       <div id="list"></div>
     </div>
+    <div class="card" style="margin-top:16px">
+      <h2>터치 기록 (공 던지기 시험용)</h2>
+      <p class="mute">벽에 공을 던질 때마다 한 줄씩 생겨야 한다. 세게 던졌는데 줄이 안 생기면 센서(카메라)가 못 본 것이다. 시간이 아주 짧게(30ms 이하) 찍히면 겨우 잡힌 것이다.</p>
+      <div class="row"><span id="hitCnt" class="pill">0번</span><button id="hitClr">지우기</button></div>
+      <div id="hits" style="font-family:Consolas,monospace;font-size:13px;max-height:220px;overflow:auto;white-space:pre;margin-top:8px"></div>
+    </div>
   </section>
   <aside>
     <div class="card">
@@ -126,11 +132,17 @@ function connect(){
   es.onmessage = e => {
     cursors = JSON.parse(e.data).c;
     const now = new Set(cursors.map(c=>c.id));
-    for (const [id,p] of lastPos) if (!now.has(id)) { lastPos.delete(id); onUp(p); }
-    for (const c of cursors) lastPos.set(c.id, c);
+    const tnow = performance.now();
+    for (const [id,p] of lastPos) if (!now.has(id)) { lastPos.delete(id); onUp(p); logHit(p, tnow); }
+    for (const c of cursors) { const o=lastPos.get(c.id); lastPos.set(c.id, Object.assign(c,{t0:o?o.t0:tnow,n:(o?o.n:0)+1})); }
     document.getElementById('list').textContent = cursors.map(c=>`#${c.id}  x ${c.x.toFixed(3)}  y ${c.y.toFixed(3)}  → ${zoneOf(c)?.name ?? '구역 밖'}`).join('\n') || '(없음)';
   };
 }
+let hitN=0;const hitLines=[];
+function logHit(p,tnow){hitN++;const d=Math.round(tnow-p.t0),z=zoneOf(p);
+  hitLines.unshift(`${new Date().toLocaleTimeString()}  ${String(d).padStart(5)}ms  ${String(p.n).padStart(3)}프레임  ${z?z.name:'구역 밖'}  (${p.x.toFixed(2)}, ${p.y.toFixed(2)})${d<=30?'  ← 아주 짧음':''}`);
+  if(hitLines.length>60)hitLines.pop();document.getElementById('hits').textContent=hitLines.join('\n');document.getElementById('hitCnt').textContent=hitN+'번'}
+document.getElementById('hitClr').onclick=()=>{hitN=0;hitLines.length=0;document.getElementById('hits').textContent='';document.getElementById('hitCnt').textContent='0번'};
 connect();
 setInterval(async ()=>{
   try { const s = await (await fetch('/status')).json(); const el=document.getElementById('pkt');
