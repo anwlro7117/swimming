@@ -411,6 +411,12 @@ def calibrate(cam, kit, cfg, sender):
     i = 0; state = 'wait'; samples = []; t_on = 0; t_off = time.time()
     print(f'보정 시작: {d.get("name", did)} — 노란 원 가운데를 손가락으로 1초 누르고 떼기. Esc 취소')
     ok = False
+    # 시작 전 0.7초: 아무도 안 만질 때 계속 보이는 점(반사광 등) 위치를 기억해 보정에서 뺀다
+    static = []; t_s = time.time()
+    while time.time() - t_s < 0.7:
+        static += [(x, y) for x, y, a in cam.raw]; time.sleep(0.02)
+    def real(raw):
+        return [r for r in raw if all(math.hypot(r[0] - x, r[1] - y) > 12 for x, y in static)]
     while True:
         img = np.zeros((H, W, 3), np.uint8)
         for j, (u, v) in enumerate(targets):
@@ -423,6 +429,8 @@ def calibrate(cam, kit, cfg, sender):
             r = 60 if state != 'hold' else int(60 - 40 * min(1, (time.time() - t_on) / 0.8))
             cv2.circle(img, p, r, col, 6); cv2.circle(img, p, 8, col, -1)
             cv2.line(img, (p[0] - 90, p[1]), (p[0] + 90, p[1]), col, 2); cv2.line(img, (p[0], p[1] - 90), (p[0], p[1] + 90), col, 2)
+        seen = len(real(list(cam.raw)))
+        cv2.putText(img, f'camera {cam.slot+1} sees: {seen}', (40, 60), cv2.FONT_HERSHEY_SIMPLEX, 1.4, (0, 255, 0) if seen else (90, 90, 255), 3)
         cv2.putText(img, f'{min(i+1, len(targets))} / {len(targets)}   (Esc = cancel)', (40, H - 40), cv2.FONT_HERSHEY_SIMPLEX, 1.4, (200, 200, 200), 3)
         cv2.imshow(win, img)
         k = cv2.waitKey(10) & 0xFF
@@ -438,7 +446,7 @@ def calibrate(cam, kit, cfg, sender):
                 print('보정 실패:', e)
             break
         now = time.time()
-        raw = list(cam.raw)
+        raw = real(list(cam.raw))
         if state == 'wait':
             if raw and now - t_off > 0.3:
                 state = 'hold'; t_on = now; samples = []
