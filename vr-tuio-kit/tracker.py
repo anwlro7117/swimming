@@ -7,6 +7,7 @@ VR실 고속 터치 트래커 (YTS 대신 사용). 카메라 5대를 60~120fps �
 YTS 설정 파일은 읽지도 쓰지도 않는다. 설정은 tracker.json 에만 저장.
 미리보기 창 키:
   1~5 / Tab  카메라 선택        l f r  선택 카메라 = 좌/정면/우 벽   a d  바닥 왼쪽/오른쪽     n  선택 카메라 끄기(바닥 등)   u  지정 해제
+  k  선택 카메라에서 지금 빨간 곳 = 무시 구역 등록 (아무도 안 만질 때)   o  무시 구역 지우기
   c  선택 카메라 터치 보정(벽에 점 표시)     b  배경 다시 찍기(손 떼고)
   t / g  감도 문턱 +/-     ] / [  최소 크기 +/-     m  흑백/검출 화면 전환
   x / y  선택 카메라 좌우/상하 뒤집기     s  저장     q / Esc  종료
@@ -170,6 +171,7 @@ class Cam(threading.Thread):
         self.W, self.H = cfg['width'], cfg['height']
         self.cap = None; self.ok = False; self.err = ''
         self.frame = None; self.mask = None
+        self.ign = None; self.ign_key = None   # 무시 구역 마스크
         self.bg = None; self.bg_acc = None; self.bg_n = 0
         self.raw = []                 # 이번 프레임 검출 [(x,y,area)]
         self.tracks = {}              # id -> dict
@@ -206,6 +208,39 @@ class Cam(threading.Thread):
         self.cap = cap; self.ok = True
         w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)); h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         print(f'카메라 {self.slot+1} (번호 {idx}) 열림 {w}x{h} 요청 {cfg["fps"]}fps')
+
+    def ignore_mask(self):
+        spots = self.cc.get('ignore') or []
+        key = json.dumps(spots)
+        if key != self.ign_key:
+            self.ign_key = key
+            if not spots: self.ign = None
+            else:
+                mk = np.full((self.H, self.W), 255, np.uint8)
+                for u, v, r in spots:
+                    cv2.circle(mk, (int(u * self.W), int(v * self.H)), max(2, int(r * self.W)), 0, -1)
+                self.ign = mk
+        return self.ign
+
+    def add_ignore(self):
+        """지금 검출된(빨간) 곳을 무시 구역으로 등록."""
+        m = self.mask
+        if m is None: return 0
+        m = cv2.dilate(m, None, iterations=4)
+        cnts, _ = cv2.findContours(m, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        spots = self.cc.setdefault('ignore', [])
+        n = 0
+        for ct in cnts:
+            x, y, w, h = cv2.boundingRect(ct)
+            # 긴 띠는 작은 원 여러 개로 덮는다
+            step = max(4, min(w, h))
+            r = max(w, h) / 2 if max(w, h) <= 2 * step else step * 0.75
+            for cx in np.arange(x + step / 2, x + w + 1, step) if w >= h else [x + w / 2]:
+                for cy in np.arange(y + step / 2, y + h + 1, step) if h > w else [y + h / 2]:
+                    rr = (min(w, h) / 2 + 3) if max(w, h) > 2 * step else r + 3
+                    spots.append([round(float(cx) / self.W, 4), round(float(cy) / self.H, 4), round((max(rr, step * 0.75) + 2) / self.W, 4)])
+                    n += 1
+        return n
 
     def reset_bg(self):
         with self.lock: self.bg = None; self.bg_acc = None; self.bg_n = 0
@@ -247,6 +282,8 @@ class Cam(threading.Thread):
         if hp > 1: d = cv2.subtract(d, cv2.blur(d, (hp, hp)))
         if c['amplify'] != 1: d = cv2.convertScaleAbs(d, alpha=c['amplify'])
         _, m = cv2.threshold(d, c['threshold'], 255, cv2.THRESH_BINARY)
+        ig = self.ignore_mask()
+        if ig is not None: m = cv2.bitwise_and(m, ig)
         n, lab, st, cen = cv2.connectedComponentsWithStats(m, connectivity=8)
         raw = []
         for i in range(1, n):
@@ -445,7 +482,7 @@ def preview_img(cams, sel, show_mask, cfg):
         tiles.append(cv2.resize(t, (320, 240)))
     row = np.hstack(tiles)
     bar = np.zeros((44, row.shape[1], 3), np.uint8)
-    cv2.putText(bar, f'thr {cfg["threshold"]} (t/g)  min {cfg["min_area"]} ([/])  sel {sel+1} (1-5)  wall l/f/r floor a/d  off n  calib c  bg b  mask m  flip x/y  save s  quit q',
+    cv2.putText(bar, f'thr {cfg["threshold"]} (t/g)  min {cfg["min_area"]} ([/])  sel {sel+1} (1-5)  wall l/f/r floor a/d  off n  ignore k/o  calib c  bg b  mask m  flip x/y  save s  quit q',
                 (6, 18), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (220, 220, 220), 1)
     return np.vstack([row, bar])
 
@@ -512,6 +549,10 @@ def main():
             elif ch == 'n': cur.cc['display'] = 'off'; print(f'카메라 {sel+1} 끔')
             elif ch == 'u': cur.cc['display'] = None; cur.cc.pop('calib', None); cur.set_calib(None)
             elif ch == 'c': calibrate(cur, kit, cfg, snd)
+            elif ch == 'k':
+                print(f'카메라 {sel+1}: 무시 구역 {cur.add_ignore()}개 추가 (s 로 저장)')
+            elif ch == 'o':
+                cur.cc['ignore'] = []; print(f'카메라 {sel+1}: 무시 구역 지움')
             elif ch == 'b':
                 for c in cams: c.reset_bg()
                 print('배경 다시 찍는 중 — 손 떼기')
