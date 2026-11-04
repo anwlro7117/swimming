@@ -37,8 +37,9 @@ DEFAULT = {
     "hold_ms": 60,           # 1프레임만 찍힌 공도 이 시간만큼 유지
     "stable_ms": 0,          # >0 이면 이 시간 이상 보인 점만 보냄 (가짜 깜빡임 거르기)
     "tuio_host": "127.0.0.1", "tuio_port": 3333,
-    "grid_u": [0.08, 0.36, 0.64, 0.92],
-    "grid_v": [0.08, 0.38, 0.68],
+    "grid_u": [0.06, 0.28, 0.5, 0.72, 0.94],
+    "grid_v": [0.07, 0.29, 0.5, 0.71],
+    "skip_s": 6,             # 보정 점에서 이 시간 동안 못 잡으면 자동 건너뜀 (사각지대)
     "cams": [{"index": i, "display": None, "flip_x": False, "flip_y": False} for i in range(5)],
 }
 
@@ -48,6 +49,9 @@ def load_cfg():
     if os.path.exists(CFG_PATH):
         with open(CFG_PATH, encoding='utf-8') as f:
             cfg.update(json.load(f))
+        if cfg.get('grid_u') == [0.08, 0.36, 0.64, 0.92] and cfg.get('grid_v') == [0.08, 0.38, 0.68]:
+            cfg['grid_u'], cfg['grid_v'] = DEFAULT['grid_u'], DEFAULT['grid_v']   # 예전 12점 → 20점
+        cfg.setdefault('skip_s', DEFAULT['skip_s'])
     return cfg
 
 
@@ -424,12 +428,12 @@ def calibrate(cam, kit, cfg, sender):
         if static_m is None: return raw
         return [r for r in raw if static_m[min(cam.H - 1, int(r[1])), min(cam.W - 1, int(r[0]))] == 0]
     near = 0.1 * cam.W          # 같은 손으로 볼 거리 (픽셀)
-    hold_p = None; last_p = None
+    hold_p = None; last_p = None; skipped = []; t_step = time.time()
     while True:
         img = np.zeros((H, W, 3), np.uint8)
         for j, (u, v) in enumerate(targets):
             p = (int(u * W), int(v * H))
-            if j < i: cv2.circle(img, p, 14, (60, 160, 60), -1)
+            if j < i: cv2.circle(img, p, 14, (60, 60, 200) if j in skipped else (60, 160, 60), -1)
             elif j > i: cv2.circle(img, p, 10, (70, 70, 70), 2)
         if i < len(targets):
             u, v = targets[i]; p = (int(u * W), int(v * H))
@@ -441,10 +445,23 @@ def calibrate(cam, kit, cfg, sender):
         msg = 'lift hand' if state == 'release' else f'camera {cam.slot+1} sees: {seen}'
         cv2.putText(img, msg, (40, 60), cv2.FONT_HERSHEY_SIMPLEX, 1.4, (0, 255, 0) if seen else (90, 90, 255), 3)
         cv2.putText(img, f'{min(i+1, len(targets))} / {len(targets)}   (Space = skip, Esc = cancel)', (40, H - 40), cv2.FONT_HERSHEY_SIMPLEX, 1.4, (200, 200, 200), 3)
+        # 오른쪽 위: 카메라가 보는 화면 (빨강 = 잡힌 곳)
+        if cam.frame is not None:
+            v = cv2.cvtColor(cam.frame, cv2.COLOR_GRAY2BGR)
+            if cam.mask is not None: v[cam.mask > 0] = (0, 0, 255)
+            if static_m is not None: v[static_m > 0] = (v[static_m > 0] * 0.4).astype(np.uint8)
+            for (sx, sy) in src: cv2.circle(v, (int(sx * cam.W), int(sy * cam.H)), 4, (0, 200, 0), -1)
+            v = cv2.resize(v, (480, 360)); img[20:380, W - 500:W - 20] = v
+            cv2.rectangle(img, (W - 500, 20), (W - 20, 380), (200, 200, 200), 1)
+        if state == 'wait' and i < len(targets):
+            left = cfg.get('skip_s', 6) - (time.time() - t_step)
+            cv2.putText(img, f'auto skip {max(0, left):.0f}s', (40, 120), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (120, 120, 120), 2)
+        else: left = 1
         cv2.imshow(win, img)
         k = cv2.waitKey(10) & 0xFF
         if k == 27: break
-        if k == 32 and i < len(targets):
+        if (k == 32 or left <= 0) and i < len(targets):
+            skipped.append(i); t_step = time.time()
             i += 1; state = 'wait'; t_off = time.time(); continue
         if i >= len(targets):
             try:
@@ -452,17 +469,18 @@ def calibrate(cam, kit, cfg, sender):
                 cal = {'display': did, 'src': src, 'dst': dst}
                 mp = Mapper(src, dst)
                 cam.cc['calib'] = cal; cam.set_calib(cal)
+                if skipped: print(f'못 잡은 점 {len(skipped)}개 (사각지대 가능): ' + ', '.join(f'{targets[j][0]:.2f},{targets[j][1]:.2f}' for j in skipped))
                 print(f'보정 완료 ({len(src)}점). 평균 오차 {mp.err*100:.1f}% (2% 이하 좋음)')
                 ok = True
             except Exception as e:
                 print('보정 실패:', e)
             break
-        now = time.time()
+        now = time.time(); cam.cal_i = i
         raw = real(list(cam.raw))
         if state == 'release':
             # 방금 누른 자리에서 손이 떨어지면 다음 (다른 곳 잡티는 상관없음)
             if not any(math.hypot(x - last_p[0], y - last_p[1]) < near for x, y, a in raw):
-                if now - t_off > 0.3: state = 'wait'; t_off = now
+                if now - t_off > 0.3: state = 'wait'; t_off = now; t_step = now
             else: t_off = now
             continue
         if state == 'wait':
@@ -477,9 +495,9 @@ def calibrate(cam, kit, cfg, sender):
                 if now - t_on >= 0.8 and len(samples) >= 5:
                     sm = np.array(samples[len(samples) // 3:])
                     src.append([float(np.median(sm[:, 0])), float(np.median(sm[:, 1]))]); dst.append(list(targets[i]))
-                    i += 1; state = 'release'; last_p = hold_p; t_off = now
+                    i += 1; state = 'release'; last_p = hold_p; t_off = now; t_step = now + 1e6
             else:
-                state = 'wait'; t_off = now
+                state = 'wait'; t_off = now; t_step = now
     cv2.destroyWindow(win)
     sender.paused = False
     return ok
