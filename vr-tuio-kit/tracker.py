@@ -8,6 +8,7 @@ YTS 설정 파일은 읽지도 쓰지도 않는다. 설정은 tracker.json 에�
 미리보기 창 키:
   1~5 / Tab  카메라 선택        l f r  선택 카메라 = 좌/정면/우 벽   a d  바닥 왼쪽/오른쪽     n  선택 카메라 끄기(바닥 등)   u  지정 해제
   k  선택 카메라에서 지금 빨간 곳 = 무시 구역 등록 (아무도 안 만질 때)   o  무시 구역 지우기
+  w  선택 카메라 640x480 <-> 1280x720 (넓게 보이는지 비교)   p  카메라 설정 창(줌·노출)
   c  선택 카메라 터치 보정(벽에 점 표시)     b  배경 다시 찍기(손 떼고)
   t / g  감도 문턱 +/-     ] / [  최소 크기 +/-     m  흑백/검출 화면 전환
   x / y  선택 카메라 좌우/상하 뒤집기     s  저장     q / Esc  종료
@@ -202,13 +203,16 @@ class Cam(threading.Thread):
             self.err = '열기 실패 (YTS 켜져 있나?)'; print(f'카메라 {self.slot+1} (번호 {idx}) {self.err}'); return
         fcc = cv2.VideoWriter_fourcc(*cfg['fourcc'])
         cap.set(cv2.CAP_PROP_FOURCC, fcc)
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, cfg.get('cap_width', self.W)); cap.set(cv2.CAP_PROP_FRAME_HEIGHT, cfg.get('cap_height', self.H))
+        cw, ch = self.cc.get('cap') or (cfg.get('cap_width', self.W), cfg.get('cap_height', self.H))
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, cw); cap.set(cv2.CAP_PROP_FRAME_HEIGHT, ch)
         cap.set(cv2.CAP_PROP_FPS, cfg['fps'])
         cap.set(cv2.CAP_PROP_FOURCC, fcc)
         try: cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
         except Exception: pass
         if cfg.get('exposure') is not None:
             cap.set(cv2.CAP_PROP_EXPOSURE, cfg['exposure'])
+        if self.cc.get('zoom') is not None:
+            cap.set(cv2.CAP_PROP_ZOOM, self.cc['zoom'])
         self.cap = cap; self.ok = True
         w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)); h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         print(f'카메라 {self.slot+1} (번호 {idx}) 열림 {w}x{h} 요청 {cfg["fps"]}fps')
@@ -252,6 +256,15 @@ class Cam(threading.Thread):
     def run(self):
         self.open()
         while self.running and self.ok:
+            if getattr(self, 'req_settings', False):
+                self.req_settings = False
+                if not self.synth:
+                    try: self.cap.set(cv2.CAP_PROP_SETTINGS, 1)   # 윈도우 카메라 설정 창
+                    except Exception as e: print('설정 창 실패:', e)
+            if getattr(self, 'req_reopen', False):
+                self.req_reopen = False
+                self.cap.release(); self.open(); self.reset_bg()
+                if not self.ok: break
             ok, img = self.cap.read()
             if not ok or img is None:
                 self.err = '영상 끊김'; time.sleep(0.05); continue
@@ -522,12 +535,13 @@ def preview_img(cams, sel, show_mask, cfg):
         cal = 'CAL' if c.mapper else 'no-cal'
         st = 'BG...' if c.bg is None and c.ok else (c.err or '')
         cv2.putText(t, f'{c.slot+1} cam#{c.cc["index"]} {did} {cal}', (4, 14), cv2.FONT_HERSHEY_SIMPLEX, 0.42, (255, 255, 0), 1)
-        cv2.putText(t, f'{c.fps:.0f}fps {st}', (4, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.42, (255, 255, 0), 1)
+        csz = c.cc.get('cap') or [cfg.get('cap_width'), cfg.get('cap_height')]
+        cv2.putText(t, f'{c.fps:.0f}fps {csz[0]}x{csz[1]} {st}', (4, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.42, (255, 255, 0), 1)
         if c.slot == sel: cv2.rectangle(t, (0, 0), (t.shape[1] - 1, t.shape[0] - 1), (0, 255, 255), 3)
         tiles.append(cv2.resize(t, (320, 240)))
     row = np.hstack(tiles)
     bar = np.zeros((44, row.shape[1], 3), np.uint8)
-    cv2.putText(bar, f'thr {cfg["threshold"]} (t/g)  min {cfg["min_area"]} ([/])  sel {sel+1} (1-5)  wall l/f/r floor a/d  off n  ignore k/o  calib c  bg b  mask m  flip x/y  save s  quit q',
+    cv2.putText(bar, f'thr {cfg["threshold"]} (t/g)  min {cfg["min_area"]} ([/])  sel {sel+1} (1-5)  wall l/f/r floor a/d  off n  ignore k/o  calib c  wide w  props p  bg b  mask m  flip x/y  save s  quit q',
                 (6, 18), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (220, 220, 220), 1)
     return np.vstack([row, bar])
 
@@ -538,7 +552,7 @@ def probe():
         cap = cv2.VideoCapture(idx, cv2.CAP_DSHOW) if os.name == 'nt' else cv2.VideoCapture(idx)
         if not cap.isOpened(): continue
         for fcc in ('MJPG', 'YUY2'):
-            for (w, h, fps) in ((640, 480, 120), (640, 480, 60), (320, 240, 120)):
+            for (w, h, fps) in ((640, 480, 120), (1280, 720, 60), (320, 240, 120)):
                 cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*fcc))
                 cap.set(cv2.CAP_PROP_FRAME_WIDTH, w); cap.set(cv2.CAP_PROP_FRAME_HEIGHT, h)
                 cap.set(cv2.CAP_PROP_FPS, fps); cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*fcc))
@@ -598,6 +612,14 @@ def main():
                 print(f'카메라 {sel+1}: 무시 구역 {cur.add_ignore()}개 추가 (s 로 저장)')
             elif ch == 'o':
                 cur.cc['ignore'] = []; print(f'카메라 {sel+1}: 무시 구역 지움')
+            elif ch == 'p':
+                cur.req_settings = True; print(f'카메라 {sel+1}: 카메라 설정 창 (확대/줌·노출 확인)')
+            elif ch == 'w':
+                now_c = cur.cc.get('cap') or [cfg.get('cap_width', 640), cfg.get('cap_height', 480)]
+                cur.cc['cap'] = [1280, 720] if list(now_c) == [640, 480] else [640, 480]
+                cur.cc.pop('calib', None); cur.set_calib(None); cur.cc['ignore'] = []
+                cur.req_reopen = True
+                print(f'카메라 {sel+1}: {cur.cc["cap"][0]}x{cur.cc["cap"][1]} 로 바꿈 → 화면 넓어졌는지 확인. 보정·무시구역 초기화됨')
             elif ch == 'b':
                 for c in cams: c.reset_bg()
                 print('배경 다시 찍는 중 — 손 떼기')
