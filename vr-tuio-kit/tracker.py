@@ -411,12 +411,20 @@ def calibrate(cam, kit, cfg, sender):
     i = 0; state = 'wait'; samples = []; t_on = 0; t_off = time.time()
     print(f'보정 시작: {d.get("name", did)} — 노란 원 가운데를 손가락으로 1초 누르고 떼기. Esc 취소')
     ok = False
-    # 시작 전 0.7초: 아무도 안 만질 때 계속 보이는 점(반사광 등) 위치를 기억해 보정에서 뺀다
-    static = []; t_s = time.time()
-    while time.time() - t_s < 0.7:
-        static += [(x, y) for x, y, a in cam.raw]; time.sleep(0.02)
+    # 시작 전 1.5초: 아무도 안 만질 때 빨갛게 뜨는 곳(벽 아래 띠, 반사광)을 모아 보정에서 뺀다
+    static_m = None; t_s = time.time()
+    while time.time() - t_s < 1.5:
+        m = cam.mask
+        if m is not None: static_m = m.copy() if static_m is None else cv2.bitwise_or(static_m, m)
+        img = np.zeros((H, W, 3), np.uint8)
+        cv2.putText(img, 'Do not touch...', (40, 60), cv2.FONT_HERSHEY_SIMPLEX, 1.4, (200, 200, 200), 3)
+        cv2.imshow(win, img); cv2.waitKey(20)
+    if static_m is not None: static_m = cv2.dilate(static_m, None, iterations=6)
     def real(raw):
-        return [r for r in raw if all(math.hypot(r[0] - x, r[1] - y) > 12 for x, y in static)]
+        if static_m is None: return raw
+        return [r for r in raw if static_m[min(cam.H - 1, int(r[1])), min(cam.W - 1, int(r[0]))] == 0]
+    near = 0.1 * cam.W          # 같은 손으로 볼 거리 (픽셀)
+    hold_p = None; last_p = None
     while True:
         img = np.zeros((H, W, 3), np.uint8)
         for j, (u, v) in enumerate(targets):
@@ -430,37 +438,48 @@ def calibrate(cam, kit, cfg, sender):
             cv2.circle(img, p, r, col, 6); cv2.circle(img, p, 8, col, -1)
             cv2.line(img, (p[0] - 90, p[1]), (p[0] + 90, p[1]), col, 2); cv2.line(img, (p[0], p[1] - 90), (p[0], p[1] + 90), col, 2)
         seen = len(real(list(cam.raw)))
-        cv2.putText(img, f'camera {cam.slot+1} sees: {seen}', (40, 60), cv2.FONT_HERSHEY_SIMPLEX, 1.4, (0, 255, 0) if seen else (90, 90, 255), 3)
-        cv2.putText(img, f'{min(i+1, len(targets))} / {len(targets)}   (Esc = cancel)', (40, H - 40), cv2.FONT_HERSHEY_SIMPLEX, 1.4, (200, 200, 200), 3)
+        msg = 'lift hand' if state == 'release' else f'camera {cam.slot+1} sees: {seen}'
+        cv2.putText(img, msg, (40, 60), cv2.FONT_HERSHEY_SIMPLEX, 1.4, (0, 255, 0) if seen else (90, 90, 255), 3)
+        cv2.putText(img, f'{min(i+1, len(targets))} / {len(targets)}   (Space = skip, Esc = cancel)', (40, H - 40), cv2.FONT_HERSHEY_SIMPLEX, 1.4, (200, 200, 200), 3)
         cv2.imshow(win, img)
         k = cv2.waitKey(10) & 0xFF
         if k == 27: break
+        if k == 32 and i < len(targets):
+            i += 1; state = 'wait'; t_off = time.time(); continue
         if i >= len(targets):
             try:
+                if len(src) < 4: raise ValueError(f'점 {len(src)}개 — 4개 이상 필요')
                 cal = {'display': did, 'src': src, 'dst': dst}
                 mp = Mapper(src, dst)
                 cam.cc['calib'] = cal; cam.set_calib(cal)
-                print(f'보정 완료. 평균 오차 {mp.err*100:.1f}% (2% 이하 좋음)')
+                print(f'보정 완료 ({len(src)}점). 평균 오차 {mp.err*100:.1f}% (2% 이하 좋음)')
                 ok = True
             except Exception as e:
                 print('보정 실패:', e)
             break
         now = time.time()
         raw = real(list(cam.raw))
+        if state == 'release':
+            # 방금 누른 자리에서 손이 떨어지면 다음 (다른 곳 잡티는 상관없음)
+            if not any(math.hypot(x - last_p[0], y - last_p[1]) < near for x, y, a in raw):
+                if now - t_off > 0.3: state = 'wait'; t_off = now
+            else: t_off = now
+            continue
         if state == 'wait':
             if raw and now - t_off > 0.3:
+                b = max(raw, key=lambda r: r[2]); hold_p = (b[0], b[1])
                 state = 'hold'; t_on = now; samples = []
         if state == 'hold':
-            if raw:
-                b = max(raw, key=lambda r: r[2]); samples.append((b[0] / cam.W, b[1] / cam.H))
+            cand = [r for r in raw if math.hypot(r[0] - hold_p[0], r[1] - hold_p[1]) < near]
+            if cand:
+                b = max(cand, key=lambda r: r[2]); hold_p = (b[0], b[1])
+                samples.append((b[0] / cam.W, b[1] / cam.H))
                 if now - t_on >= 0.8 and len(samples) >= 5:
-                    s = np.array(samples[len(samples) // 3:])
-                    src.append([float(np.median(s[:, 0])), float(np.median(s[:, 1]))]); dst.append(list(targets[i]))
-                    i += 1; state = 'release'
+                    sm = np.array(samples[len(samples) // 3:])
+                    src.append([float(np.median(sm[:, 0])), float(np.median(sm[:, 1]))]); dst.append(list(targets[i]))
+                    i += 1; state = 'release'; last_p = hold_p; t_off = now
             else:
                 state = 'wait'; t_off = now
-        elif state == 'release':
-            if not raw: state = 'wait'; t_off = now
     cv2.destroyWindow(win)
     sender.paused = False
     return ok
