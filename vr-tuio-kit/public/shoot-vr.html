@@ -72,6 +72,11 @@ canvas#cv{position:fixed;left:0;top:0;width:100%;height:100%;display:block}
       <button class="opt" data-k="lv" data-v="1">🐥 보통<small>가끔 막아요</small></button>
       <button class="opt" data-k="lv" data-v="2">🦅 어려움<small>움직이는 골키퍼</small></button>
     </div>
+    <div class="row"><span class="lbl">골대 높이</span>
+      <button class="opt" data-k="gh" data-v="0">⬇️ 낮게<small>제일 쉬움</small></button>
+      <button class="opt" data-k="gh" data-v="1">보통</button>
+      <button class="opt" data-k="gh" data-v="2">⬆️ 높게<small>센서 제일 잘 됨</small></button>
+    </div>
     <button id="startBtn">시작! ▶</button>
   </section>
   <div id="hud"><span id="hudN">1 / 10</span><span id="hudS">⭐ 0</span><span class="turn" id="hudT"></span></div>
@@ -91,7 +96,8 @@ const $=s=>document.querySelector(s);
 const LS='shootvr.';
 function load(k,d){try{const v=localStorage.getItem(LS+k);return v==null?d:JSON.parse(v)}catch(e){return d}}
 function save(k,v){try{localStorage.setItem(LS+k,JSON.stringify(v))}catch(e){}}
-const CFG=Object.assign({mode:'solo',lv:0},load('cfg',{}));
+const CFG=Object.assign({mode:'solo',lv:0,gh:0},load('cfg',{}));
+if(CFG.gh==null)CFG.gh=0;
 // save: 가운데로 찬 공을 막을 확률, fall: 구석일수록 줄어드는 정도, react: 키퍼 반응 시간, sway: 좌우로 움직이는 속도
 const LV=[{save:.15,fall:.9,react:.25,sway:0},{save:.32,fall:.7,react:.18,sway:0},{save:.5,fall:.55,react:.12,sway:1.6}];
 const GW=6.2,GH=2.6,BR=.2,SPOT=-9;   // 골대 폭·높이(아이용), 공 반지름, 페널티 자리
@@ -379,10 +385,11 @@ function render(){
 
 /* ---------- 카메라: 정면 = 골대가 벽 위쪽 3/4 안에 들어오게 ---------- */
 const EYE=new THREE.Vector3(0,1.25,SPOT-2.2);
-const GOAL_NY=[.12,.70];   // 골대 위·아래가 벽에서 놓일 높이 (아래 1/4 센서 약함)
+// 골대 위·아래가 벽에서 놓일 높이 (0=벽 맨 위, 1=맨 아래). 아래로 갈수록 차기 쉽지만 센서는 약해짐
+const GOAL_H=[[.36,.93],[.26,.84],[.12,.70]];
 function fitFront(r){const c=cams.front,a=r.w/r.h,dz=-EYE.z,ab=Math.atan2(0-EYE.y,dz),at=Math.atan2(GH-EYE.y,dz);
   // tan 모델: ny = .5 - k*tan(ang-p), k=1/(2tan(v/2)) → 두 식을 풀기 (반복)
-  const A=.5-GOAL_NY[0],B=GOAL_NY[1]-.5;   // k*tan(at-p)=A, k*tan(p-ab)=B
+  const GY=GOAL_H[CFG.gh]||GOAL_H[0],A=.5-GY[0],B=GY[1]-.5;   // k*tan(at-p)=A, k*tan(p-ab)=B
   let lo=ab,hi=at;for(let i=0;i<60;i++){const p=(lo+hi)/2;(Math.tan(at-p)*B-Math.tan(p-ab)*A>0)?lo=p:hi=p}
   const p=(lo+hi)/2,k=A/Math.tan(at-p);
   c.aspect=a;c.fov=THREE.MathUtils.radToDeg(2*Math.atan(1/(2*k)));c.position.copy(EYE);c.rotation.set(p,Math.PI,0,'YXZ');c.updateProjectionMatrix()}
@@ -396,7 +403,7 @@ function resize(){W=innerWidth;H=innerHeight;renderer.setSize(W,H,false);relayou
 addEventListener('resize',resize);
 let lastPos='';setInterval(()=>{const p=screenX+','+screenY;if(p!==lastPos){lastPos=p;relayout()}},1000);
 function syncOpts(){document.querySelectorAll('.opt').forEach(b=>b.classList.toggle('sel',String(CFG[b.dataset.k])===b.dataset.v))}
-document.querySelectorAll('.opt').forEach(b=>b.addEventListener('click',()=>{ac();const k=b.dataset.k;CFG[k]=k==='mode'?b.dataset.v:+b.dataset.v;save('cfg',CFG);syncOpts();sfx.tick()}));
+document.querySelectorAll('.opt').forEach(b=>b.addEventListener('click',()=>{ac();const k=b.dataset.k;CFG[k]=k==='mode'?b.dataset.v:+b.dataset.v;save('cfg',CFG);syncOpts();sfx.tick();if(k==='gh')relayout()}));
 $('#startBtn').addEventListener('click',start);$('#againBtn').addEventListener('click',start);
 $('#toHome').addEventListener('click',goHome);$('#homeBtn').addEventListener('click',goHome);
 addEventListener('keydown',e=>{if(e.key==='Escape')goHome()});
