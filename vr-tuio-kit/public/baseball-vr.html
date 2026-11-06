@@ -85,8 +85,9 @@ canvas#cv{position:fixed;left:0;top:0;width:100%;height:100%;display:block}
       <button class="opt" data-k="ht" data-v="2">높게</button>
     </div>
     <div class="row" id="pwRow"><span class="lbl">플레이 벽</span>
-      <button class="opt" data-k="pwall" data-v="left">⬅️ 왼쪽 벽에서 하기</button>
-      <button class="opt" data-k="pwall" data-v="right">오른쪽 벽에서 하기 ➡️</button>
+      <button class="opt" data-k="pwall" data-v="left">⬅️ 왼쪽 벽</button>
+      <button class="opt" data-k="pwall" data-v="front">정면 벽</button>
+      <button class="opt" data-k="pwall" data-v="right">오른쪽 벽 ➡️</button>
     </div>
     <button id="startBtn">플레이 볼! ▶</button>
   </section>
@@ -110,12 +111,13 @@ const TEAMDEF={red:{name:'빨강',color:'#ef4444',e:'🔴'},blue:{name:'파랑',
 const LS='baseballvr.'+(TEAM?TEAM+'.':'');
 function load(k,d){try{const v=localStorage.getItem(LS+k);return v==null?d:JSON.parse(v)}catch(e){return d}}
 function save(k,v){try{localStorage.setItem(LS+k,JSON.stringify(v))}catch(e){}}
-const CFG=Object.assign({part:'bat',mode:'solo',lv:0,ht:1,pwall:'left'},load('cfg',{}));
+const CFG=Object.assign({part:'bat',mode:'solo',lv:0,ht:1,pwall:'front'},load('cfg',{}));
+if(!CFG.pw2){CFG.pwall='front';CFG.pw2=1;save('cfg',CFG)}   // 정면으로 되돌림 (한 번만)
 // 투수 파트는 정면 가운데 터치가 약해서 옆 벽(왼쪽/오른쪽)에서 던진다
 const PITCHING=()=>G.phase!=='home';   // 투수·타자 모두 옆 벽에서 (정면 가운데 터치가 약함)
 if(EMBED)CFG.mode='solo';
 const MW=()=>PITCHING()&&!EMBED?CFG.pwall:'front';           // 지금 조작하는 벽
-const OW=()=>CFG.pwall==='left'?'right':'left';       // 투수 파트에서 남는 옆 벽
+const OW=()=>CFG.pwall==='left'?'right':'left';   // 옆 벽 모드에서 남는 벽 (정면 모드에서는 안 씀)
 
 /* ---------- 규칙 값 ---------- */
 // 타자 파트: T=공이 홈까지 오는 시간, win=칠 수 있는 시간 폭, mark=도착 표시 미리 보이는 비율, ball=볼(존 밖) 비율
@@ -305,7 +307,7 @@ function updFW(dt){for(const f of FW){if(f.d<=0)continue;f.t+=dt;if(f.t<0)contin
 const BAT_EYE=new THREE.Vector3(0,1.35,2.4);
 let zoneY=ZB[1];
 function setCams(){const r=RECTS;const pv=CFG.part==='pitch'&&G.phase!=='home';catcher.visible=ump.visible=pv;if(window.__net)window.__net.visible=!chase.on&&!pv&&!(G.phase!=='home'&&!EMBED);
-  if(G.phase==='home'||(CFG.part==='bat'&&EMBED)){
+  if(G.phase==='home'||(CFG.part==='bat'&&(EMBED||CFG.pwall==='front'))){
     // 타자 시점: 홈플레이트 뒤, 세 벽이 90도씩 이어짐. 정면 화면 = 홈플레이트 면 (폭 4.8m, 높이 2.7m)
     for(const [k,yaw] of [['left',Math.PI/2],['front',0],['right',-Math.PI/2]]){if(!r[k])continue;const c=cams[k],a=r[k].w/r[k].h;c.aspect=a;c.fov=EMBED?58.7:THREE.MathUtils.radToDeg(2*Math.atan(1/a));c.position.copy(BAT_EYE);c.rotation.set(0,yaw,0);c.updateProjectionMatrix()}
   }else if(CFG.part==='bat'){
@@ -319,6 +321,9 @@ function setCams(){const r=RECTS;const pv=CFG.part==='pitch'&&G.phase!=='home';c
     const pw=EMBED?'front':CFG.pwall,f=cams[pw],a=r[pw].w/r[pw].h,eye=new THREE.Vector3(0,1.7,-MOUND+.6);f.aspect=a;f.fov=10.5;f.position.copy(eye);
     const look=new THREE.Vector3(0,zoneY+ZH/2+[.55,.05,-.35][CFG.ht],0);f.lookAt(look);f.updateProjectionMatrix();
     if(EMBED)return;
+    if(CFG.pwall==='front'){   // 정면에서 던짐: 양옆 벽 = 마운드에서 본 1루·3루 쪽
+      for(const ow of ['left','right']){if(!r[ow])continue;const c=cams[ow],a2=r[ow].w/r[ow].h;c.aspect=a2;c.fov=THREE.MathUtils.radToDeg(2*Math.atan(1/a2));c.position.copy(eye);c.rotation.set(-.05,ow==='left'?Math.PI+Math.PI/2:Math.PI-Math.PI/2,0);c.updateProjectionMatrix()}
+      return}
     // 정면 = 중계 화면 (홈 뒤 위에서 경기장 전체)
     const fc=cams.front,fa=r.front.w/r.front.h;fc.aspect=fa;fc.fov=42;fc.position.set(0,7.5,11);fc.lookAt(0,0,-16);fc.updateProjectionMatrix();
     // 남는 옆 벽 = 마운드에서 본 1루 또는 3루 쪽
@@ -498,7 +503,7 @@ function loop(now){const dt=Math.min(.05,(now-last)/1000);last=now;update(dt);if
 function placeUI(id,r){Object.assign($(id).style,{left:r.x+'px',top:r.y+'px',width:r.w+'px',height:r.h+'px'})}
 function relayout(){RECTS=computeRects();
   if(EMBED){placeUI('#ui',RECTS.front);$('#uiL').style.display=$('#uiR').style.display='none'}
-  else if(PITCHING()){placeUI('#ui',RECTS[CFG.pwall]);placeUI('#uiL',RECTS.front);placeUI('#uiR',RECTS[OW()])}   // 투수: 조작 화면은 옆 벽, 점수판은 정면
+  else if(PITCHING()&&CFG.pwall!=='front'){placeUI('#ui',RECTS[CFG.pwall]);placeUI('#uiL',RECTS.front);placeUI('#uiR',RECTS[OW()])}   // 투수: 조작 화면은 옆 벽, 점수판은 정면
   else{placeUI('#ui',RECTS.front);placeUI('#uiL',RECTS.left);placeUI('#uiR',RECTS.right)}document.documentElement.style.setProperty('--u',(RECTS.front.w/100)+'px');if(!chase.on)setCams()}
 function resize(){W=innerWidth;H=innerHeight;renderer.setSize(W,H,false);relayout()}
 addEventListener('resize',resize);
@@ -514,7 +519,7 @@ if(EMBED&&TEAMDEF.e){const h=$('#home h1');h.insertAdjacentHTML('afterbegin',`<d
   if(!st)return;if(Math.hypot(d.x-st.x0,d.y-st.y0)>40)st.moved=true;const up=d.type==='pointerup'||d.type==='pointercancel';
   st.target.dispatchEvent(new PointerEvent(d.type,{bubbles:true,cancelable:true,pointerId:d.id,pointerType:'touch',clientX:d.x,clientY:d.y,buttons:up?0:1}));
   if(up){inj.delete(d.id);if(d.type==='pointerup'&&!st.moved&&performance.now()-st.t0<1200){const el=document.elementFromPoint(d.x,d.y),b=el&&el.closest&&el.closest('button');if(b)b.click()}}})}
-Object.assign(window,{G,CFG,ball,toScreen,rayToPlate,__render:render,cams,THREE,zone,launchBatted});
+Object.assign(window,{G,CFG,ball,toScreen,rayToPlate,__render:render,cams,THREE,zone,launchBatted,MW,RECTS:()=>RECTS});
 resize();syncOpts();goHome();requestAnimationFrame(loop);
 </script>
 </body>
