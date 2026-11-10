@@ -92,3 +92,9 @@ static func _draw_photo(ci: CanvasItem, r: Rect2, t: Texture2D, shadow: bool, gl
 	if glow > 0.0:
 		ci.draw_style_box(_box(Color(1, 1, 0.5, glow), h * 0.1), pr.grow(h * 0.08))
 	ci.draw_texture_rect(t, pr, false)
+	# 교육용 워터마크 (진폐 오인 방지)
+	var fs := int(h * 0.26)
+	ci.draw_set_transform(pr.get_center(), -0.22)
+	ci.draw_string_outline(FONT, Vector2(-w / 2, fs * 0.35), "교육용 견본", HORIZONTAL_ALIGNMENT_CENTER, w, fs, max(2, int(h * 0.03)), Color(1, 1, 1, 0.55))
+	ci.draw_string(FONT, Vector2(-w / 2, fs * 0.35), "교육용 견본", HORIZONTAL_ALIGNMENT_CENTER, w, fs, Color(0.85, 0.1, 0.1, 0.55))
+	ci.draw_set_transform(Vector2.ZERO)
