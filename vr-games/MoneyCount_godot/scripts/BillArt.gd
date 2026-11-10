@@ -15,7 +15,35 @@ static func _box(col: Color, rad: float, border := Color(0, 0, 0, 0), bw := 0) -
 		sb.set_border_width_all(bw)
 	return sb
 
+static var _tex := {}
+static var _loaded := false
+
+## 실제 지폐 사진: exe 옆 bills 폴더(1000.png 등) → 없으면 게임 안 res://bills → 없으면 놀이돈 그림
+static func tex(v: int) -> Texture2D:
+	if not _loaded:
+		_loaded = true
+		var dirs := [OS.get_executable_path().get_base_dir() + "/bills/", ProjectSettings.globalize_path("res://bills/")]
+		for k in [1000, 5000, 10000, 50000]:
+			for d in dirs:
+				if _tex.has(k):
+					break
+				for ext in ["png", "jpg", "jpeg", "webp"]:
+					var f: String = d + str(k) + "." + ext
+					if FileAccess.file_exists(f):
+						var img := Image.load_from_file(f)
+						if img and not img.is_empty():
+							img.generate_mipmaps()
+							_tex[k] = ImageTexture.create_from_image(img)
+							break
+			if not _tex.has(k) and ResourceLoader.exists("res://bills/%d.png" % k):
+				_tex[k] = load("res://bills/%d.png" % k)
+	return _tex.get(v)
+
 static func draw_bill(ci: CanvasItem, r: Rect2, v: int, shadow := true, glow := 0.0) -> void:
+	var t := tex(v)
+	if t:
+		_draw_photo(ci, r, t, shadow, glow)
+		return
 	var c: Array = Data.BILL_COLORS.get(v, Data.BILL_COLORS[1000])
 	var h := r.size.y
 	if shadow:
@@ -53,3 +81,14 @@ static func draw_bill(ci: CanvasItem, r: Rect2, v: int, shadow := true, glow := 
 		HORIZONTAL_ALIGNMENT_RIGHT, right, int(h * 0.15), c[2])
 	ci.draw_string(FONT, Vector2(inner.position.x + h * 0.07, inner.position.y + h * 0.15), "놀이돈",
 		HORIZONTAL_ALIGNMENT_LEFT, -1, int(h * 0.1), Color(c[2], 0.75))
+
+static func _draw_photo(ci: CanvasItem, r: Rect2, t: Texture2D, shadow: bool, glow: float) -> void:
+	# 사진 비율 그대로, 높이를 맞추고 가운데 정렬
+	var h := r.size.y
+	var w: float = min(r.size.x * 1.06, h * t.get_width() / float(t.get_height()))
+	var pr := Rect2(r.get_center() - Vector2(w, h) / 2, Vector2(w, h))
+	if shadow:
+		ci.draw_style_box(_box(Color(0, 0, 0, 0.25), h * 0.04), Rect2(pr.position + Vector2(h * 0.035, h * 0.06), pr.size))
+	if glow > 0.0:
+		ci.draw_style_box(_box(Color(1, 1, 0.5, glow), h * 0.1), pr.grow(h * 0.08))
+	ci.draw_texture_rect(t, pr, false)
