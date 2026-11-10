@@ -88,6 +88,10 @@ canvas#cv{position:fixed;left:0;top:0;width:100%;height:100%;display:block}
       <button class="opt" data-k="help" data-v="1">💡 켜기<small>어디 누를지 알려줘요</small></button>
       <button class="opt" data-k="help" data-v="0">끄기</button>
     </div>
+    <div class="row"><span class="lbl">시점</span>
+      <button class="opt" data-k="view" data-v="1">🤠 탐험가 보기<small>뒤에서 캐릭터를 봐요</small></button>
+      <button class="opt" data-k="view" data-v="0">👀 내 눈으로<small>팔이 보여요</small></button>
+    </div>
     <div class="row"><span class="lbl">시작 단계</span>
       <button class="opt" data-k="st" data-v="0">1 정글</button>
       <button class="opt" data-k="st" data-v="1">2 동굴</button>
@@ -96,7 +100,7 @@ canvas#cv{position:fixed;left:0;top:0;width:100%;height:100%;display:block}
     </div>
     <button id="startBtn">모험 시작! ▶</button>
   </section>
-  <div id="hud"><span id="hudS">1단계</span><span id="hudH">❤️❤️❤️</span><span id="hudG">💎 0</span></div>
+  <div id="hud"><span id="hudS">1단계</span><span id="hudH">❤️❤️❤️</span><span id="hudG">💎 0</span><span id="hudL">⬜🟨⬜</span></div>
   <div id="chase"><div class="bar"></div><div class="rock" id="chRock">🪨</div><div class="run" id="chRun">🏃</div></div>
   <div class="hint" id="hintF"><div class="ar">⬆</div><div class="tx">앞 벽 톡! 점프!</div></div>
   <div id="msg"></div>
@@ -121,7 +125,7 @@ const $=s=>document.querySelector(s);
 const LS='templevr.';
 function load(k,d){try{const v=localStorage.getItem(LS+k);return v==null?d:JSON.parse(v)}catch(e){return d}}
 function save(k,v){try{localStorage.setItem(LS+k,JSON.stringify(v))}catch(e){}}
-const CFG=Object.assign({lv:0,help:1,st:0},load('cfg',{}));
+const CFG=Object.assign({lv:0,help:1,st:0,view:1},load('cfg',{}));
 const rnd=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),pick=a=>a[Math.random()*a.length|0];
 
 /* ---------- 소리 ---------- */
@@ -226,7 +230,7 @@ const segs=[];
         const fl=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,fog:false}));fl.position.set(s*(CW-.25),2.95,tz);fl.scale.set(.6,.8,1);g.add(fl);flames.push({fl,ph:Math.random()*9})}}
     const b=new THREE.Mesh(gBeam,M.pillar);b.position.set(0,CH-.25,0);g.add(b);
     g.position.z=-i*SEG+SEG;scene.add(g);segs.push(g)}}
-function plaques(on){segs.forEach(g=>g.children.forEach(c=>{if(c.userData.plaque)c.visible=on||Math.abs(g.position.z+c.position.z-G.stopZ)>4}))}
+function plaques(on){segs.forEach(g=>g.children.forEach(c=>{if(c.userData.plaque)c.visible=on||Math.abs(g.position.z+c.position.z-G.stopZ-camZoff())>4}))}
 function placeSegs(z){for(const g of segs){while(g.position.z>z+SEG*2)g.position.z-=NSEG*SEG;while(g.position.z<z+SEG*2-NSEG*SEG)g.position.z+=NSEG*SEG}}
 
 /* ---------- 단계 ---------- */
@@ -282,7 +286,7 @@ function makeGlyphs(n,stopZ){glyphs.forEach(g=>scene.remove(g.m,g.halo));glyphs.
   for(const side of ['left','right']){const sl=[...SLOTS].sort(()=>Math.random()-.5).slice(0,n);
     for(const [dz,y] of sl){const sym=syms[si++%syms.length],s=side==='left'?-1:1;
       const mat=new THREE.MeshStandardMaterial({map:glyphTex(sym,false),emissive:0xffa020,emissiveIntensity:.0,roughness:.8});
-      const m=new THREE.Mesh(gGeo,[mat,mat,mat,mat,mat,mat]);m.position.set(s*(CW-.06),y,stopZ+dz*(side==='left'?-1:1));scene.add(m);
+      const m=new THREE.Mesh(gGeo,[mat,mat,mat,mat,mat,mat]);m.position.set(s*(CW-.06),y+(view3()?.3:0),stopZ+dz*(side==='left'?-1:1));scene.add(m);
       const halo=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,blending:THREE.AdditiveBlending,transparent:true,depthWrite:false,opacity:.7}));halo.position.copy(m.position);halo.position.x-=s*.15;halo.scale.set(1.9,1.9,1);scene.add(halo);
       glyphs.push({m,halo,mat,sym,side,lit:false})}}}
 // 마지막 보물
@@ -292,6 +296,55 @@ const idol=new THREE.Group();
   const head=new THREE.Mesh(new THREE.SphereGeometry(.26,18,14),M.gold);head.position.y=2.1;idol.add(head);
   for(const s of [-1,1]){const e=new THREE.Mesh(new THREE.SphereGeometry(.05,8,6),MAT.gem[1]);e.position.set(s*.1,2.14,.22);idol.add(e)}
   const sp=new THREE.PointLight(0xffe08a,30,10,1.2);sp.position.set(0,3,1);idol.add(sp);idol.visible=false;scene.add(idol)}
+
+/* ---------- 탐험가 (탐험가 보기) / 팔 (내 눈으로) ---------- */
+const CAM3={back:4.6,up:2.35,pitch:-.13};
+function view3(){return +CFG.view===1}
+function camZoff(){return view3()?CAM3.back:0}
+function eyeY(){return view3()?CAM3.up:1.6}
+const hero=new THREE.Group();
+{const mat=c=>new THREE.MeshStandardMaterial({color:c,roughness:.75});
+  const skin=mat(0xf1c27d),jacket=mat(0x8b5a2b),shirt=mat(0xe8dcb8),pants=mat(0xc8b48a),boot=mat(0x3b2412),hatM=mat(0x6b4a2a),band=mat(0x24160a),bag=mat(0x4f6b3a);
+  const add=(p,geo,m,x,y,z)=>{const o=new THREE.Mesh(geo,m);o.position.set(x,y,z);p.add(o);return o};
+  const body=add(hero,new THREE.CapsuleGeometry(.25,.45,4,12),jacket,0,1.25,0);body.scale.set(1,1,.78);
+  add(hero,new THREE.SphereGeometry(.17,20,16),skin,0,1.79,0);
+  add(hero,new THREE.CylinderGeometry(.34,.34,.03,24),hatM,0,1.9,0);
+  add(hero,new THREE.CylinderGeometry(.15,.18,.2,20),hatM,0,2.0,0);
+  add(hero,new THREE.CylinderGeometry(.183,.183,.05,20),band,0,1.94,0);
+  add(hero,new THREE.BoxGeometry(.36,.4,.18),bag,0,1.3,.24);              // 등가방 (뒤에서 보임)
+  add(hero,new THREE.BoxGeometry(.38,.06,.06),band,0,1.48,.2);
+  const whip=add(hero,new THREE.TorusGeometry(.1,.025,6,16),band,.27,1.0,0);whip.rotation.y=Math.PI/2;   // 허리 채찍
+  add(hero,new THREE.CylinderGeometry(.25,.23,.24,16),pants,0,.92,0);
+  const legs=[],arms=[];
+  for(const sd of [-1,1]){const hip=new THREE.Group();hip.position.set(sd*.12,.9,0);hero.add(hip);
+    add(hip,new THREE.CapsuleGeometry(.09,.36,4,8),pants,0,-.25,0);add(hip,new THREE.CapsuleGeometry(.085,.26,4,8),pants,0,-.58,0);add(hip,new THREE.BoxGeometry(.15,.12,.28),boot,0,-.82,-.04);legs.push(hip);
+    const sh=new THREE.Group();sh.position.set(sd*.33,1.52,0);hero.add(sh);add(sh,new THREE.CapsuleGeometry(.07,.42,4,8),jacket,0,-.25,0);add(sh,new THREE.SphereGeometry(.075,10,8),skin,0,-.53,0);arms.push(sh)}
+  hero.userData={legs,arms};hero.scale.setScalar(1.05);scene.add(hero)}
+// 발밑 표시 (어느 줄에 있는지)
+const ring=new THREE.Mesh(new THREE.RingGeometry(.55,.75,40),new THREE.MeshBasicMaterial({color:0xffd166,transparent:true,opacity:.75,depthWrite:false,blending:THREE.AdditiveBlending}));
+ring.rotation.x=-Math.PI/2;ring.position.y=.02;scene.add(ring);
+const heroShadow=new THREE.Mesh(new THREE.CircleGeometry(.45,24),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.35,depthWrite:false}));heroShadow.rotation.x=-Math.PI/2;heroShadow.position.y=.015;scene.add(heroShadow);
+// 1인칭 팔: 정면 카메라에 붙임
+const fpArms=[];
+{const sleeve=new THREE.MeshStandardMaterial({color:0x8b5a2b,roughness:.75}),skin=new THREE.MeshStandardMaterial({color:0xf1c27d,roughness:.7});
+  for(const sd of [-1,1]){const g=new THREE.Group();const a=new THREE.Mesh(new THREE.CapsuleGeometry(.07,.45,4,10),sleeve);a.rotation.x=-1.42;g.add(a);
+    const h=new THREE.Mesh(new THREE.SphereGeometry(.085,12,10),skin);h.position.set(0,.04,-.3);h.scale.set(1,.8,1.1);g.add(h);
+    g.userData.base=new THREE.Vector3(sd*.24,-.36,-.6);g.position.copy(g.userData.base);cams.front.add(g);fpArms.push(g)}}
+function animHero(dt){const run=P.v>1&&G.phase!=='dead',{legs,arms}=hero.userData,sw=Math.sin(P.bob);
+  const third=view3()&&G.phase!=='home'||G.phase==='home';
+  const blink=P.inv>0&&Math.floor(P.inv*10)%2===1;
+  hero.visible=third&&view3()&&!blink;ring.visible=hero.visible;heroShadow.visible=view3();
+  hero.position.set(P.x,P.y,P.z);ring.position.set(P.x,.02,P.z);heroShadow.position.set(P.x,.015,P.z);heroShadow.scale.setScalar(1/(1+P.y));
+  ring.material.opacity=.45+Math.sin(clock*6)*.25;
+  hero.rotation.set(run?-.14:0,0,(P.x-LANES[P.lane])*.18);
+  if(P.y>0){legs[0].rotation.x=-.9;legs[1].rotation.x=.5;arms[0].rotation.x=arms[1].rotation.x=-2.6;arms[0].rotation.z=-.3;arms[1].rotation.z=.3}
+  else if(run||G.phase==='home'){const a=G.phase==='home'?.5:1;legs[0].rotation.x=sw*.9*a;legs[1].rotation.x=-sw*.9*a;arms[0].rotation.x=-sw*.8*a;arms[1].rotation.x=sw*.8*a;arms[0].rotation.z=arms[1].rotation.z=0}
+  else{legs[0].rotation.x=legs[1].rotation.x=0;arms[0].rotation.x=arms[1].rotation.x=0;arms[0].rotation.z=-.08;arms[1].rotation.z=.08}
+  if(G.phase==='door'&&!view3()){}
+  // 1인칭 팔: 달릴 때 번갈아 앞뒤로, 점프하면 위로
+  const fp=!view3()&&G.phase!=='home';fpArms.forEach((g,i)=>{g.visible=fp&&!blink;const b=g.userData.base,s=i?-sw:sw;
+    if(P.y>0)g.position.set(b.x*1.3,b.y+.18,b.z-.05);else if(run)g.position.set(b.x,b.y+s*.05+Math.abs(s)*.02,b.z+s*.16);else g.position.set(b.x,b.y-.04+Math.sin(clock*2+i)*.01,b.z);
+    g.rotation.set(run?s*.25:0,0,(i?-1:1)*(P.y>0?.5:.1))})}
 
 /* ---------- 게임 상태 ---------- */
 const P={z:0,lane:1,x:0,y:0,vy:0,inv:0,hearts:3,gems:0,gems0:0,v:0,shake:0,bob:0};
@@ -316,14 +369,14 @@ function genStage(si){clearStage();const st=STAGES[si],v=speedOf(si),len=v*st.du
     prevBlock=lanes;first=false;z-=gap*rnd(1,1.3)}
   G.doorZ=-len;G.stopZ=G.doorZ+6;door.position.z=G.doorZ;slab.position.y=(CH-.5)/2;door.visible=true;
   idol.visible=si===STAGES.length-1;idol.position.set(0,0,G.doorZ-12);
-  makeGlyphs(st.glyphs,G.stopZ);glyphs.forEach(g=>{g.m.visible=false;g.halo.visible=false})}
+  makeGlyphs(st.glyphs,G.stopZ+camZoff());glyphs.forEach(g=>{g.m.visible=false;g.halo.visible=false})}
 function addGem(l,z,y=.9){const m=new THREE.Mesh(GEO.gem,pick(MAT.gem));m.position.set(LANES[l],y,z);m.scale.y=1.4;scene.add(m);G.gems.push({m,l,z,y,got:false})}
 
 /* ---------- 흐름 ---------- */
 function showOv(id,on){$(id).classList.toggle('on',on)}
 function fade(on){$('#fade').classList.toggle('on',on)}
 function updHud(){const h='❤️'.repeat(P.hearts)+'🤍'.repeat(Math.max(0,3-P.hearts));$('#hudH').textContent=h;$('#hearts').textContent=h;
-  $('#hudG').textContent=`💎 ${P.gems}`;$('#gems').textContent=`💎 ${P.gems}`;$('#hudS').textContent=`${G.si+1}단계 · ${STAGES[G.si].name}`;
+  $('#hudG').textContent=`💎 ${P.gems}`;$('#hudL').textContent=[0,1,2].map(l=>l===P.lane?'🟨':'⬜').join('');$('#gems').textContent=`💎 ${P.gems}`;$('#hudS').textContent=`${G.si+1}단계 · ${STAGES[G.si].name}`;
   const ch=STAGES[G.si].chase&&G.phase!=='home';$('#chase').classList.toggle('on',!!ch);
   if(ch){const d=clamp(G.chase/24,0,1);$('#chRun').style.left=(88)+'%';$('#chRock').style.left=(88-d*76)+'%'}}
 function flash(t,sub,color){const m=$('#msg');m.innerHTML=t+(sub?`<small>${sub}</small>`:'');m.style.color=color||'#fff';m.classList.remove('show');void m.offsetWidth;m.classList.add('show')}
@@ -342,7 +395,7 @@ function die(t){G.phase='dead';music(false);sfx.fail();$('#deadT').textContent=t
 /* ---------- 입력 ---------- */
 function onTouch(k,x,y){ac();const now=performance.now();
   if(G.phase==='run'){if(now-G.lastTap[k]<200)return;G.lastTap[k]=now;
-    if(k==='left'){if(P.lane>0){P.lane--;sfx.whoosh()}}else if(k==='right'){if(P.lane<2){P.lane++;sfx.whoosh()}}
+    if(k==='left'){if(P.lane>0){P.lane--;sfx.whoosh();updHud()}}else if(k==='right'){if(P.lane<2){P.lane++;sfx.whoosh();updHud()}}
     else if(P.y<=0.01){P.vy=6.4;sfx.jump()}}
   else if(G.phase==='door'&&k!=='front'){const r=RECTS[k],c=cams[k];c.updateMatrixWorld();let best=null,bd=1e9;
     for(const g of glyphs){if(g.side!==k||g.lit)continue;const p=g.m.position.clone().project(c),sx=r.x+(p.x+1)/2*r.w,sy=r.y+(1-p.y)/2*r.h,d=Math.hypot(sx-x,sy-y);if(d<bd){bd=d;best=g}}
@@ -404,19 +457,20 @@ function finish(){music(false);sfx.win();hideHints();$('#chase').classList.remov
 function finish2(){sfx.win();$('#endP').textContent=`보석 ${P.gems}개를 모아 신전을 탈출했어요! 최고의 탐험가예요!`;showOv('#endOv',true);speak(`보물을 찾았어요! 보석 ${P.gems}개! 최고의 탐험가예요!`)}
 function loop(now){const dt=Math.min(.05,(now-last)/1000);last=now;clock+=dt;
   if(G.phase!=='home'&&G.phase!=='dead'&&G.phase!=='end')step(dt);
-  else if(G.phase==='home'){P.z-=dt*1.2;door.position.z=P.z-40;}
+  else if(G.phase==='home'){P.z-=dt*1.2;P.bob+=dt*5;door.position.z=P.z-40;}
   else if(G.phase==='end'){G.t+=dt}
   placeSegs(P.z);
   for(const f of flames){const k=.85+Math.sin(clock*13+f.ph)*.08+Math.sin(clock*7.3+f.ph*2)*.07;f.fl.scale.set(.6*k,.85*k,1)}
-  pl1.position.set(P.x*.5,3.6,P.z-5);pl2.position.set(0,3.6,P.z-17);plB.position.set(P.x,2.6,P.z+.5);pl1.intensity=60+Math.sin(clock*11)*6;
+  pl1.position.set(P.x*.5,3.6,P.z-5);pl2.position.set(0,3.6,P.z-17);if(view3()){plB.position.set(P.x,3.4,P.z+3);plB.intensity=10}else{plB.position.set(P.x,2.6,P.z+.5);plB.intensity=12}pl1.intensity=60+Math.sin(clock*11)*6;
   glyphs.forEach(g=>{if(!g.m.visible)return;if(g.lit){g.halo.material.opacity=.25;g.halo.scale.set(1.5,1.5,1)}else{g.halo.material.opacity=.45+Math.sin(clock*5+g.m.position.z)*.35;const s=1.8+Math.sin(clock*5+g.m.position.z)*.25;g.halo.scale.set(s,s,1)}});
   if(idol.visible)idol.children[1].rotation.y+=dt;
   G.gems.forEach(g=>{if(!g.got)g.m.position.y=g.y+Math.sin(clock*3+g.z)*.08});
-  render();requestAnimationFrame(loop)}
+  animHero(dt);render();requestAnimationFrame(loop)}
 function render(){const blink=P.inv>0&&Math.floor(P.inv*10)%2;
   for(const k of WALLS){const r=RECTS[k];if(!r)continue;const c=cams[k],sh=Math.max(P.shake,G.shake||0);
-    c.position.set(P.x+(Math.random()-.5)*.08*sh,1.6+P.y+Math.abs(Math.sin(P.bob))*.06*(P.v>1?1:0)+(Math.random()-.5)*.08*sh,P.z);
-    c.rotation.set(-.04,YAW[k],0);
+    const t3=view3(),bob=Math.abs(Math.sin(P.bob))*(t3?.03:.06)*(P.v>1?1:0);
+    c.position.set((t3?P.x*.55:P.x)+(Math.random()-.5)*.08*sh,eyeY()+(t3?P.y*.35:P.y)+bob+(Math.random()-.5)*.08*sh,P.z+camZoff());
+    c.rotation.set(t3?CAM3.pitch:-.04,YAW[k],0);
     renderer.setViewport(r.x,H-r.y-r.h,r.w,r.h);renderer.setScissor(r.x,H-r.y-r.h,r.w,r.h);renderer.render(scene,c)}}
 // 세 화면 = 정육면체 안쪽 (가로 90°씩) → 모서리가 이어져 보임
 function fitCam(k,r){const c=cams[k];c.aspect=r.w/r.h;c.fov=THREE.MathUtils.radToDeg(2*Math.atan(1/c.aspect));c.updateProjectionMatrix()}
@@ -433,7 +487,7 @@ document.querySelectorAll('.opt').forEach(b=>b.addEventListener('click',()=>{ac(
 $('#startBtn').addEventListener('click',start);$('#againBtn').addEventListener('click',start);$('#retryBtn').addEventListener('click',retry);
 ['#toHome1','#toHome2','#homeBtn'].forEach(s=>$(s).addEventListener('click',goHome));
 document.addEventListener('contextmenu',e=>e.preventDefault());
-Object.assign(window,{G,P,STAGES,beginStage,onTouch,lightGlyph,glyphs,THREE,__cams:cams,__R:()=>RECTS});
+Object.assign(window,{CFG,G,P,STAGES,beginStage,onTouch,lightGlyph,glyphs,THREE,__cams:cams,__R:()=>RECTS});
 resize();syncOpts();goHome();requestAnimationFrame(loop);
 </script>
 </body>
