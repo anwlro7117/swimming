@@ -84,6 +84,25 @@ if (cmd === 'list') {
   console.log(`벽 전체 (${x0},${y0} ${x1 - x0}x${y1 - y0}) ← ${page}`);
   const op = pick(config.operatorScreen, config.operatorMonitor);
   if (op) open(`${BASE}/`, op, 'operator', false);
+} else if (cmd === 'floor') {
+  // 창 하나를 바닥 화면 2개에 걸쳐 띄움:  node launch.js floor lava-vr.html
+  // config 에 바닥(floorL/floorR)이 없으면 윈도우 DISPLAY 1·2 위치를 쓴다.
+  const page = process.argv[3] || 'lava-vr.html';
+  let S = ['floorL', 'floorR'].map((k) => config.displays.find((d) => d.id === k)?.screen).filter((s) => s && s.w);
+  if (S.length < 2) S = [byN(1), byN(2)].filter(Boolean).map((m) => ({ x: m.x, y: m.y, w: m.w, h: m.h }));
+  if (S.length < 2) { console.log('!! 바닥 화면 2개를 못 찾음 — node launch.js list 로 확인'); process.exit(1); }
+  S.sort((a, b) => a.x - b.x);
+  const x0 = Math.min(...S.map((s) => s.x)), y0 = Math.min(...S.map((s) => s.y));
+  const x1 = Math.max(...S.map((s) => s.x + s.w)), y1 = Math.max(...S.map((s) => s.y + s.h));
+  const hash = '#floors=' + S.map((s) => [s.x, s.y, s.w, s.h].join(',')).join(';');
+  const dir = path.join(os.tmpdir(), 'vrtuio_floor');
+  spawn(browser(), [`--user-data-dir=${dir}`, '--no-first-run', '--no-default-browser-check', '--disable-session-crashed-bubble',
+    '--disable-features=TranslateUI', '--overscroll-history-navigation=0', '--disable-pinch', '--autoplay-policy=no-user-gesture-required',
+    `--window-position=${x0},${y0}`, `--window-size=${x1 - x0},${y1 - y0}`, `--app=${BASE}/${page}${hash}`],
+    { detached: true, stdio: 'ignore' }).unref();
+  console.log(`바닥 전체 (${x0},${y0} ${x1 - x0}x${y1 - y0}) ← ${page}`);
+  const op = pick(config.operatorScreen, config.operatorMonitor);
+  if (op) open(`${BASE}/`, op, 'operator', false);
 } else {
   const page = cmd || 'display.html';
   for (const d of config.displays) {

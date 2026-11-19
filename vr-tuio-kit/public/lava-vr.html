@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>용암 바닥 탈출</title>
+<style>
+*{margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;touch-action:none}
+html,body{height:100%;overflow:hidden;background:#200400;cursor:default}
+canvas{position:fixed;left:0;top:0;width:100%;height:100%;display:block}
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<canvas id="cv"></canvas>
+<script src="/tuio-pointer.js"></script>
+<script>
+// ======================================================================
+// 용암 바닥 탈출 — VR실 바닥 2면 게임
+//  창 하나가 바닥 왼쪽·오른쪽 화면에 걸쳐 뜬다 (launch.js floor lava-vr.html)
+//  발로 밟기 = 터치. 가만히 서 있는 발은 브리지가 1.5초 뒤 무시 → "밟는 순간"만 쓴다.
+//  놀이 1) 돌다리 건너기  2) 용암 식히기  3) 색깔 돌 찾기
+//  키보드: Esc 처음으로, F 화면 뒤집기
+// ======================================================================
+const FONT='"Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif';
+const LS='lavavr.';
+function load(k,d){try{const v=localStorage.getItem(LS+k);return v==null?d:JSON.parse(v)}catch(e){return d}}
+function save(k,v){try{localStorage.setItem(LS+k,JSON.stringify(v))}catch(e){}}
+
+const CFG={mode:load('mode','cross'),lv:load('lv',0),team:load('team',false),dir:load('dir',1),flip:load('flip',false)};
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+let W=0,H=0,U=10,FLO=[];   // FLO = 바닥 화면 2개 (창 안 좌표)
+
+function floorsFromHash(){
+  const m=location.hash.match(/floors=([^&]+)/);if(!m)return null;
+  const r=m[1].split(';').map(s=>s.split(',').map(Number)).filter(a=>a.length===4&&a.every(isFinite));
+  if(r.length<2)return null;
+  const x0=Math.min(...r.map(a=>a[0])),y0=Math.min(...r.map(a=>a[1]));
+  return r.map(a=>({x:a[0]-x0,y:a[1]-y0,w:a[2],h:a[3]})).sort((a,b)=>a.x-b.x);
+}
+function resize(){
+  W=innerWidth;H=innerHeight;cv.width=W;cv.height=H;
+  const f=floorsFromHash();
+  FLO=f&&f[1].x+f[1].w<=W+4?f:[{x:0,y:0,w:W/2,h:H},{x:W/2,y:0,w:W/2,h:H}];
+  U=Math.min(H/10,W/38);
+  glResize();
+  if(G.phase!=='home'&&G.phase!=='end')layoutAgain();
+}
+addEventListener('resize',resize);
+
+// ---------------- 용암 배경 (WebGL) ----------------
+const gc=document.getElementById('gl');let gl=null,glU={},glP=null;
+(function(){
+  try{gl=gc.getContext('webgl',{antialias:false})}catch(e){}
+  if(!gl)return;
+  const vs='attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
+  const fs=`precision mediump float;uniform vec2 r;uniform float t;uniform float cool;
+float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1.,0.)),f.x),mix(h(i+vec2(0.,1.)),h(i+vec2(1.,1.)),f.x),f.y);}
+float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<5;i++){v+=a*n(p);p=p*2.03+vec2(1.7,9.2);a*=.5;}return v;}
+void main(){vec2 uv=gl_FragCoord.xy/r.y*2.6;
+ vec2 q=vec2(fbm(uv+vec2(t*.04,t*.02)),fbm(uv+vec2(5.2,1.3)-vec2(t*.03,0.)));
+ float k=fbm(uv*1.2+q*2.2+vec2(-t*.03,t*.05));
+ vec3 col=mix(vec3(.30,.03,.0),vec3(.98,.32,.03),smoothstep(.30,.75,k));
+ col=mix(col,vec3(1.,.86,.35),smoothstep(.68,.92,k));
+ float crust=smoothstep(.47,.40,k);
+ col=mix(col,vec3(.10,.04,.03)+vec3(.15,.03,0.)*smoothstep(.36,.40,k),crust*.85);
+ col*=1.-cool*.55;
+ gl_FragColor=vec4(col,1.);}`;
+  const sh=(t,s)=>{const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);return o};
+  glP=gl.createProgram();gl.attachShader(glP,sh(gl.VERTEX_SHADER,vs));gl.attachShader(glP,sh(gl.FRAGMENT_SHADER,fs));gl.linkProgram(glP);
+  if(!gl.getProgramParameter(glP,gl.LINK_STATUS)){gl=null;return}
+  gl.useProgram(glP);
+  const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+  const a=gl.getAttribLocation(glP,'p');gl.enableVertexAttribArray(a);gl.vertexAttribPointer(a,2,gl.FLOAT,false,0,0);
+  glU={r:gl.getUniformLocation(glP,'r'),t:gl.getUniformLocation(glP,'t'),cool:gl.getUniformLocation(glP,'cool')};
+})();
+const GLS=.5; // 반 해상도로 그려 늘림 (가벼움)
+function glResize(){if(!gl)return;gc.width=Math.max(2,Math.round(W*GLS));gc.height=Math.max(2,Math.round(H*GLS));gl.viewport(0,0,gc.width,gc.height)}
+function glDraw(t,cool){
+  if(!gl){ctx.fillStyle='#8a1c02';ctx.fillRect(0,0,W,H);return}
+  gl.uniform2f(glU.r,gc.width,gc.height);gl.uniform1f(glU.t,t);gl.uniform1f(glU.cool,cool);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+}
+
+// ---------------- 소리·목소리 ----------------
+let AC=null;
+function ac(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();return AC}
+function tone(f,t0,d,type='sine',v=.2,f2){const a=ac();if(!a)return;const o=a.createOscillator(),g=a.createGain(),T=a.currentTime+t0;o.type=type;o.frequency.setValueAtTime(f,T);if(f2)o.frequency.exponentialRampToValueAtTime(f2,T+d);g.gain.setValueAtTime(v,T);g.gain.exponentialRampToValueAtTime(.001,T+d);o.connect(g);g.connect(a.destination);o.start(T);o.stop(T+d+.02)}
+let NB=null;
+function noise(t0,d,v=.3,f0=800,f1=200,q=1){const a=ac();if(!a)return;if(!NB){NB=a.createBuffer(1,a.sampleRate,a.sampleRate);const c=NB.getChannelData(0);for(let i=0;i<c.length;i++)c[i]=Math.random()*2-1}
+  const s=a.createBufferSource(),fl=a.createBiquadFilter(),g=a.createGain(),T=a.currentTime+t0;s.buffer=NB;fl.type='bandpass';fl.Q.value=q;fl.frequency.setValueAtTime(f0,T);fl.frequency.exponentialRampToValueAtTime(f1,T+d);
+  g.gain.setValueAtTime(v,T);g.gain.exponentialRampToValueAtTime(.001,T+d);s.connect(fl);fl.connect(g);g.connect(a.destination);s.start(T);s.stop(T+d+.05)}
+const SCALE=[523,587,659,784,880,1047,1175,1319,1568,1760,2093,2349,2637,3136];
+const sfx={
+  step(i){const f=SCALE[i%SCALE.length];tone(f,0,.22,'triangle',.25);tone(f*2,.02,.12,'sine',.08);noise(0,.08,.15,1500,600,2)},
+  splash(){noise(0,.5,.45,1200,150,.8);tone(300,0,.35,'sawtooth',.06,90);for(let i=0;i<4;i++)tone(700+Math.random()*900,.05+i*.06,.08,'sine',.06)},
+  sizzle(){noise(0,.45,.35,5000,2500,.7);tone(220,0,.12,'square',.06,110)},
+  gold(){[1047,1319,1568,2093].forEach((f,i)=>tone(f,i*.06,.18,'triangle',.18))},
+  ok(){tone(784,0,.12,'triangle',.25);tone(1175,.1,.25,'triangle',.25)},
+  no(){tone(260,0,.18,'square',.08,200);tone(200,.15,.25,'square',.08,150)},
+  tick(){tone(880,0,.08,'square',.1)},
+  go(){tone(1175,0,.35,'square',.12)},
+  win(){[523,659,784,1047,784,1047,1319].forEach((f,i)=>tone(f,i*.12,.3,'triangle',.22))},
+  press(){tone(660,0,.08,'triangle',.18);tone(990,.06,.1,'triangle',.18)},
+};
+let lastSay=0;
+function speak(t,force){const n=performance.now();if(!force&&n-lastSay<900)return;lastSay=n;try{const u=new SpeechSynthesisUtterance(t);u.lang='ko-KR';u.rate=1.05;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
+
+// ---------------- 입력 ----------------
+// 화면 뒤집기(바닥을 반대쪽에서 볼 때) → 입력도 뒤집는다
+const ptrs=new Map();   // pointerId -> {x,y,t0,mouse,btn,bt0}
+function L(e){let x=e.clientX,y=e.clientY;if(CFG.flip){x=W-x;y=H-y}return{x,y}}
+cv.addEventListener('pointerdown',e=>{ac();const p=L(e);const P={x:p.x,y:p.y,t0:performance.now(),mouse:e.pointerType==='mouse'};ptrs.set(e.pointerId,P);ripple(p.x,p.y);onStep(p,P)});
+addEventListener('pointermove',e=>{const P=ptrs.get(e.pointerId);if(!P)return;const p=L(e);P.x=p.x;P.y=p.y});
+const upP=e=>ptrs.delete(e.pointerId);
+addEventListener('pointerup',upP);addEventListener('pointercancel',upP);
+addEventListener('keydown',e=>{
+  if(e.key==='Escape')goHome();
+  else if(e.key==='f'||e.key==='F'){CFG.flip=!CFG.flip;save('flip',CFG.flip)}
+});
+
+// ---------------- 버튼 (발로 0.6초 밟고 있으면 눌림, 마우스는 바로) ----------------
+let BTN=[];
+const HOLD=600;
+function btn(o){BTN.push(o);return o}
+function btnAt(x,y){return BTN.find(b=>!b.off&&x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h)}
+function updateButtons(now){
+  for(const b of BTN)b.prog=0;
+  for(const P of ptrs.values()){
+    const b=btnAt(P.x,P.y);
+    const key=b?b.label+'|'+Math.round(b.x)+'|'+Math.round(b.y):'';   // 버튼은 매 프레임 새로 만들어지므로 자리로 비교
+    if(key!==P.bkey){P.bkey=key;P.bt0=now;P.fired=false}
+    if(!b||P.fired)continue;
+    const hold=b.hold||HOLD;
+    const pr=P.mouse?1:(now-P.bt0)/hold;
+    b.prog=Math.max(b.prog,Math.min(1,pr));
+    if(pr>=1){P.fired=true;sfx.press();b.act()}
+  }
+}
+
+// ---------------- 효과 ----------------
+const FX=[];
+function ripple(x,y){FX.push({k:'ring',x,y,t:0,d:.5,c:'255,255,255'})}
+function burst(x,y,col,n=18,sp=1){for(let i=0;i<n;i++){const a=Math.random()*6.283,s=(.4+Math.random())*U*6*sp;FX.push({k:'dot',x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,t:0,d:.6+Math.random()*.5,c:col,r:U*(.12+Math.random()*.18)})}}
+function splashFX(x,y){for(let i=0;i<26;i++){const a=Math.random()*6.283,s=(.3+Math.random())*U*7;FX.push({k:'dot',x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,t:0,d:.5+Math.random()*.5,c:i%3?'255,140,20':'255,230,120',r:U*(.15+Math.random()*.25)})}
+  FX.push({k:'ring',x,y,t:0,d:.7,c:'255,120,0',big:1});FX.push({k:'txt',x,y:y-U*1.2,t:0,d:1,s:'앗 뜨거!',c:'#fff'})}
+function steamFX(x,y){for(let i=0;i<14;i++)FX.push({k:'steam',x:x+(Math.random()-.5)*U*1.5,y:y+(Math.random()-.5)*U,vx:(Math.random()-.5)*U,vy:-U*(1+Math.random()*1.5),t:0,d:1+Math.random()*.6,r:U*(.4+Math.random()*.5)})}
+function textFX(x,y,s,c='#fff'){FX.push({k:'txt',x,y,t:0,d:1,s,c})}
+function drawFX(dt){
+  for(let i=FX.length-1;i>=0;i--){const f=FX[i];f.t+=dt;const a=1-f.t/f.d;if(a<=0){FX.splice(i,1);continue}
+    if(f.k==='ring'){ctx.strokeStyle=`rgba(${f.c},${a})`;ctx.lineWidth=U*(f.big?.35:.15);ctx.beginPath();ctx.arc(f.x,f.y,U*(f.big?3:1.2)*(1-a*.7),0,6.283);ctx.stroke()}
+    else if(f.k==='dot'){f.x+=f.vx*dt;f.y+=f.vy*dt;f.vx*=.94;f.vy*=.94;ctx.fillStyle=`rgba(${f.c},${a})`;ctx.beginPath();ctx.arc(f.x,f.y,f.r*(.5+a*.5),0,6.283);ctx.fill()}
+    else if(f.k==='steam'){f.x+=f.vx*dt;f.y+=f.vy*dt;ctx.fillStyle=`rgba(235,235,235,${a*.45})`;ctx.beginPath();ctx.arc(f.x,f.y,f.r*(1.6-a*.6),0,6.283);ctx.fill()}
+    else if(f.k==='txt'){ctx.globalAlpha=Math.min(1,a*2);txt(f.s,f.x,f.y-(1-a)*U*1.2,U*1.1,f.c,'center','#000');ctx.globalAlpha=1}
+  }
+}
+
+// ---------------- 그리기 도우미 ----------------
+function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+function txt(s,x,y,size,col='#fff',al='center',stroke,weight=900,maxW){ctx.font=`${weight} ${size}px ${FONT}`;if(maxW){const w=ctx.measureText(s).width;if(w>maxW){size*=maxW/w;ctx.font=`${weight} ${size}px ${FONT}`}}ctx.textAlign=al;ctx.textBaseline='middle';if(stroke){ctx.lineWidth=size*.18;ctx.strokeStyle=stroke;ctx.lineJoin='round';ctx.strokeText(s,x,y)}ctx.fillStyle=col;ctx.fillText(s,x,y)}
+function drawBtn(b){
+  const sel=b.sel,dis=b.off;
+  ctx.save();ctx.globalAlpha=dis?.35:1;
+  ctx.fillStyle='rgba(0,0,0,.35)';rr(b.x,b.y+U*.2,b.w,b.h,U*.6);ctx.fill();
+  ctx.fillStyle=b.big?'#ff8c1a':sel?'#ffd166':'#3b2b26';rr(b.x,b.y,b.w,b.h,U*.6);ctx.fill();
+  ctx.lineWidth=U*.12;ctx.strokeStyle=sel||b.big?'#fff3c4':'rgba(255,255,255,.25)';ctx.stroke();
+  if(b.prog>0){ctx.save();rr(b.x,b.y,b.w,b.h,U*.6);ctx.clip();ctx.fillStyle='rgba(255,255,255,.45)';ctx.fillRect(b.x,b.y,b.w*b.prog,b.h);ctx.restore()}
+  const c=sel||b.big?'#3a1500':'#fde7d9';
+  if(b.icon){txt(b.icon,b.x+b.w/2,b.y+b.h*(b.sub?.3:.36),b.h*(b.sub?.3:.4),c);txt(b.label,b.x+b.w/2,b.y+b.h*(b.sub?.62:.76),Math.min(b.h*.17,U*.9),c,'center',null,900,b.w*.9);if(b.sub)txt(b.sub,b.x+b.w/2,b.y+b.h*.82,Math.min(b.h*.11,U*.55),c,'center',null,700,b.w*.9)}
+  else txt(b.label,b.x+b.w/2,b.y+b.h/2,Math.min(b.h*.42,U*(b.big?1.4:.85)),c,'center',null,900,b.w*.88);
+  ctx.restore();
+}
+// 울퉁불퉁 돌 모양
+function rockShape(seed){const n=11,a=[];let s=seed*9301+49297;for(let i=0;i<n;i++){s=(s*9301+49297)%233280;a.push(.82+(s/233280)*.22)}return a}
+function drawRock(x,y,r,shape,o={}){
+  const n=shape.length;
+  ctx.save();ctx.translate(x,y+(o.sink||0)*r*.15);const sc=1-(o.sink||0)*.35;ctx.scale(sc,sc);
+  if(o.glow){const g=(Math.sin(o.glow*6)+1)/2;ctx.shadowColor=o.glowCol||'#7df9ff';ctx.shadowBlur=r*(.4+g*.5)}
+  else{ctx.shadowColor='rgba(0,0,0,.6)';ctx.shadowBlur=r*.35;ctx.shadowOffsetY=r*.12}
+  ctx.beginPath();for(let i=0;i<=n;i++){const a=i/n*6.283,k=shape[i%n];const px=Math.cos(a)*r*k,py=Math.sin(a)*r*k*.92;i?ctx.lineTo(px,py):ctx.moveTo(px,py)}ctx.closePath();
+  const gr=ctx.createRadialGradient(-r*.3,-r*.35,r*.1,0,0,r*1.1);
+  const c=o.col||['#9a8f87','#5d524c','#2e2622'];gr.addColorStop(0,c[0]);gr.addColorStop(.55,c[1]);gr.addColorStop(1,c[2]);
+  ctx.fillStyle=gr;ctx.fill();ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+  ctx.lineWidth=r*.07;ctx.strokeStyle=o.glow?(o.glowCol||'#7df9ff'):'rgba(20,10,5,.7)';ctx.stroke();
+  if(o.sink){ctx.strokeStyle='rgba(255,120,20,'+o.sink+')';ctx.lineWidth=r*.05;ctx.beginPath();ctx.moveTo(-r*.5,-r*.2);ctx.lineTo(0,r*.05);ctx.lineTo(r*.4,-r*.3);ctx.moveTo(0,r*.05);ctx.lineTo(r*.1,r*.5);ctx.stroke()}
+  ctx.restore();
+}
+function floorOf(x){return x<FLO[1].x?0:1}
+function seamX(){return FLO[1].x}
+
+// ---------------- 게임 상태 ----------------
+const G={phase:'home',t:0,mode:'cross',score:[0,0],timer:0};
+function teamOn(){return CFG.team&&CFG.mode!=='find'}
+const TEAM=[{name:'빨강',col:'#ff5a5f',rgb:'255,90,95'},{name:'파랑',col:'#3fa9ff',rgb:'63,169,255'}];
+
+// ===== 1) 돌다리 건너기 =====
+// 출발 둑 → 돌 → 도착 둑. 빛나는 다음 돌만 밟으면 됨 (한 칸 건너뛰기 허용). 용암 밟으면 풍덩 (점수에만 영향).
+const LV_CROSS=[{n:7,r:1.25,sink:0},{n:10,r:1.05,sink:0},{n:12,r:.92,sink:2.6}];
+function laneRect(i,lanes){const h=H/lanes;return{y0:h*i,y1:h*(i+1)}}
+function makePath(lane){
+  const lv=LV_CROSS[CFG.lv],lanes=teamOn()?2:1,R=laneRect(lane.i,lanes);
+  const r=U*lv.r*(lanes===2?.85:1);
+  const bank=W*.075,x0=bank+r*1.3,x1=W-bank-r*1.3,n=lv.n,sx=seamX();
+  const st=[];let y=(R.y0+R.y1)/2;
+  for(let i=0;i<n;i++){
+    let x=x0+(x1-x0)*(n===1?.5:i/(n-1))+(Math.random()-.5)*(x1-x0)/(n-1)*.35;
+    if(Math.abs(x-sx)<r*1.15)x=sx+(x<sx?-1:1)*r*1.15;      // 화면 이음매 피함
+    const pad=r*1.1,lo=R.y0+pad+(lanes===1||lane.i===0?U*1.4:0),hi=R.y1-pad-(lane.i===1?U*1.4:0);
+    y=Math.min(hi,Math.max(lo,y+(lo+Math.random()*(hi-lo)-y)*.65));
+    st.push({x,y,r,shape:rockShape(Math.random()*1000|0),done:false,t:0,sink:0});
+  }
+  if(CFG.dir<0)st.forEach(s=>{s.x=W-s.x});
+  lane.stones=st;lane.next=0;lane.lastStep=0;lane.R=R;lane.r=r;lane.bank=bank;lane.cross=lane.cross||0;
+}
+function crossStart(){
+  G.lanes=[];const n=teamOn()?2:1;
+  for(let i=0;i<n;i++){const l={i,splash:0,cross:0};makePath(l);G.lanes.push(l)}
+  G.goal=teamOn()?3:5;
+  speak(teamOn()?'빛나는 돌만 밟고 건너요! 세 번 먼저 건너는 팀이 이겨요!':'빛나는 돌만 밟고 용암을 건너요!',true);
+}
+function startBank(l){return CFG.dir>0?{x0:0,x1:l.bank}:{x0:W-l.bank,x1:W}}
+function endBank(l){return CFG.dir>0?{x0:W-l.bank,x1:W}:{x0:0,x1:l.bank}}
+function crossStep(p,now){
+  const lanes=G.lanes,li=lanes.length===2?(p.y<H/2?0:1):0,l=lanes[li];
+  // 돌 위?
+  let hit=-1;for(let i=0;i<l.stones.length;i++){const s=l.stones[i];if(s.sink>=1)continue;if(Math.hypot(p.x-s.x,p.y-s.y)<s.r*1.2){hit=i;break}}
+  const eb=endBank(l),sb=startBank(l);
+  if(hit>=0){
+    if(hit===l.next||hit===l.next+1){
+      for(let j=l.next;j<=hit;j++){l.stones[j].done=true;l.stones[j].t=now}
+      l.next=hit+1;l.lastStep=now;sfx.step(hit);burst(l.stones[hit].x,l.stones[hit].y,'125,249,255',12,.7);
+      if(l.next===l.stones.length)speak('이제 도착!');
+    }
+    return;
+  }
+  if(p.x>=eb.x0&&p.x<=eb.x1){
+    if(l.next>=l.stones.length){crossDone(l);}
+    else if(now-l.lastStep>400)speak('빛나는 돌부터 밟아요');
+    return;
+  }
+  if(p.x>=sb.x0&&p.x<=sb.x1)return;
+  // 방금 밟은 돌 바로 옆 = 같은 발 → 봐줌
+  const ls=l.stones[l.next-1];if(ls&&Math.hypot(p.x-ls.x,p.y-ls.y)<ls.r*1.9)return;
+  if(now-l.lastStep<350)return;
+  if(now-(l.lastSplash||0)<900)return;
+  l.lastSplash=now;l.splash++;sfx.splash();splashFX(p.x,p.y);
+}
+function crossDone(l){
+  l.cross++;sfx.win();
+  const eb=endBank(l),cx=(eb.x0+eb.x1)/2,cy=(l.R.y0+l.R.y1)/2;
+  for(let k=0;k<3;k++)setTimeout(()=>burst(cx+(Math.random()-.5)*U*3,cy+(Math.random()-.5)*U*3,k%2?'255,215,0':'125,249,255',30,1.2),k*200);
+  if(l.cross>=G.goal){endGame();return}
+  speak(teamOn()?`${TEAM[l.i].name} 팀 ${l.cross}번 건넜어요!`:`건넜어요! 다음 친구!`,true);
+  setTimeout(()=>{if(G.phase==='play')makePath(l)},1500);
+  l.stones.forEach(s=>s.done=true);
+}
+function crossUpdate(now,dt){
+  const lv=LV_CROSS[CFG.lv];
+  for(const l of G.lanes)for(const s of l.stones){
+    if(lv.sink&&s.done&&l.next<l.stones.length&&s.sink<1){const age=(now-s.t)/1000;s.sink=age>lv.sink?Math.min(1,(age-lv.sink)/.8):0;if(s.sink>=1&&!s.sunk){s.sunk=1;steamFX(s.x,s.y)}}
+  }
+}
+function crossDraw(now){
+  for(const l of G.lanes){
+    const two=G.lanes.length===2,R=l.R;
+    // 둑
+    for(const [b,isEnd] of [[startBank(l),false],[endBank(l),true]]){
+      const g=ctx.createLinearGradient(b.x0,0,b.x1,0);const out=(b.x0===0);
+      g.addColorStop(out?0:1,'#2f7d32');g.addColorStop(out?1:0,'#4caf50');
+      ctx.fillStyle=g;ctx.fillRect(b.x0,R.y0,b.x1-b.x0,R.y1-R.y0);
+      ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(out?b.x1-U*.25:b.x0,R.y0,U*.25,R.y1-R.y0);
+      const cx=(b.x0+b.x1)/2,cy=(R.y0+R.y1)/2,sz=Math.min((b.x1-b.x0)*.75,(R.y1-R.y0)*.4);
+      const done=l.next>=l.stones.length;
+      if(isEnd){const pulse=done?1+Math.sin(now/150)*.12:1;txt('🏆',cx,cy-sz*.25,sz*.8*pulse);txt('도착',cx,cy+sz*.6,sz*.32,'#fff','center','#1b5e20')}
+      else{txt('🐾',cx,cy-sz*.25,sz*.7);txt('출발',cx,cy+sz*.6,sz*.32,'#fff','center','#1b5e20')}
+    }
+    if(two){ctx.fillStyle=`rgba(${TEAM[l.i].rgb},.9)`;ctx.fillRect(0,l.i?R.y0:R.y1-U*.18,W,U*.18)}
+    // 다음 돌까지 점선
+    const nx=l.stones[l.next];
+    l.stones.forEach((s,i)=>{
+      if(s.sink>=1)return;
+      const isNext=i===l.next,isNext2=i===l.next+1;
+      drawRock(s.x,s.y,s.r,s.shape,{glow:isNext?now/1000:0,glowCol:two?TEAM[l.i].col:'#7df9ff',sink:s.sink,col:s.done?['#a5d6a7','#558b2f','#1b3a12']:undefined});
+      if(isNext){txt('👣',s.x,s.y,s.r*.75)}
+      else if(s.done){txt('⭐',s.x,s.y,s.r*.6)}
+      else if(isNext2){ctx.globalAlpha=.5;txt('👣',s.x,s.y,s.r*.55);ctx.globalAlpha=1}
+    });
+    // 점수
+    const sx=W/2,sy=two?(l.i?R.y1-U*.8:R.y0+U*.8):R.y0+U*.8;
+    const label=two?`${TEAM[l.i].name} 팀  ${'🏆'.repeat(l.cross)}${'⚪'.repeat(Math.max(0,G.goal-l.cross))}`:`건넌 횟수 ${l.cross} / ${G.goal}   풍덩 ${l.splash}`;
+    for(const f of FLO)txt(label,f.x+f.w/2,sy,U*.7,'#fff','center','rgba(0,0,0,.7)');
+  }
+}
+
+// ===== 2) 용암 식히기 =====
+// 부글부글 올라오는 용암 방울을 밟으면 돌로 식는다. 금빛 방울 3점. 1분.
+const LV_POP=[{life:4.2,max:3,gold:.12},{life:3.2,max:5,gold:.1},{life:2.4,max:7,gold:.08}];
+function popStart(){G.bub=[];G.score=[0,0];G.timer=60;G.spawnT=0;speak(teamOn()?'부글부글 방울을 밟아서 식혀요! 왼쪽은 빨강 팀, 오른쪽은 파랑 팀!':'부글부글 방울을 밟아서 식혀요!',true)}
+function popSpawn(fi){
+  const f=FLO[fi],r=U*1.15,pad=r*1.4;
+  for(let k=0;k<20;k++){
+    const x=f.x+pad+Math.random()*(f.w-pad*2),y=f.y+pad+U*1.2+Math.random()*(f.h-pad*2-U*1.2);
+    if(G.bub.some(b=>Math.hypot(b.x-x,b.y-y)<r*2.6))continue;
+    G.bub.push({x,y,r,t:0,life:LV_POP[CFG.lv].life*(.85+Math.random()*.3),gold:Math.random()<LV_POP[CFG.lv].gold,fi,state:'up',shape:rockShape(Math.random()*999|0)});return;
+  }
+}
+function popUpdate(now,dt){
+  G.timer-=dt;if(G.timer<=0){G.timer=0;endGame();return}
+  const lv=LV_POP[CFG.lv];
+  for(let fi=0;fi<2;fi++){const live=G.bub.filter(b=>b.fi===fi&&b.state==='up').length;const want=teamOn()?lv.max:Math.ceil(lv.max/2)+(fi===0?0:0);
+    if(live<want&&Math.random()<dt*3)popSpawn(fi)}
+  for(let i=G.bub.length-1;i>=0;i--){const b=G.bub[i];b.t+=dt;
+    if(b.state==='up'&&b.t>b.life){b.state='pop';b.t=0;noise(0,.15,.08,600,300,2)}
+    else if(b.state==='pop'&&b.t>.35)G.bub.splice(i,1);
+    else if(b.state==='rock'&&b.t>1.6)G.bub.splice(i,1)}
+}
+function popStep(p){
+  for(const b of G.bub){if(b.state!=='up')continue;
+    if(Math.hypot(p.x-b.x,p.y-b.y)<b.r*1.35){
+      b.state='rock';b.t=0;const pts=b.gold?3:1;const team=teamOn()?floorOf(b.x):0;G.score[team]+=pts;
+      if(b.gold){sfx.gold();burst(b.x,b.y,'255,215,0',26,1)}else sfx.sizzle();
+      steamFX(b.x,b.y);textFX(b.x,b.y-b.r*1.4,'+'+pts,b.gold?'#ffd54f':'#fff');return}
+  }
+}
+function popDraw(now){
+  for(const b of G.bub){
+    if(b.state==='rock'){const a=b.t<1.2?1:1-(b.t-1.2)/.4;ctx.globalAlpha=Math.max(0,a);drawRock(b.x,b.y,b.r,b.shape,{col:['#b0bec5','#607d8b','#263238']});txt(b.gold?'🌟':'✨',b.x,b.y,b.r*.6);ctx.globalAlpha=1;continue}
+    const k=b.state==='up'?Math.min(1,b.t/.35):1+b.t*2,a=b.state==='pop'?1-b.t/.35:1;
+    const left=b.state==='up'?1-b.t/b.life:0,wob=Math.sin(now/120+b.x)*.06;
+    const r=b.r*k*(1+wob);
+    ctx.save();ctx.globalAlpha=Math.max(0,a);
+    const g=ctx.createRadialGradient(b.x-r*.3,b.y-r*.35,r*.1,b.x,b.y,r);
+    if(b.gold){g.addColorStop(0,'#fffde7');g.addColorStop(.5,'#ffd54f');g.addColorStop(1,'#ff8f00')}else{g.addColorStop(0,'#fff59d');g.addColorStop(.45,'#ff9800');g.addColorStop(1,'#d84315')}
+    ctx.shadowColor=b.gold?'#ffeb3b':'#ff6d00';ctx.shadowBlur=r*.8;ctx.fillStyle=g;ctx.beginPath();ctx.arc(b.x,b.y,r,0,6.283);ctx.fill();ctx.shadowBlur=0;
+    ctx.fillStyle='rgba(255,255,255,.55)';ctx.beginPath();ctx.ellipse(b.x-r*.35,b.y-r*.4,r*.22,r*.13,-.6,0,6.283);ctx.fill();
+    if(b.state==='up'){ctx.strokeStyle='rgba(255,255,255,.85)';ctx.lineWidth=U*.16;ctx.beginPath();ctx.arc(b.x,b.y,r+U*.3,-1.571,-1.571+6.283*left);ctx.stroke();
+      // 눈
+      ctx.fillStyle='#3e1000';for(const s of[-1,1]){ctx.beginPath();ctx.arc(b.x+s*r*.28,b.y-r*.05,r*.09,0,6.283);ctx.fill()}
+      ctx.strokeStyle='#3e1000';ctx.lineWidth=r*.06;ctx.beginPath();ctx.arc(b.x,b.y+r*.12,r*.2,.3,2.84);ctx.stroke()}
+    ctx.restore();
+  }
+  // 위쪽 정보
+  const tt=Math.ceil(G.timer);
+  FLO.forEach((f,i)=>{
+    const by=f.y+U*.75;
+    ctx.fillStyle='rgba(0,0,0,.45)';rr(f.x+U,by-U*.55,f.w-U*2,U*1.1,U*.55);ctx.fill();
+    ctx.fillStyle=tt<=10?'#ff5252':'#ffd166';rr(f.x+U,by-U*.55,(f.w-U*2)*(G.timer/60),U*1.1,U*.55);ctx.fill();
+    const label=teamOn()?`${TEAM[i].name} 팀 ${G.score[i]}점   ⏱ ${tt}`:`식힌 방울 ${G.score[0]}개   ⏱ ${tt}`;
+    txt(label,f.x+f.w/2,by,U*.75,'#fff','center',teamOn()?TEAM[i].col:'#5d1a00');
+  });
+}
+
+// ===== 3) 색깔 돌 찾기 =====
+const COLORS=[['빨간','#e53935'],['노란','#fdd835'],['초록','#43a047'],['파란','#1e88e5'],['보라','#8e24aa'],['주황','#fb8c00']];
+const SHAPES=[['동그라미','●'],['세모','▲'],['네모','■'],['별','★'],['하트','♥']];
+const LV_FIND=[{n:4,cats:['c']},{n:6,cats:['c','s']},{n:8,cats:['c','s','n']}];
+function findStart(){G.q=0;G.qMax=10;G.score=[0,0];G.miss=0;findNext(true)}
+function findNext(first){
+  const lv=LV_FIND[CFG.lv],n=lv.n;
+  const cat=lv.cats[G.q%lv.cats.length];
+  const cs=shuffle(COLORS.slice()),ss=shuffle(SHAPES.slice()),ns=shuffle([1,2,3,4,5,6,7,8,9]);
+  // 돌 자리: 두 바닥에 고르게, 위쪽 글자 띠는 피함
+  const r=U*1.35,st=[];
+  for(let i=0;i<n;i++){
+    const f=FLO[i%2];let x,y,ok=false;
+    for(let k=0;k<60&&!ok;k++){x=f.x+r*1.4+Math.random()*(f.w-r*2.8);y=f.y+U*2.2+r+Math.random()*(f.h-U*2.2-r*2.2);ok=!st.some(s=>Math.hypot(s.x-x,s.y-y)<r*2.5)}
+    st.push({x,y,r,shape:rockShape(Math.random()*999|0),c:cs[i%cs.length],s:ss[i%ss.length],n:ns[i%ns.length],hit:0,wrong:0});
+  }
+  const ans=Math.random()*n|0;
+  // 정답이 유일하게: 색·모양·숫자 모두 다르게 배정됨 (n ≤ 각 목록 길이일 때). 모양은 5개라 n>5면 겹침 → 모양 문제 땐 정답 모양을 하나만 남김
+  if(cat==='s')st.forEach((s,i)=>{if(i!==ans&&s.s[0]===st[ans].s[0])s.s=SHAPES.find(x=>!st.some(o=>o!==s&&o.s[0]===x[0])&&x[0]!==st[ans].s[0])||SHAPES.find(x=>x[0]!==st[ans].s[0])});
+  if(cat==='c')st.forEach((s,i)=>{if(i!==ans&&s.c[0]===st[ans].c[0])s.c=COLORS.find(x=>x[0]!==st[ans].c[0])});
+  G.st=st;G.ans=ans;G.cat=cat;G.wait=false;
+  const a=st[ans];
+  G.say=cat==='c'?`${a.c[0]} 돌을 밟아요!`:cat==='s'?`${a.s[0]} 돌을 밟아요!`:`숫자 ${a.n} 돌을 밟아요!`;
+  G.qT=performance.now();
+  setTimeout(()=>speak(G.say,true),first?300:100);
+}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a}
+function findStep(p,now){
+  if(G.wait)return;
+  for(let i=0;i<G.st.length;i++){const s=G.st[i];if(Math.hypot(p.x-s.x,p.y-s.y)>s.r*1.2)continue;
+    if(i===G.ans){s.hit=now;G.score[0]++;G.wait=true;sfx.ok();burst(s.x,s.y,'255,215,0',30,1.2);speak(['딩동댕!','맞았어요!','최고!','잘했어요!'][Math.random()*4|0],true);
+      G.q++;setTimeout(()=>{if(G.phase!=='play')return;if(G.q>=G.qMax)endGame();else findNext()},1600)}
+    else if(now-s.wrong>1200){s.wrong=now;G.miss++;sfx.no();const d=G.cat==='c'?s.c[0]:G.cat==='s'?s.s[0]:'숫자 '+s.n;speak(`그건 ${d} 돌이에요. ${G.say}`,true)}
+    return}
+}
+function findDraw(now){
+  for(let i=0;i<G.st.length;i++){const s=G.st[i];
+    const hit=s.hit&&now-s.hit<1600,wr=s.wrong&&now-s.wrong<500;
+    const sh=wr?Math.sin(now/30)*U*.15:0;
+    const col=G.cat==='c'||CFG.lv>0?s.c[1]:'#cfd8dc';
+    const c2=shade(col,-.35),c3=shade(col,-.65);
+    drawRock(s.x+sh,s.y,s.r*(hit?1.12:1),s.shape,{col:[shade(col,.35),col,c3],glow:hit?now/1000:0,glowCol:'#fff59d'});
+    const fg='#fff';
+    if(G.cat==='n'||(CFG.lv===2)){txt(String(s.n),s.x+sh,s.y+(G.cat==='s'||CFG.lv>0?s.r*.28:0),s.r*.7,fg,'center',c3)}
+    if(G.cat==='s'||CFG.lv>0){txt(s.s[1],s.x+sh,s.y-(CFG.lv===2?s.r*.3:0),s.r*(CFG.lv===2?.55:.8),fg,'center',c3)}
+  }
+  // 문제 띠
+  FLO.forEach(f=>{
+    ctx.fillStyle='rgba(30,10,5,.75)';rr(f.x+U*1.2,f.y+U*.3,f.w-U*2.4,U*1.5,U*.75);ctx.fill();
+    txt(G.say||'',f.x+f.w/2,f.y+U*1.05,U*.95,'#fff');
+    txt(`${Math.min(G.q+1,G.qMax)} / ${G.qMax}   ⭐ ${G.score[0]}`,f.x+f.w-U*1.8,f.y+U*1.05,U*.6,'#ffd166','right',null,700);
+  });
+}
+function shade(hex,k){const n=parseInt(hex.slice(1),16);let r=n>>16,g=n>>8&255,b=n&255;const f=v=>Math.round(k>0?v+(255-v)*k:v*(1+k));return`rgb(${f(r)},${f(g)},${f(b)})`}
+
+// ---------------- 흐름 ----------------
+function startGame(){
+  G.mode=CFG.mode;G.phase='count';G.cnt=3;G.cntT=performance.now();sfx.tick();speak('준비!',true);
+  G.lanes=null;G.bub=null;G.st=null;FX.length=0;
+}
+function beginPlay(){
+  G.phase='play';sfx.go();
+  if(G.mode==='cross')crossStart();else if(G.mode==='pop')popStart();else findStart();
+}
+function layoutAgain(){if(G.mode==='cross'&&G.lanes)G.lanes.forEach(makePath);else if(G.mode==='find'&&G.st)findNext()}
+function endGame(){
+  if(G.phase!=='play')return;
+  G.phase='end';G.endT=performance.now();sfx.win();
+  let t,s;
+  if(G.mode==='cross'){
+    if(teamOn()){const w=G.lanes[0].cross>=G.goal?0:1;t=`${TEAM[w].name} 팀 승리! 🏆`;s='두 팀 모두 용암을 잘 건넜어요!';speak(`${TEAM[w].name} 팀 승리! 모두 잘했어요!`,true)}
+    else{const sp=G.lanes[0].splash;const star=sp<=1?3:sp<=4?2:1;t=`${'⭐'.repeat(star)} 탈출 성공!`;s=`${G.goal}번 건넜어요. 풍덩 ${sp}번`;speak('모두 용암을 건넜어요! 탈출 성공!',true)}
+  }else if(G.mode==='pop'){
+    if(teamOn()){const [a,b]=G.score;t=a===b?'비겼어요! 🤝':`${TEAM[a>b?0:1].name} 팀 승리! 🏆`;s=`빨강 ${a}점 · 파랑 ${b}점`;speak(a===b?'비겼어요! 모두 잘했어요!':`${TEAM[a>b?0:1].name} 팀 승리!`,true)}
+    else{t=`${G.score[0]}개 식혔어요! 🎉`;s='뜨거운 용암이 시원한 돌이 됐어요';speak(`${G.score[0]}개 식혔어요! 정말 잘했어요!`,true)}
+  }else{t=`${G.score[0]}개 찾았어요! 🎉`;s=G.miss?`다시 찾기 ${G.miss}번`:'한 번도 안 틀렸어요!';speak('다 찾았어요! 정말 잘했어요!',true)}
+  G.endTitle=t;G.endSub=s;
+}
+function goHome(){G.phase='home';FX.length=0;try{speechSynthesis.cancel()}catch(e){}}
+
+function onStep(p,P){
+  const now=performance.now();
+  if(btnAt(p.x,p.y))return;           // 버튼은 updateButtons 에서 처리
+  if(G.phase!=='play')return;
+  if(G.mode==='cross')crossStep(p,now);else if(G.mode==='pop')popStep(p,now);else findStep(p,now);
+}
+
+// ---------------- 화면 ----------------
+const MODES=[
+  {k:'cross',icon:'🪨',label:'돌다리 건너기',sub:'빛나는 돌만 밟고 건너요'},
+  {k:'pop',icon:'🫧',label:'용암 식히기',sub:'부글부글 방울을 콩!'},
+  {k:'find',icon:'🎨',label:'색깔 돌 찾기',sub:'말하는 돌을 찾아 밟아요'},
+];
+function homeUI(now){
+  const A=FLO[0],B=FLO[1];
+  // 왼쪽 바닥: 제목 + 놀이 고르기
+  txt('🌋 용암 바닥 탈출',A.x+A.w/2,A.y+A.h*.14,Math.min(U*1.6,A.w/12),'#ffd166','center','#5d1a00');
+  txt('바닥은 뜨거운 용암! 발로 꾹 밟아서 골라요',A.x+A.w/2,A.y+A.h*.27,U*.6,'#fff','center','rgba(0,0,0,.6)',700);
+  const tw=A.w*.27,th=A.h*.5,gap=(A.w-tw*3)/4;
+  MODES.forEach((m,i)=>btn({x:A.x+gap+(tw+gap)*i,y:A.y+A.h*.38,w:tw,h:th,icon:m.icon,label:m.label,sub:m.sub,sel:CFG.mode===m.k,act:()=>{CFG.mode=m.k;save('mode',m.k)}}));
+  // 오른쪽 바닥: 설정 + 시작
+  const rows=[
+    {lbl:'난이도',opts:[['🐣 쉬움',0],['🐥 보통',1],['🦅 어려움',2]],k:'lv'},
+    {lbl:'같이',opts:[['🙋 다 같이',false],['🔴🔵 2팀',true]],k:'team',off:CFG.mode==='find'},
+    {lbl:'방향',opts:[['➡️ 오른쪽으로',1],['⬅️ 왼쪽으로',-1]],k:'dir',off:CFG.mode!=='cross'},
+    {lbl:'화면',opts:[['그대로',false],['🔄 뒤집기',true]],k:'flip'},
+  ];
+  const lx=B.x+B.w*.04,ow=B.w*.17,oh=B.h*.15,rg=B.h*.04,y0=B.y+B.h*.08;
+  rows.forEach((r,ri)=>{
+    const y=y0+ri*(oh+rg);
+    txt(r.lbl,lx+B.w*.05,y+oh/2,U*.7,r.off?'rgba(255,255,255,.35)':'#ffe0b2','center','rgba(0,0,0,.6)');
+    r.opts.forEach(([l,v],oi)=>btn({x:lx+B.w*.11+oi*(ow+B.w*.015),y,w:ow,h:oh,label:l,sel:CFG[r.k]===v,off:r.off,act:()=>{CFG[r.k]=v;save(r.k,v)}}));
+  });
+  btn({x:B.x+B.w*.7,y:B.y+B.h*.3,w:B.w*.26,h:B.h*.4,big:true,icon:'▶',label:'시작!',hold:900,act:startGame});
+  // 도움말
+  const help={cross:'출발 둑에서 빛나는 👣 돌만 밟아 도착 🏆까지! 용암을 밟으면 풍덩',pop:'올라오는 용암 방울을 밟으면 돌로 식어요. 🌟 금빛 방울은 3점',find:'목소리가 말하는 색깔·모양·숫자 돌을 찾아 밟아요'}[CFG.mode];
+  txt(help,B.x+B.w/2,B.y+B.h*.92,U*.55,'#fff','center','rgba(0,0,0,.7)',700);
+}
+function homeBtns(){
+  // 놀이 중: 바닥 가장자리 작은 처음으로 버튼 (1.5초 밟기)
+  // 이음매 아래 가운데 하나만 (둑·돌과 안 겹침)
+  btn({x:seamX()-U*.8,y:H-U*1.8,w:U*1.6,h:U*1.6,label:'🏠',hold:2000,act:goHome});
+}
+function endUI(now){
+  for(const f of FLO){
+    const w=f.w*.6,h=f.h*.66,x=f.x+(f.w-w)/2,y=f.y+(f.h-h)/2;
+    ctx.fillStyle='rgba(0,0,0,.4)';rr(x,y+U*.3,w,h,U);ctx.fill();
+    ctx.fillStyle='#fff8e1';rr(x,y,w,h,U);ctx.fill();
+    txt(G.endTitle,x+w/2,y+h*.24,Math.min(U*1.5,w/12),'#bf360c');
+    txt(G.endSub,x+w/2,y+h*.45,U*.75,'#5d4037','center',null,700);
+    btn({x:x+w*.06,y:y+h*.62,w:w*.42,h:h*.28,label:'한 번 더! 🔁',act:startGame,sel:true});
+    btn({x:x+w*.52,y:y+h*.62,w:w*.42,h:h*.28,label:'처음으로 🏠',act:goHome});
+  }
+}
+
+// ---------------- 반복 ----------------
+let last=performance.now();
+function loop(now){
+  const dt=Math.min(.05,(now-last)/1000);last=now;G.t+=dt;
+  glDraw(G.t,G.phase==='home'||G.phase==='end'?.35:0);
+  ctx.clearRect(0,0,W,H);
+  ctx.save();if(CFG.flip){ctx.translate(W,H);ctx.rotate(Math.PI)}
+  BTN=[];
+  if(G.phase==='play'){
+    if(G.mode==='cross'){crossUpdate(now,dt);crossDraw(now)}
+    else if(G.mode==='pop'){popUpdate(now,dt);if(G.phase==='play'||G.bub)popDraw(now)}
+    else findDraw(now);
+    homeBtns();
+  }else if(G.phase==='count'){
+    const el=(now-G.cntT)/1000;const n=3-Math.floor(el);
+    if(n!==G.cnt&&n>0){G.cnt=n;sfx.tick()}
+    if(el>=3)beginPlay();
+    else for(const f of FLO){const k=1+(el%1)*.3;txt(String(n),f.x+f.w/2,f.y+f.h/2,f.h*.45*k,'#ffd166','center','#5d1a00')}
+  }else if(G.phase==='home')homeUI(now);
+  else if(G.phase==='end'){
+    if(G.mode==='cross')crossDraw(now);else if(G.mode==='pop')popDraw(now);else findDraw(now);
+    ctx.fillStyle='rgba(20,5,0,.45)';ctx.fillRect(0,0,W,H);
+    if(now-G.endT>1200)endUI(now);
+    if(Math.random()<.08){const f=FLO[Math.random()*2|0];burst(f.x+Math.random()*f.w,f.y+Math.random()*f.h*.6,['255,215,0','125,249,255','255,138,101'][Math.random()*3|0],24,1.2)}
+  }
+  updateButtons(now);
+  for(const b of BTN)drawBtn(b);
+  drawFX(dt);
+  // 이음매 표시 (개발 확인용: ?seam)
+  if(location.search.includes('seam')){ctx.strokeStyle='#0ff';ctx.lineWidth=2;FLO.forEach(f=>ctx.strokeRect(f.x+1,f.y+1,f.w-2,f.h-2))}
+  ctx.restore();
+  requestAnimationFrame(loop);
+}
+resize();
+requestAnimationFrame(loop);
+// 시험용 훅
+window.__lava={G,CFG,FLO:()=>FLO,startGame,beginPlay,goHome,endGame};
+</script>
+</body>
+</html>
