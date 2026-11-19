@@ -27,6 +27,10 @@
   --red-bg: #fce8eb;
   --forest: #1B4332;
   --sky: #0277BD;
+  --purple: #6A1B9A;
+  --purple-bg: #f3e5f5;
+  --orange: #C2410C;
+  --orange-bg: #fff1e6;
   --r: 12px; --rs: 8px;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -59,6 +63,8 @@ body { font-family: 'Apple SD Gothic Neo','Noto Sans KR',sans-serif; background:
 .class-dots { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; min-height: 16px; }
 .cnt-badge { font-size: 9px; background: var(--green); color: #fff; border-radius: 20px; padding: 1px 5px; font-weight: 600; }
 .cnt-badge.forest { background: var(--sky); }
+.cnt-badge.musical { background: var(--purple); }
+.cnt-badge.movie { background: var(--orange); }
 
 /* ── 입력 폼 ── */
 .form-card { background: var(--surface); border: .5px solid var(--border2); border-radius: var(--r); padding: 20px; margin-bottom: 12px; }
@@ -87,6 +93,10 @@ body { font-family: 'Apple SD Gothic Neo','Noto Sans KR',sans-serif; background:
 .type-btn .tb-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
 .type-btn.sel-trip .tb-label { color: var(--blue); }
 .type-btn.sel-forest .tb-label { color: var(--green); }
+.type-btn.sel-musical { border-color: var(--purple); background: var(--purple-bg); }
+.type-btn.sel-movie { border-color: var(--orange); background: var(--orange-bg); }
+.type-btn.sel-musical .tb-label { color: var(--purple); }
+.type-btn.sel-movie .tb-label { color: var(--orange); }
 
 /* 폼 요소 */
 .fg { margin-bottom: 14px; }
@@ -144,11 +154,15 @@ body { font-family: 'Apple SD Gothic Neo','Noto Sans KR',sans-serif; background:
 .my-list-empty { font-size: 13px; color: var(--text3); padding: 12px 0; text-align: center; }
 .my-item { background: var(--surface2); border-radius: var(--rs); padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; border-left: 3px solid var(--green); }
 .my-item.forest-item { border-left-color: var(--sky); }
+.my-item.musical-item { border-left-color: var(--purple); }
+.my-item.movie-item { border-left-color: var(--orange); }
 .my-item-left { flex: 1; }
 .my-item-top { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; }
 .my-item-badge { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
 .mib-trip { background: var(--forest); color: #fff; }
 .mib-forest { background: var(--sky); color: #fff; }
+.mib-musical { background: var(--purple); color: #fff; }
+.mib-movie { background: var(--orange); color: #fff; }
 .my-item-date { font-size: 13px; font-weight: 700; color: var(--forest); }
 .my-item-info { font-size: 12px; color: var(--text2); line-height: 1.5; }
 .my-item-del { flex-shrink: 0; height: 30px; padding: 0 12px; border-radius: var(--rs); border: .5px solid rgba(155,35,53,.3); background: transparent; color: var(--red); font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; }
@@ -210,6 +224,12 @@ body { font-family: 'Apple SD Gothic Neo','Noto Sans KR',sans-serif; background:
       <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)">
         <span style="width:10px;height:10px;border-radius:3px;background:var(--sky);display:inline-block"></span>숲놀이
       </div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)">
+        <span style="width:10px;height:10px;border-radius:3px;background:var(--purple);display:inline-block"></span>뮤지컬관람
+      </div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)">
+        <span style="width:10px;height:10px;border-radius:3px;background:var(--orange);display:inline-block"></span>영화관람
+      </div>
     </div>
   </div>
 
@@ -249,6 +269,16 @@ body { font-family: 'Apple SD Gothic Neo','Noto Sans KR',sans-serif; background:
           <div class="tb-icon">🌲</div>
           <div class="tb-label">숲놀이</div>
           <div class="tb-sub">장소·주제 입력</div>
+        </button>
+        <button class="type-btn" id="btnMusical" onclick="selectType('musical')">
+          <div class="tb-icon">🎭</div>
+          <div class="tb-label">뮤지컬관람</div>
+          <div class="tb-sub">장소·주제·미션 입력</div>
+        </button>
+        <button class="type-btn" id="btnMovie" onclick="selectType('movie')">
+          <div class="tb-icon">🎬</div>
+          <div class="tb-label">영화관람</div>
+          <div class="tb-sub">장소·주제·미션 입력</div>
         </button>
       </div>
     </div>
@@ -420,7 +450,7 @@ const MONS = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10
 let state = {
   inst: '무지개',
   cls: '',
-  type: '',   // 'trip' | 'forest'
+  type: '',   // 'trip' | 'forest' | 'musical' | 'movie'
   date: '',   // 'YYYY-MM-DD'
   bus: null,
   editKey: '',  // 수정 중인 Firebase key
@@ -488,13 +518,13 @@ function renderMyList() {
   items.forEach(([key, r]) => {
     const d = r.날짜 ? parseDate(r.날짜) : null;
     const dateStr = d ? `${d.getMonth()+1}월 ${d.getDate()}일 (${DAYS[d.getDay()]}요일)` : '-';
-    const isForest = r.유형 === '숲놀이';
+    const tk = typeKey(r.유형);
     const el = document.createElement('div');
-    el.className = 'my-item' + (isForest ? ' forest-item' : '');
+    el.className = 'my-item' + (tk!=='trip' ? ` ${tk}-item` : '');
     el.innerHTML = `
       <div class="my-item-left">
         <div class="my-item-top">
-          <span class="my-item-badge ${isForest?'mib-forest':'mib-trip'}">${r.유형}</span>
+          <span class="my-item-badge mib-${tk}">${r.유형}</span>
           <span class="my-item-date">${dateStr}</span>
         </div>
         <div class="my-item-info">
@@ -519,7 +549,7 @@ function startEdit(key) {
   state.editKey = key;
 
   // 유형 선택
-  const t = r.유형 === '광주탐방' ? 'trip' : 'forest';
+  const t = typeKey(r.유형);
   selectType(t);  // typeCard + detailCard 열기
 
   // 날짜 복원
@@ -554,7 +584,7 @@ function startEdit(key) {
   document.getElementById('fSupport').value = r.지원교사 !== undefined ? r.지원교사 : '';
   setBus(r.차량이용 === '이용');
 
-  if (t === 'trip') {
+  if (t !== 'forest') {
     document.getElementById('fMission').value = r.미션 || '';
     document.getElementById('fPre').value = r.사전활동 || '';
     document.getElementById('fPost').value = r.사후활동 || '';
@@ -563,7 +593,7 @@ function startEdit(key) {
   // 수정 모드 UI
   document.getElementById('editBanner').classList.add('show');
   document.getElementById('submitBtn').textContent = '✏️ 수정 저장하기';
-  document.getElementById('detailTitle').textContent = t === 'trip' ? '✏️ 광주탐방 수정' : '✏️ 숲놀이 수정';
+  document.getElementById('detailTitle').textContent = `✏️ ${TYPES[t].label} 수정`;
 
   window.scrollTo({top: document.getElementById('detailCard').offsetTop - 70, behavior:'smooth'});
 }
@@ -576,8 +606,7 @@ function cancelEdit() {
   document.getElementById('typeCard').style.display = 'block';
   state.type = '';
   state.date = '';
-  document.getElementById('btnTrip').className = 'type-btn';
-  document.getElementById('btnForest').className = 'type-btn';
+  clearTypeBtns();
   document.getElementById('selDateDisplay').style.display = 'none';
 }
 
@@ -637,13 +666,12 @@ function renderTopCal() {
   });
 
   // 날짜별 일정 집계
-  const dayCounts = {}; // 'YYYY-MM-DD' → { trip:n, forest:n }
+  const dayCounts = {}; // 'YYYY-MM-DD' → { trip:n, forest:n, musical:n, movie:n }
   Object.values(allSchedules).forEach(s => {
     const key = s.날짜;
     if (!key) return;
-    if (!dayCounts[key]) dayCounts[key] = { trip:0, forest:0 };
-    if (s.유형 === '광주탐방') dayCounts[key].trip++;
-    else dayCounts[key].forest++;
+    if (!dayCounts[key]) dayCounts[key] = { trip:0, forest:0, musical:0, movie:0 };
+    dayCounts[key][typeKey(s.유형)]++;
   });
 
   const first = new Date(y,m,1), dow = first.getDay(), dim = new Date(y,m+1,0).getDate();
@@ -665,6 +693,8 @@ function renderTopCal() {
     if (cnt) {
       if (cnt.trip > 0) html += `<span class="cnt-badge">${cnt.trip}탐방</span>`;
       if (cnt.forest > 0) html += `<span class="cnt-badge forest">${cnt.forest}숲</span>`;
+      if (cnt.musical > 0) html += `<span class="cnt-badge musical">${cnt.musical}뮤지컬</span>`;
+      if (cnt.movie > 0) html += `<span class="cnt-badge movie">${cnt.movie}영화</span>`;
     }
     html += '</div>';
     el.innerHTML = html;
@@ -702,18 +732,27 @@ function selectClass(name) {
   renderMyList();
   document.getElementById('typeCard').style.display = 'block';
   document.getElementById('detailCard').style.display = 'none';
-  document.getElementById('btnTrip').className = 'type-btn';
-  document.getElementById('btnForest').className = 'type-btn';
+  clearTypeBtns();
   window.scrollTo({top: document.getElementById('myListCard').offsetTop - 70, behavior:'smooth'});
 }
+
+// ── 유형 정의 ──
+const TYPES = {
+  trip:    { label:'광주탐방',   icon:'🗺', short:'탐방' },
+  forest:  { label:'숲놀이',     icon:'🌲', short:'숲' },
+  musical: { label:'뮤지컬관람', icon:'🎭', short:'뮤지컬' },
+  movie:   { label:'영화관람',   icon:'🎬', short:'영화' },
+};
+const TYPE_BTN = { trip:'btnTrip', forest:'btnForest', musical:'btnMusical', movie:'btnMovie' };
+function typeKey(label) { return Object.keys(TYPES).find(k => TYPES[k].label === label) || 'forest'; }
+function clearTypeBtns() { Object.values(TYPE_BTN).forEach(id => document.getElementById(id).className = 'type-btn'); }
 
 // ── 유형 선택 ──
 function selectType(t) {
   state.type = t;
-  document.getElementById('btnTrip').className = 'type-btn'+(t==='trip'?' sel-trip':'');
-  document.getElementById('btnForest').className = 'type-btn'+(t==='forest'?' sel-forest':'');
-  document.getElementById('tripOnly').style.display = t==='trip' ? 'block' : 'none';
-  document.getElementById('detailTitle').textContent = t==='trip' ? '🗺 광주탐방 상세 정보' : '🌲 숲놀이 상세 정보';
+  Object.entries(TYPE_BTN).forEach(([k,id]) => document.getElementById(id).className = 'type-btn'+(t===k?' sel-'+k:''));
+  document.getElementById('tripOnly').style.display = t!=='forest' ? 'block' : 'none';
+  document.getElementById('detailTitle').textContent = `${TYPES[t].icon} ${TYPES[t].label} 상세 정보`;
   document.getElementById('detailCard').style.display = 'block';
   // 날짜 달력: 다음달로 초기화
   state.dateCy = nextM.getFullYear(); state.dateCm = nextM.getMonth();
@@ -810,7 +849,7 @@ async function submitForm() {
   const payload = {
     기관: state.inst==='무지개' ? '무지개어린이집' : '우리무지개어린이집',
     반: state.cls,
-    유형: state.type==='trip' ? '광주탐방' : '숲놀이',
+    유형: TYPES[state.type].label,
     날짜: state.date,
     출발시간: `${depH}시 ${String(depM).padStart(2,'0')}분`,
     도착시간: `${arrH}시 ${String(arrM).padStart(2,'0')}분`,
@@ -822,7 +861,7 @@ async function submitForm() {
     제출일시: new Date().toISOString(),
   };
 
-  if (state.type === 'trip') {
+  if (state.type !== 'forest') {
     payload.미션 = document.getElementById('fMission').value.trim();
     payload.사전활동 = document.getElementById('fPre').value.trim();
     payload.사후활동 = document.getElementById('fPost').value.trim();

@@ -15,6 +15,7 @@
   --green:#2D6A4F;--green-bg:#d8f3dc;--green-lt:#e8f5e9;
   --blue:#1565C0;--blue-bg:#e3f0fd;
   --sky:#0277BD;--sky-bg:#e1f5fe;
+  --purple:#6A1B9A;--orange:#C2410C;
   --amber:#7B4F12;--amber-bg:#fef3e2;
   --red:#9B2335;--red-bg:#fce8eb;
   --forest:#1B4332;--forest2:#2D6A4F;
@@ -50,12 +51,12 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;background:var(
 .page{max-width:1100px;margin:0 auto;padding:20px 16px 80px}
 
 /* Stats */
-.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
+.stats-row{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:16px}
 .sc{background:var(--surface);border:.5px solid var(--border2);border-radius:var(--r);padding:14px 16px}
 .sc .sl{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
 .sc .sv{font-size:24px;font-weight:700}
 .sc .ss{font-size:11px;color:var(--text3);margin-top:2px}
-.sv.forest{color:var(--forest)}.sv.sky{color:var(--sky)}.sv.green{color:var(--green)}
+.sv.forest{color:var(--forest)}.sv.sky{color:var(--sky)}.sv.green{color:var(--green)}.sv.purple{color:var(--purple)}.sv.orange{color:var(--orange)}
 
 /* Top calendar */
 .top-cal-card{background:var(--surface);border:.5px solid var(--border2);border-radius:var(--r);padding:18px;margin-bottom:16px}
@@ -78,6 +79,8 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;background:var(
 .cb{font-size:8px;padding:1px 4px;border-radius:3px;font-weight:600;white-space:nowrap}
 .cb-trip{background:var(--forest);color:#fff}
 .cb-forest{background:var(--sky);color:#fff}
+.cb-musical{background:var(--purple);color:#fff}
+.cb-movie{background:var(--orange);color:#fff}
 
 /* Toolbar */
 .toolbar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
@@ -107,6 +110,8 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;background:var(
 .bdg{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
 .bdg-trip{background:var(--forest);color:#fff}
 .bdg-forest{background:var(--sky);color:#fff}
+.bdg-musical{background:var(--purple);color:#fff}
+.bdg-movie{background:var(--orange);color:#fff}
 .bdg-green{background:var(--green-bg);color:var(--forest)}
 .bdg-gray{background:var(--surface2);color:var(--text2)}
 .sa{display:inline-block;margin-left:3px;font-size:9px;opacity:.4}
@@ -133,6 +138,8 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;background:var(
 .day-modal-close{cursor:pointer;color:var(--text2);font-size:20px;line-height:1}
 .day-schedule-item{background:var(--surface2);border-radius:var(--rs);padding:12px 14px;margin-bottom:8px;border-left:3px solid var(--green)}
 .day-schedule-item.forest-type{border-left-color:var(--sky)}
+.day-schedule-item.musical-type{border-left-color:var(--purple)}
+.day-schedule-item.movie-type{border-left-color:var(--orange)}
 .dsi-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .dsi-class{font-size:13px;font-weight:700}
 .dsi-rows{display:grid;grid-template-columns:1fr 1fr;gap:4px}
@@ -206,6 +213,8 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;background:var(
     <div class="sc"><div class="sl">전체 일정</div><div class="sv forest" id="sTot">-</div><div class="ss">건</div></div>
     <div class="sc"><div class="sl">광주탐방</div><div class="sv forest" id="sTrip">-</div><div class="ss">건</div></div>
     <div class="sc"><div class="sl">숲놀이</div><div class="sv sky" id="sForest">-</div><div class="ss">건</div></div>
+    <div class="sc"><div class="sl">뮤지컬관람</div><div class="sv purple" id="sMusical">-</div><div class="ss">건</div></div>
+    <div class="sc"><div class="sl">영화관람</div><div class="sv orange" id="sMovie">-</div><div class="ss">건</div></div>
     <div class="sc"><div class="sl">차량 이용</div><div class="sv green" id="sBus">-</div><div class="ss">건</div></div>
     <div class="sc"><div class="sl">이번달 일정</div><div class="sv forest" id="sThisMonth">-</div><div class="ss">건</div></div>
   </div>
@@ -225,6 +234,12 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;background:var(
       <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)">
         <span style="width:10px;height:10px;border-radius:2px;background:var(--sky);display:inline-block"></span>숲놀이
       </div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)">
+        <span style="width:10px;height:10px;border-radius:2px;background:var(--purple);display:inline-block"></span>뮤지컬관람
+      </div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)">
+        <span style="width:10px;height:10px;border-radius:2px;background:var(--orange);display:inline-block"></span>영화관람
+      </div>
       <div style="font-size:11px;color:var(--text3)">날짜 클릭 시 해당 일정 상세 보기</div>
     </div>
   </div>
@@ -241,6 +256,8 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;background:var(
         <option value="">전체 유형</option>
         <option value="광주탐방">광주탐방</option>
         <option value="숲놀이">숲놀이</option>
+        <option value="뮤지컬관람">뮤지컬관람</option>
+        <option value="영화관람">영화관람</option>
       </select>
       <select class="fsel" id="fBus" onchange="applyFilter()">
         <option value="">차량 전체</option>
@@ -370,6 +387,8 @@ function renderAll(){
   document.getElementById('sTot').textContent=allData.length;
   document.getElementById('sTrip').textContent=allData.filter(r=>r.유형==='광주탐방').length;
   document.getElementById('sForest').textContent=allData.filter(r=>r.유형==='숲놀이').length;
+  document.getElementById('sMusical').textContent=allData.filter(r=>r.유형==='뮤지컬관람').length;
+  document.getElementById('sMovie').textContent=allData.filter(r=>r.유형==='영화관람').length;
   document.getElementById('sBus').textContent=allData.filter(r=>r.차량이용==='이용').length;
   document.getElementById('sThisMonth').textContent=allData.filter(r=>r.날짜&&r.날짜.startsWith(thisMonth)).length;
 
@@ -377,6 +396,11 @@ function renderAll(){
   renderTopCal();
   applyFilter();
 }
+
+// ── 유형 정의 ──
+const TYPE_KEYS={'광주탐방':'trip','숲놀이':'forest','뮤지컬관람':'musical','영화관람':'movie'};
+const TYPE_ICON={trip:'🗺',forest:'🌲',musical:'🎭',movie:'🎬'};
+function typeKey(label){return TYPE_KEYS[label]||'forest';}
 
 // ── 상단 달력 ──
 function topMove(d){topCm+=d;if(topCm>11){topCm=0;topCy++;}if(topCm<0){topCm=11;topCy--;}renderTopCal();}
@@ -394,9 +418,8 @@ function renderTopCal(){
   const daySched={};
   allData.forEach(r=>{
     if(!r.날짜)return;
-    if(!daySched[r.날짜])daySched[r.날짜]={trip:[],forest:[]};
-    if(r.유형==='광주탐방')daySched[r.날짜].trip.push(r.반);
-    else daySched[r.날짜].forest.push(r.반);
+    if(!daySched[r.날짜])daySched[r.날짜]={trip:[],forest:[],musical:[],movie:[]};
+    daySched[r.날짜][typeKey(r.유형)].push(r.반);
   });
 
   const first=new Date(topCy,topCm,1),dow=first.getDay(),dim=new Date(topCy,topCm+1,0).getDate();
@@ -416,10 +439,12 @@ function renderTopCal(){
     if(sc){
       sc.trip.forEach(c=>html+=`<span class="cb cb-trip">${c}</span>`);
       sc.forest.forEach(c=>html+=`<span class="cb cb-forest">${c}</span>`);
+      sc.musical.forEach(c=>html+=`<span class="cb cb-musical">${c}</span>`);
+      sc.movie.forEach(c=>html+=`<span class="cb cb-movie">${c}</span>`);
     }
     html+='</div>';
     el.innerHTML=html;
-    if(sc&&(sc.trip.length+sc.forest.length)>0){
+    if(sc&&(sc.trip.length+sc.forest.length+sc.musical.length+sc.movie.length)>0){
       el.style.cursor='pointer';
       el.onclick=()=>openDayModal(key,sc);
     }
@@ -437,9 +462,10 @@ function openDayModal(dateKey,sc){
   if(items.length===0){body.innerHTML='<div style="color:var(--text3);font-size:13px">일정 없음</div>';return;}
   items.forEach(r=>{
     const el=document.createElement('div');
-    el.className='day-schedule-item'+(r.유형==='숲놀이'?' forest-type':'');
+    const tk=typeKey(r.유형);
+    el.className='day-schedule-item'+(tk!=='trip'?` ${tk}-type`:'');
     let html=`<div class="dsi-top">
-      <span class="bdg ${r.유형==='광주탐방'?'bdg-trip':'bdg-forest'}">${r.유형}</span>
+      <span class="bdg bdg-${tk}">${r.유형}</span>
       <span class="dsi-class">${r.반}</span>
       <span style="font-size:11px;color:var(--text2)">${r.기관==='무지개어린이집'?'무지개':'우리무지개'}</span>
     </div>
@@ -448,7 +474,7 @@ function openDayModal(dateKey,sc){
       <div class="dsi-row">📍 <b>${r.장소||'-'}</b></div>
       <div class="dsi-row">🎯 ${r.주제||'-'}</div>
       <div class="dsi-row">👥 인원 <b>${r.인원}명</b> · 지원 <b>${r.지원교사}명</b> · 차량 <b>${r.차량이용}</b></div>`;
-    if(r.유형==='광주탐방'&&r.미션){
+    if(r.유형!=='숲놀이'&&r.미션){
       html+=`<div class="dsi-row" style="grid-column:span 2">🔍 미션: ${r.미션}</div>`;
     }
     html+=`</div>`;
@@ -516,7 +542,7 @@ function renderTable(rows){
       <td style="font-weight:600;color:var(--forest);white-space:nowrap">${dateStr}</td>
       <td style="font-size:11px;color:var(--text2)">${r.기관==='무지개어린이집'?'무지개':'우리무지개'}</td>
       <td style="font-weight:600">${r.반||'-'}</td>
-      <td><span class="bdg ${r.유형==='광주탐방'?'bdg-trip':'bdg-forest'}">${r.유형||'-'}</span></td>
+      <td><span class="bdg bdg-${typeKey(r.유형)}">${r.유형||'-'}</span></td>
       <td style="white-space:nowrap;font-size:11px">${r.출발시간||'-'} → ${r.도착시간||'-'}</td>
       <td>${r.장소||'-'}</td>
       <td style="text-align:center">${r.인원||0}명</td>
@@ -541,9 +567,9 @@ function renderTable(rows){
         <div class="dg-item"><div class="dg-label">차량이용</div><div class="dg-val">${r.차량이용||'-'}</div></div>
         <div class="dg-item"><div class="dg-label">제출일시</div><div class="dg-val" style="font-size:11px">${r.제출일시?new Date(r.제출일시).toLocaleString('ko-KR'):'-'}</div></div>
       </div>`;
-    if(r.유형==='광주탐방'){
+    if(r.유형&&r.유형!=='숲놀이'){
       html+=`<div class="trip-extra">
-        <div class="trip-extra-title">🗺 광주탐방 추가 정보</div>
+        <div class="trip-extra-title">${TYPE_ICON[typeKey(r.유형)]} ${r.유형} 추가 정보</div>
         <div class="trip-extra-grid">
           <div class="te-item"><div class="te-label">미션</div><div class="te-val">${r.미션||'-'}</div></div>
           <div class="te-item"><div class="te-label">사전 활동</div><div class="te-val">${r.사전활동||'-'}</div></div>
