@@ -100,6 +100,9 @@ body { font-family: 'Apple SD Gothic Neo','Noto Sans KR',sans-serif; background:
 
 /* 폼 요소 */
 .fg { margin-bottom: 14px; }
+.fg.arrive-hl { background: #FFF4D6; border: 2px solid #E0A100; border-radius: var(--rs); padding: 8px 10px 10px; }
+.fg.arrive-hl label { color: #8A5A00; font-weight: 700; font-size: 13px; }
+.arrive-note { display: block; font-size: 11px; color: #8A5A00; margin-top: 5px; font-weight: 600; }
 .fg label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 5px; font-weight: 500; }
 .fg input, .fg select, .fg textarea {
   width: 100%; border: .5px solid var(--border2); border-radius: var(--rs);
@@ -313,14 +316,15 @@ body { font-family: 'Apple SD Gothic Neo','Noto Sans KR',sans-serif; background:
             <span class="time-sep">분</span>
           </div>
         </div>
-        <div class="fg">
-          <label>도착 시간 (복귀)</label>
+        <div class="fg arrive-hl">
+          <label>🏫 원 도착 시간</label>
           <div class="time-row">
             <select id="arrH"></select>
             <span class="time-sep">시</span>
             <select id="arrM"></select>
             <span class="time-sep">분</span>
           </div>
+          <span class="arrive-note">※ 탐방 마치고 어린이집에 도착하는 시간</span>
         </div>
       </div>
 
@@ -528,7 +532,7 @@ function renderMyList() {
           <span class="my-item-date">${dateStr}</span>
         </div>
         <div class="my-item-info">
-          📍 ${r.장소||'-'} · ${r.출발시간||'-'} → ${r.도착시간||'-'}<br>
+          📍 ${r.장소||'-'} · ${r.출발시간||'-'} 출발 → <b style="color:#8A5A00">${r.도착시간||'-'} 원 도착</b><br>
           👥 인원 ${r.인원||0}명 · 지원교사 ${r.지원교사||0}명 · 차량 ${r.차량이용||'-'}
           ${r.주제 ? `<br>🎯 ${r.주제}` : ''}
         </div>
@@ -896,7 +900,7 @@ async function submitForm() {
   document.getElementById('doneSub').innerHTML =
     `<b>${payload.기관}</b> · ${state.cls}<br>` +
     `${payload.유형} · ${d.getMonth()+1}월 ${d.getDate()}일 (${DAYS[d.getDay()]}요일)<br>` +
-    `${payload.출발시간} 출발 → ${payload.도착시간} 도착<br>` +
+    `${payload.출발시간} 출발 → <b style="color:#8A5A00">${payload.도착시간} 원 도착</b><br>` +
     `📍 ${place} · 인원 ${people}명 · 지원교사 ${support}명 · 차량 ${payload.차량이용}`;
   window.scrollTo(0,0);
 }

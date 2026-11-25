@@ -470,7 +470,7 @@ function openDayModal(dateKey,sc){
       <span style="font-size:11px;color:var(--text2)">${r.기관==='무지개어린이집'?'무지개':'우리무지개'}</span>
     </div>
     <div class="dsi-rows">
-      <div class="dsi-row">🕐 <b>${r.출발시간}</b> 출발 → <b>${r.도착시간}</b> 도착</div>
+      <div class="dsi-row">🕐 <b>${r.출발시간}</b> 출발 → <b style="color:#8A5A00">${r.도착시간}</b> 원 도착</div>
       <div class="dsi-row">📍 <b>${r.장소||'-'}</b></div>
       <div class="dsi-row">🎯 ${r.주제||'-'}</div>
       <div class="dsi-row">👥 인원 <b>${r.인원}명</b> · 지원 <b>${r.지원교사}명</b> · 차량 <b>${r.차량이용}</b></div>`;
@@ -543,7 +543,7 @@ function renderTable(rows){
       <td style="font-size:11px;color:var(--text2)">${r.기관==='무지개어린이집'?'무지개':'우리무지개'}</td>
       <td style="font-weight:600">${r.반||'-'}</td>
       <td><span class="bdg bdg-${typeKey(r.유형)}">${r.유형||'-'}</span></td>
-      <td style="white-space:nowrap;font-size:11px">${r.출발시간||'-'} → ${r.도착시간||'-'}</td>
+      <td style="white-space:nowrap;font-size:11px">${r.출발시간||'-'} → <b style="color:#8A5A00">${r.도착시간||'-'}</b></td>
       <td>${r.장소||'-'}</td>
       <td style="text-align:center">${r.인원||0}명</td>
       <td style="text-align:center">${r.지원교사||0}명</td>
@@ -559,7 +559,7 @@ function renderTable(rows){
         <div class="dg-item"><div class="dg-label">기관</div><div class="dg-val">${r.기관||'-'}</div></div>
         <div class="dg-item"><div class="dg-label">날짜</div><div class="dg-val green">${r.날짜||'-'}</div></div>
         <div class="dg-item"><div class="dg-label">출발시간</div><div class="dg-val">${r.출발시간||'-'}</div></div>
-        <div class="dg-item"><div class="dg-label">도착시간</div><div class="dg-val">${r.도착시간||'-'}</div></div>
+        <div class="dg-item"><div class="dg-label" style="color:#8A5A00">원 도착시간</div><div class="dg-val" style="color:#8A5A00;font-weight:700">${r.도착시간||'-'}</div></div>
         <div class="dg-item"><div class="dg-label">장소</div><div class="dg-val">${r.장소||'-'}</div></div>
         <div class="dg-item"><div class="dg-label">주제</div><div class="dg-val">${r.주제||'-'}</div></div>
         <div class="dg-item"><div class="dg-label">인원</div><div class="dg-val">${r.인원||0}명</div></div>
@@ -595,7 +595,7 @@ function exportExcel(){
   const rows=window._tRows||[];
   if(rows.length===0){toast('데이터 없음');return;}
 
-  const data=[['날짜','기관','반','유형','출발시간','도착시간','장소','주제','인원(명)','지원교사(명)','차량이용','미션','사전활동','사후활동','제출일시']];
+  const data=[['날짜','기관','반','유형','출발시간','원 도착시간','장소','주제','인원(명)','지원교사(명)','차량이용','미션','사전활동','사후활동','제출일시']];
   rows.forEach(r=>{
     data.push([
       r.날짜||'',r.기관||'',r.반||'',r.유형||'',
